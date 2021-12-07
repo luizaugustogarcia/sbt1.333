@@ -9,6 +9,7 @@ import br.unb.cic.tdp.proof.ProofGenerator;
 import br.unb.cic.tdp.util.Pair;
 import br.unb.cic.tdp.util.Triplet;
 import lombok.SneakyThrows;
+import org.apache.commons.lang.time.StopWatch;
 import org.apache.velocity.app.Velocity;
 import org.apache.velocity.util.StringUtils;
 
@@ -31,6 +32,9 @@ public class FinalPermutations {
         Velocity.setProperty("resource.loader", "class");
         Velocity.setProperty("class.resource.loader.class", "org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader");
         Velocity.init();
+
+        final var s = new MulticyclePermutation("(0 4 2)(1 35 3)(5 9 7)(6 10 8)(11 15 13)(12 16 14)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)");
+        final var i = s.getIndex();
 
         Stream.of(
                 new Configuration("(0 4 2)(1 35 3)(5 9 7)(6 10 8)(11 15 13)(12 16 14)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"),
@@ -56,6 +60,16 @@ public class FinalPermutations {
         }
 
         System.out.println("Sorting " + conf.getSpi());
+
+        final var stopWatch = new StopWatch();
+        stopWatch.start();
+        for (int i = 0; i < 10; i++) {
+            generateAll0And2Moves(canonical.getSpi(), canonical.getPi()).count();
+        }
+        stopWatch.stop();
+        System.out.println(stopWatch.getTime());
+        if (true)
+            return;
 
         final var stream = generateAll0And2Moves(canonical.getSpi(), canonical.getPi())
                 .filter(p -> p.third == 0)
@@ -158,30 +172,34 @@ public class FinalPermutations {
         return Collections.emptyList();
     }
 
+    static MulticyclePermutation m = new MulticyclePermutation("(1,2,3)");
+
     private static Stream<Triplet<MulticyclePermutation, Cycle, Integer>> generateAll0And2Moves(final MulticyclePermutation spi, final Cycle pi) {
-        final var ci = cycleIndex(spi, pi);
         final var numberOfEvenCycles = spi.getNumberOfEvenCycles();
 
         return IntStream.range(0, pi.size() - 2).boxed()
-                .filter(i -> ci[pi.get(i)].size() > 1)
+                .filter(i -> spi.getCycleBySymbol(pi.get(i)).size() > 1)
                 .flatMap(i -> IntStream.range(i + 1, pi.size() - 1).boxed()
-                        .filter(j -> ci[pi.get(j)].size() > 1)
+                        .filter(j -> spi.getCycleBySymbol(pi.get(j)).size() > 1)
                         .flatMap(j -> IntStream.range(j + 1, pi.size()).boxed()
-                                .filter(k -> ci[pi.get(k)].size() > 1)
+                                .filter(k -> spi.getCycleBySymbol(pi.get(k)).size() > 1)
                                 .filter(k -> {
                                     int a = pi.get(i), b = pi.get(j), c = pi.get(k);
-                                    final var is_2Move = ci[a] != ci[b] && ci[b] != ci[c] && ci[a] != ci[c];
+                                    final var is_2Move = spi.getCycleBySymbol(a) != spi.getCycleBySymbol(b) &&
+                                            spi.getCycleBySymbol(b) != spi.getCycleBySymbol(c) &&
+                                            spi.getCycleBySymbol(a) != spi.getCycleBySymbol(c);
                                     // skip (-2)-moves
                                     return !is_2Move;
                                 }).map(k -> {
                                     int a = pi.get(i), b = pi.get(j), c = pi.get(k);
                                     final var move = Cycle.create(a, b, c);
-                                    final var spi_ = computeProduct(true, pi.getMaxSymbol() + 1, spi, move.getInverse());
-                                    final var delta = (spi_.getNumberOfEvenCycles() - numberOfEvenCycles);
-                                    if (delta >= 0)
-                                        return new Triplet<>(spi_, move, delta);
+//                                    final var spi_ = computeProduct(true, pi.getMaxSymbol() + 1, spi, move.getInverse());
+//                                    final var delta = (spi_.getNumberOfEvenCycles() - numberOfEvenCycles);
+//                                    if (delta >= 0)
+//                                        return new Triplet<>(spi_, move, delta);
+                                    return new Triplet<>(m, move, 0);
 
-                                    return null;
+//                                    return null;
                                 }))).filter(Objects::nonNull);
     }
 }

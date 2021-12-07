@@ -46,7 +46,7 @@ public class Silvaetal extends BaseAlgorithm {
             spi = computeProduct(true, sigma, pi.getInverse());
         }
 
-        final List<List<Cycle>> badSmallComponents = new ArrayList<>();
+        final List<Collection<Cycle>> badSmallComponents = new ArrayList<>();
 
         final var nonBadSmallComponents = new HashSet<>(spi.getNonTrivialCycles());
         while (!nonBadSmallComponents.isEmpty()) {
@@ -63,7 +63,7 @@ public class Silvaetal extends BaseAlgorithm {
                     pi = pair.getSecond();
                     spi = computeProduct(true, sigma, pi.getInverse());
                 } else {
-                    List<Cycle> component = new ArrayList<>();
+                    Collection<Cycle> component = new ArrayList<>();
                     final var gamma = nonBadSmallComponents.stream().findFirst().get();
                     component.add(Cycle.create(gamma.get(0), gamma.get(1), gamma.get(2)));
 
@@ -167,7 +167,7 @@ public class Silvaetal extends BaseAlgorithm {
         }
     }
 
-    public static List<Cycle> extend(final List<Cycle> config, final List<Cycle> spi, final Cycle pi) {
+    public static Collection<Cycle> extend(final Collection<Cycle> config, final Collection<Cycle> spi, final Cycle pi) {
         final var extension = ehExtend(config, spi, pi);
 
         if (extension != config) {

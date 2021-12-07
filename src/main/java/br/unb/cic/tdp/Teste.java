@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static br.unb.cic.tdp.base.CommonOperations.*;
 
@@ -38,7 +40,7 @@ public class Teste {
 
         final var n = spi.getNumberOfEvenCycles();
 
-        for (final var combination : combinations(spi.getSymbols(), 3)) {
+        for (final var combination : combinations(IntStream.of(spi.getSymbols().toArray()).boxed().collect(Collectors.toList()), 3)) {
             for (final var permutation : Factory.createPermutationGenerator(combination)) {
                 int a = permutation.getValue(0);
                 int b = permutation.getValue(1);

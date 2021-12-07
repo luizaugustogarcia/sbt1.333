@@ -6,6 +6,8 @@ import br.unb.cic.tdp.permutation.PermutationGroups;
 import br.unb.cic.tdp.util.Pair;
 import cern.colt.list.IntArrayList;
 import cern.colt.list.FloatArrayList;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 import lombok.SneakyThrows;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.time.StopWatch;
@@ -13,6 +15,7 @@ import org.paukov.combinatorics.Factory;
 import org.paukov.combinatorics.Generator;
 
 import java.io.Serializable;
+import java.sql.Array;
 import java.util.*;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Executors;
@@ -130,11 +133,11 @@ public class CommonOperations implements Serializable {
      * Creates an array where the cycles in <code>bigGamma</code> can be accessed by the symbols of <code>pi</code>
      * (being the indexes of the resulting array).
      */
-    public static Cycle[] cycleIndex(final List<Cycle> cycle, final Cycle pi) {
+    public static Cycle[] cycleIndex(final Collection<Cycle> cycle, final Cycle pi) {
         return cyclesIndex(Arrays.asList(cycle), pi);
     }
 
-    public static Cycle[] cyclesIndex(final List<List<Cycle>> components, final Cycle pi) {
+    public static Cycle[] cyclesIndex(final List<Collection<Cycle>> components, final Cycle pi) {
         final var index = new Cycle[pi.getMaxSymbol() + 1];
 
         components.forEach(component -> {
@@ -153,7 +156,7 @@ public class CommonOperations implements Serializable {
 
         boolean leap = false;
         for (int i = 0; i < symbols.length; i++) {
-            if (symbolIndexes[symbols[i]] > symbolIndexes[symbols[(i + 1) % symbols.length]]) {
+            if (symbolIndexes.get(symbols[i]) > symbolIndexes.get(symbols[(i + 1) % symbols.length])) {
                 if (!leap) {
                     leap = true;
                 } else {
@@ -361,7 +364,7 @@ public class CommonOperations implements Serializable {
     }
 
     // optimize
-    public static List<List<Cycle>> getComponents(final List<Cycle> spi, final Cycle pi) {
+    public static List<List<Cycle>> getComponents(final Collection<Cycle> spi, final Cycle pi) {
         final var cycleIndex = cycleIndex(spi, pi);
         final var piInverse = pi.getInverse();
 
@@ -415,11 +418,11 @@ public class CommonOperations implements Serializable {
         return components;
     }
 
-    public static Set<Integer> getOpenGates(final List<Cycle> config, final Cycle pi) {
+    public static Set<Integer> getOpenGates(final Collection<Cycle> config, final Cycle pi) {
         return getOpenGates(config, pi, Configuration.signature(config, pi));
     }
 
-    public static Set<Integer> getOpenGates(final List<Cycle> config, final Cycle pi, float[] signature) {
+    public static Set<Integer> getOpenGates(final Collection<Cycle> config, final Cycle pi, float[] signature) {
         final Set<Integer> openGates = new HashSet<>();
 
         final var piInverse = pi.getInverse();

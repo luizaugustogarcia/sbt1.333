@@ -3,6 +3,10 @@ package br.unb.cic.tdp.permutation;
 import cc.redberry.core.utils.BitArray;
 import cern.colt.list.IntArrayList;
 import cern.colt.map.OpenIntIntHashMap;
+import org.eclipse.collections.api.list.primitive.IntList;
+import org.eclipse.collections.api.map.primitive.MutableIntIntMap;
+import org.eclipse.collections.impl.factory.primitive.IntIntMaps;
+import org.eclipse.collections.impl.factory.primitive.IntLists;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -34,25 +38,22 @@ public class PermutationGroups implements Serializable {
     }
 
     public static MulticyclePermutation computeProduct(final boolean include1Cycle, final int n, final Permutation... permutations) {
-        final var functions = new int[permutations.length][n];
+        final var functions = new MutableIntIntMap[permutations.length];
 
-        final var symbols = new OpenIntIntHashMap();
-
-        // initializing
-        for (var i = 0; i < permutations.length; i++)
-            Arrays.fill(functions[i], -1);
+        final var symbols = IntIntMaps.mutable.empty();
 
         for (var i = 0; i < permutations.length; i++) {
+            functions[i] = IntIntMaps.mutable.empty();
             if (permutations[i] instanceof Cycle) {
                 final var cycle = (Cycle) permutations[i];
                 for (var j = 0; j < cycle.size(); j++) {
-                    functions[i][cycle.get(j)] = cycle.image(cycle.get(j));
+                    functions[i].put(cycle.get(j), cycle.image(cycle.get(j)));
                     symbols.put(cycle.get(j), 0);
                 }
             } else {
                 for (final var cycle : ((MulticyclePermutation) permutations[i])) {
                     for (var j = 0; j < cycle.size(); j++) {
-                        functions[i][cycle.get(j)] = cycle.image(cycle.get(j));
+                        functions[i].put(cycle.get(j), cycle.image(cycle.get(j)));
                         symbols.put(cycle.get(j), 0);
                     }
                 }
@@ -61,7 +62,7 @@ public class PermutationGroups implements Serializable {
 
         final var result = new MulticyclePermutation();
 
-        final var cycle = new IntArrayList();
+        final var cycle = IntLists.mutable.empty();
         final var bitArray = new BitArray(n);
         var counter = 0;
         while (counter < n) {
@@ -69,7 +70,7 @@ public class PermutationGroups implements Serializable {
 
             var image = start;
             for (var i = functions.length - 1; i >= 0; i--) {
-                image = functions[i][image] == -1 ? image : functions[i][image];
+                image = !functions[i].containsKey(image) ? image : functions[i].get(image);
             }
 
             if (image == start) {
@@ -86,14 +87,13 @@ public class PermutationGroups implements Serializable {
 
                 image = start;
                 for (var i = functions.length - 1; i >= 0; i--) {
-                    image = functions[i][image] == -1 ? image : functions[i][image];
+                    image = !functions[i].containsKey(image) ? image : functions[i].get(image);
                 }
 
                 start = image;
             }
 
-            cycle.trimToSize();
-            result.add(Cycle.create(cycle));
+            result.add(Cycle.create(cycle.toArray()));
             cycle.clear();
         }
 

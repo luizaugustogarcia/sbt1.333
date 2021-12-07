@@ -13,6 +13,7 @@ import com.google.common.primitives.Ints;
 import lombok.Getter;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.Velocity;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
 
 import java.io.Serializable;
 import java.io.Writer;
@@ -262,7 +263,7 @@ public class ProofGenerator {
         return Optional.empty();
     }
 
-    public static Cycle removeExtraSymbols(final Set<Integer> symbols, final Cycle pi) {
+    public static Cycle removeExtraSymbols(final MutableIntSet symbols, final Cycle pi) {
         final var newPi = new IntArrayList(symbols.size());
         for (final var symbol: pi.getSymbols()) {
             if (symbols.contains(symbol))
