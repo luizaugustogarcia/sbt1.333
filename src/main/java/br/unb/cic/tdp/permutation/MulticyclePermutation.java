@@ -16,10 +16,10 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class MulticyclePermutation implements Collection<Cycle>, Permutation {
-    private final Set<Cycle> cycles = new HashSet<>();
+    private HashSet<Cycle> cycles = new HashSet<>();
 
     @Getter
-    private final MutableIntObjectMap index = IntObjectMaps.mutable.empty();
+    private MutableIntObjectMap index = IntObjectMaps.mutable.empty();
     private int numberOfEvenCycles;
 
     public MulticyclePermutation() {
@@ -216,7 +216,7 @@ public class MulticyclePermutation implements Collection<Cycle>, Permutation {
         cycles.clear();
     }
 
-    public Cycle getCycleBySymbol(int symbol) {
+    public Cycle getCycle(int symbol) {
         return (Cycle) index.get(symbol);
     }
 }

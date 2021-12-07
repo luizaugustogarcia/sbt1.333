@@ -11,10 +11,14 @@ import static br.unb.cic.tdp.base.CommonOperations.mod;
 
 public class Cycle implements Permutation, Comparable<Cycle> {
     private int[] symbols;
+
+    private boolean internalStateInitialized = false;
     private final MutableIntIntMap symbolIndexes = IntIntMaps.mutable.empty();
     private int minSymbol = -1;
     private int maxSymbol = -1;
+
     private Cycle inverse;
+
     private int hashCode;
     private boolean hashCodeCalculated = false;
 
@@ -23,12 +27,10 @@ public class Cycle implements Permutation, Comparable<Cycle> {
 
     public void update(final int... symbols) {
         this.symbols = symbols;
-        updateInternalState();
     }
 
     private Cycle(final int... symbols) {
         this.symbols = symbols;
-        updateInternalState();
     }
 
     public static Cycle create(final String cycle) {
@@ -55,7 +57,10 @@ public class Cycle implements Permutation, Comparable<Cycle> {
         return symbols;
     }
 
-    private void updateInternalState() {
+    private void initializeInternalState() {
+        if (internalStateInitialized)
+            return;
+
         for (var i = 0; i < symbols.length; i++) {
             int symbol = symbols[i];
             if (minSymbol == -1 || symbol < minSymbol) {
@@ -66,13 +71,17 @@ public class Cycle implements Permutation, Comparable<Cycle> {
             }
             symbolIndexes.addToValue(symbol, i);
         }
+
+        internalStateInitialized = true;
     }
 
     public int getMaxSymbol() {
+        initializeInternalState();
         return maxSymbol;
     }
 
     public int getMinSymbol() {
+        initializeInternalState();
         return minSymbol;
     }
 
@@ -97,6 +106,8 @@ public class Cycle implements Permutation, Comparable<Cycle> {
     }
 
     private String defaultStringRepresentation() {
+        initializeInternalState();
+
         final var _default = this.startingBy(minSymbol);
 
         final var representation = new StringBuilder().append("(");
@@ -114,6 +125,8 @@ public class Cycle implements Permutation, Comparable<Cycle> {
 
     @Override
     public int hashCode() {
+        initializeInternalState();
+
         if (!hashCodeCalculated) {
             hashCode = 1;
             for (int i = 0; i < symbols.length; i++) {
@@ -143,6 +156,8 @@ public class Cycle implements Permutation, Comparable<Cycle> {
             return false;
         }
 
+        initializeInternalState();
+
         if (getMinSymbol() != other.getMinSymbol() || getMaxSymbol() != other.getMaxSymbol())
             return false;
 
@@ -159,14 +174,17 @@ public class Cycle implements Permutation, Comparable<Cycle> {
     }
 
     public int image(final int a) {
+        initializeInternalState();
         return symbols[(symbolIndexes.get(a) + 1) % symbols.length];
     }
 
     public int pow(final int a, final int power) {
+        initializeInternalState();
         return symbols[mod(symbolIndexes.get(a) + power, symbols.length)];
     }
 
     public int getK(final int a, final int b) {
+        initializeInternalState();
         final var aIndex = indexOf(a);
         final var bIndex = indexOf(b);
 
@@ -204,10 +222,12 @@ public class Cycle implements Permutation, Comparable<Cycle> {
     }
 
     public int indexOf(final int symbol) {
+        initializeInternalState();
         return symbolIndexes.get(symbol);
     }
 
     public boolean contains(final int symbol) {
+        initializeInternalState();
         return symbolIndexes.containsKey(symbol);
     }
 
