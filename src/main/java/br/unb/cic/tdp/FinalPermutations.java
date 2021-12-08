@@ -179,9 +179,11 @@ public class FinalPermutations {
             final var piInverse = pi.clone();
             ArrayUtils.reverse(piInverse);
 
-            final var piInverseIndex = new int[piInverse.length];
-            for (var i = 0; i < piInverse.length; i++) {
+            final var piInverseIndex = new int[pi.length];
+            final var piIndex = new int[pi.length];
+            for (var i = 0; i < pi.length; i++) {
                 piInverseIndex[piInverse[i]] = i;
+                piIndex[pi[i]] = i;
             }
 
             for (final var cycle : spi.stream().filter(c -> c.size() > 1 &&
@@ -193,7 +195,7 @@ public class FinalPermutations {
                             final var a = cycle.get(i);
                             final var b = cycle.get(j);
                             final var c = cycle.get(k);
-                            if (areSymbolsInCyclicOrder(pi, a, b, c)) {
+                            if (areSymbolsInCyclicOrder(piIndex, a, b, c)) {
                                 var after = cycle.getK(a, b) % 2 == 1 ? 1 : 0;
                                 after += cycle.getK(b, c) % 2 == 1 ? 1 : 0;
                                 after += cycle.getK(c, a) % 2 == 1 ? 1 : 0;
