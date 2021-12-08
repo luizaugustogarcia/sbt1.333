@@ -153,18 +153,11 @@ public class ProofGenerator {
     public static final Move _12_9_SEQS = new Move(0, new LinkedList<>());
     public static final Move _16_12_SEQS = new Move(0, new LinkedList<>());
 
-    // TODO Remove
-    static final int[][] _16_12_SPECIAL = new int[][]{{0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2}};
-    public static final Move _16_12_SPECIAL_SEQ = new Move(0, new LinkedList<>());
-
     static {
         toTrie(_4_3, _4_3_SEQS);
         toTrie(_8_6, _8_6_SEQS);
         toTrie(_12_9, _12_9_SEQS);
         toTrie(_16_12, _16_12_SEQS);
-
-        // TODO Remove
-        toTrie(_16_12_SPECIAL, _16_12_SPECIAL_SEQ);
     }
 
     private static void toTrie(final int[][] seqs, Move root) {
