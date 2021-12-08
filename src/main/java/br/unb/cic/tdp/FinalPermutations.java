@@ -136,7 +136,7 @@ public class FinalPermutations {
                         final Triplet<Set<Cycle>, Set<Cycle>, Integer> triplet;
                         if (isSameCycle(spi, a, b, c)) {
                             final var cycle = spi.getCycle(a);
-                            if (areSymbolsInCyclicOrder(cycle, a, b, c)) {
+                            if (CommonOperations.areSymbolsInCyclicOrder(cycle, a, b, c)) {
                                 // it's 2-move, skip
                                 continue;
                             }
@@ -179,8 +179,13 @@ public class FinalPermutations {
             final var piInverse = pi.clone();
             ArrayUtils.reverse(piInverse);
 
+            final var piInverseIndex = new int[piInverse.length];
+            for (var i = 0; i < piInverse.length; i++) {
+                piInverseIndex[piInverse[i]] = i;
+            }
+
             for (final var cycle : spi.stream().filter(c -> c.size() > 1 &&
-                    isOriented(piInverse, c)).collect(Collectors.toCollection(LinkedList::new))) {
+                    isOriented(piInverseIndex, c)).collect(Collectors.toCollection(LinkedList::new))) {
                 final var before = cycle.isEven() ? 1 : 0;
                 for (var i = 0; i < cycle.size() - 2; i++) {
                     for (var j = i + 1; j < cycle.size() - 1; j++) {
@@ -302,9 +307,25 @@ public class FinalPermutations {
         return Collections.emptyList();
     }
 
-    public static boolean isOriented(final int[] piInverse, final Cycle cycle) {
-        return !areSymbolsInCyclicOrder(piInverse, cycle.getSymbols());
+    public static boolean isOriented(final int[] piInverseIndex, final Cycle cycle) {
+        return !areSymbolsInCyclicOrder(piInverseIndex, cycle.getSymbols());
     }
+
+    private static boolean areSymbolsInCyclicOrder(final int[] index, int... symbols) {
+        boolean leap = false;
+        for (int i = 0; i < symbols.length; i++) {
+            if (index[symbols[i]] > index[symbols[(i + 1) % symbols.length]]) {
+                if (!leap) {
+                    leap = true;
+                } else {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
 
     private static boolean isSameCycle(final MulticyclePermutation spi, int a, int b, int c) {
         return spi.getCycle(a) == spi.getCycle(b) && spi.getCycle(b) == spi.getCycle(c);

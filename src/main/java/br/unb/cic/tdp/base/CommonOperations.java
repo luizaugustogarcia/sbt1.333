@@ -151,24 +151,6 @@ public class CommonOperations implements Serializable {
         return index;
     }
 
-    public static boolean areSymbolsInCyclicOrder(final int[] cycle, int... symbols) {
-        int first = symbols[0];
-        for (int i = 0; i < cycle.length; i++) {
-            if (cycle[i] == first) {
-                int nextMatch = 1;
-                for (int j = 0; j < cycle.length; j++) {
-                    if (cycle[(i + j) % cycle.length] == symbols[nextMatch]) {
-                        nextMatch++;
-
-                        if (nextMatch == symbols.length)
-                            return true;
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
     public static boolean areSymbolsInCyclicOrder(final Cycle cycle, int... symbols) {
         final var symbolIndexes = cycle.getSymbolIndexes();
 
@@ -291,7 +273,7 @@ public class CommonOperations implements Serializable {
 
     public static Stream<Pair<Cycle, Integer>> generateAll2Moves(final MulticyclePermutation spi, final Cycle pi) {
         return Stream.concat(
-                generateAll2MovesFromOrientedCycles(spi, pi.getSymbols()).stream().map(m -> new Pair<>(m, 2)),
+                generateAll2MovesFromOrientedCycles(spi, pi).stream().map(m -> new Pair<>(m, 2)),
                 generateAll2MovesFromOddCycles(spi, pi));
     }
 
@@ -336,7 +318,7 @@ public class CommonOperations implements Serializable {
                 }))).filter(Objects::nonNull);
     }
 
-    public static List<Cycle> generateAll2MovesFromOrientedCycles(final Collection<Cycle> spi, final int[] pi) {
+    public static List<Cycle> generateAll2MovesFromOrientedCycles(final Collection<Cycle> spi, final Cycle pi) {
         final var _2moves = new ArrayList<Cycle>();
 
         for (final var cycle : spi) {
@@ -366,7 +348,7 @@ public class CommonOperations implements Serializable {
      * Search for a 2-move given by an oriented cycle.
      */
     public static Optional<Cycle> searchFor2MoveFromOrientedCycle(final Collection<Cycle> spi, final Cycle pi) {
-        return generateAll2MovesFromOrientedCycles(spi, pi.getSymbols()).stream().findFirst();
+        return generateAll2MovesFromOrientedCycles(spi, pi).stream().findFirst();
     }
 
     public static <T> Generator<T> combinations(final Collection<T> collection, final int k) {
