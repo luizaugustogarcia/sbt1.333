@@ -179,7 +179,8 @@ public class FinalPermutations {
             final var piInverse = pi.clone();
             ArrayUtils.reverse(piInverse);
 
-            for (final var cycle : new LinkedList<>(spi).stream().filter(c -> c.size() > 1 && isOriented(piInverse, c)).collect(Collectors.toList())) {
+            for (final var cycle : spi.stream().filter(c -> c.size() > 1 &&
+                    isOriented(piInverse, c)).collect(Collectors.toCollection(LinkedList::new))) {
                 final var before = cycle.isEven() ? 1 : 0;
                 for (var i = 0; i < cycle.size() - 2; i++) {
                     for (var j = i + 1; j < cycle.size() - 1; j++) {
