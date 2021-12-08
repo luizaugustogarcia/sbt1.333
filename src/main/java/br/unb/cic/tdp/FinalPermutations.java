@@ -74,13 +74,15 @@ public class FinalPermutations {
         final var submittedTasks = new ArrayList<Future<List<Cycle>>>();
 
         stream.forEach(move -> {
-            final var partialSorting = new Stack<Cycle>();
-            partialSorting.push(move);
             for (final var root : rootMove.getChildren()) {
-                submittedTasks.add(completionService.submit(() -> search(computeProduct(canonical.getSpi(), move.getInverse()),
-                        CommonOperations.applyTransposition(canonical.getPi(), move).getSymbols(),
-                        partialSorting,
-                        root)));
+                submittedTasks.add(completionService.submit(() -> {
+                    final var partialSorting = new Stack<Cycle>();
+                    partialSorting.push(move);
+                    return search(computeProduct(canonical.getSpi(), move.getInverse()),
+                            CommonOperations.applyTransposition(canonical.getPi(), move).getSymbols(),
+                            partialSorting,
+                            root);
+                }));
             }
         });
 

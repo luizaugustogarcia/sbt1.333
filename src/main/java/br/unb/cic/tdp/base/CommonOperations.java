@@ -458,7 +458,7 @@ public class CommonOperations implements Serializable {
             spi = PermutationGroups.computeProduct(spi, move.getInverse());
         }
         final var after = spi.getNumberOfEvenCycles();
-        final var ratio = (float) moves.size() / ((after - before) / 2);
-        return spi.stream().allMatch(Cycle::isEven) && ratio >= 1 && ratio <= ((float) 12 / 9);
+        final var ratio = (float) moves.size() / ((before - after) / 2);
+        return spi.stream().allMatch(Cycle::isEven) && ratio <= ((float) 12 / 9);
     }
 }
