@@ -182,10 +182,8 @@ public class FinalPermutations {
             ArrayUtils.reverse(piInverse);
 
             final var piInverseIndex = new int[pi.length];
-            final var piIndex = new int[pi.length];
             for (var i = 0; i < pi.length; i++) {
                 piInverseIndex[piInverse[i]] = i;
-                piIndex[pi[i]] = i;
             }
 
             for (final var cycle : spi.stream().filter(c -> c.size() > 1 &&
@@ -197,7 +195,8 @@ public class FinalPermutations {
                             final var a = cycle.get(i);
                             final var b = cycle.get(j);
                             final var c = cycle.get(k);
-                            if (areSymbolsInCyclicOrder(piIndex, a, b, c)) {
+                            // check if it's applicable
+                            if (areSymbolsInCyclicOrder(piInverseIndex, a, c, b)) {
                                 var after = cycle.getK(a, b) % 2 == 1 ? 1 : 0;
                                 after += cycle.getK(b, c) % 2 == 1 ? 1 : 0;
                                 after += cycle.getK(c, a) % 2 == 1 ? 1 : 0;
@@ -329,7 +328,6 @@ public class FinalPermutations {
 
         return true;
     }
-
 
     private static boolean isSameCycle(final MulticyclePermutation spi, int a, int b, int c) {
         return spi.getCycle(a) == spi.getCycle(b) && spi.getCycle(b) == spi.getCycle(c);
