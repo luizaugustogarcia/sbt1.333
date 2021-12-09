@@ -178,12 +178,9 @@ public class FinalPermutations {
                 }
             }
         } else {
-            final var piInverse = pi.clone();
-            ArrayUtils.reverse(piInverse);
-
             final var piInverseIndex = new int[pi.length];
             for (var i = 0; i < pi.length; i++) {
-                piInverseIndex[piInverse[i]] = i;
+                piInverseIndex[pi[pi.length - i - 1]] = i;
             }
 
             for (final var cycle : spi.stream().filter(c -> c.size() > 1 &&
