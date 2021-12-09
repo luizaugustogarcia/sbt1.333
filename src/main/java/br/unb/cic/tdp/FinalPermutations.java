@@ -69,7 +69,7 @@ public class FinalPermutations {
                             return new Pair<>(b_.getAsInt(), pair.getFirst());
                         }).sorted(Comparator.comparing(o -> ((Pair<Integer, Cycle>) o).getFirst()).reversed()).map(Pair::getSecond);
 
-        final var executorService = Executors.newFixedThreadPool(1);
+        final var executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         final var completionService = new ExecutorCompletionService<List<int[]>>(executorService);
 
         final var submittedTasks = new ArrayList<Future<List<int[]>>>();
