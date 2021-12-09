@@ -76,6 +76,19 @@ public class MulticyclePermutation implements Collection<Cycle>, Permutation {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        MulticyclePermutation cycles1 = (MulticyclePermutation) o;
+        return Objects.equals(cycles, cycles1.cycles);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(cycles);
+    }
+
+    @Override
     public String toString() {
         if (this.isEmpty()) {
             return "()";

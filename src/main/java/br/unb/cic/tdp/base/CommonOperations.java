@@ -451,14 +451,14 @@ public class CommonOperations implements Serializable {
         return openGates;
     }
 
-    public static boolean is12_9(MulticyclePermutation spi, Cycle pi, final List<Cycle> moves) {
+    public static boolean is16_12(MulticyclePermutation spi, Cycle pi, final List<Cycle> moves) {
         final var before = spi.getNumberOfEvenCycles();
         for (final var move : moves) {
             pi = applyTransposition(pi, move);
             spi = PermutationGroups.computeProduct(spi, move.getInverse());
         }
         final var after = spi.getNumberOfEvenCycles();
-        final var ratio = (float) moves.size() / ((before - after) / 2);
-        return spi.stream().allMatch(Cycle::isEven) && ratio <= ((float) 12 / 9);
+        final var ratio = (float) moves.size() / ((after - before) / 2);
+        return spi.stream().allMatch(Cycle::isEven) && ratio >= 1 && ratio <= ((float) 16 / 12);
     }
 }
