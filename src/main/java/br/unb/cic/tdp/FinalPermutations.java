@@ -3,13 +3,11 @@ package br.unb.cic.tdp;
 import br.unb.cic.tdp.base.CommonOperations;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
-import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.proof.ProofGenerator;
 import br.unb.cic.tdp.util.Pair;
 import br.unb.cic.tdp.util.Triplet;
 import com.google.common.primitives.Ints;
 import lombok.SneakyThrows;
-import org.apache.commons.lang.time.StopWatch;
 import org.apache.velocity.app.Velocity;
 
 import java.io.File;
@@ -47,34 +45,29 @@ public class FinalPermutations {
     }
 
     @SneakyThrows
-    public static void sort(final Configuration conf, String outputDir, ProofGenerator.Move rootMove) {
-        final var canonical = conf.getCanonical();
+    public static void sort(final Configuration configuration, String outputDir, ProofGenerator.Move rootMove) {
+        final var canonical = configuration.getCanonical();
 
         final var sortingFile = new File(outputDir + "/comb/" + canonical.getSpi() + ".html");
         if (sortingFile.exists()) {
-            System.out.println("Skipping " + conf.getSpi());
+            System.out.println("Skipping " + configuration.getSpi());
             return;
         }
 
-        System.out.println("Sorting " + conf.getSpi());
+        System.out.println("Sorting " + configuration.getSpi());
 
-        // prioritize the ones that create big components
-        final var stream =
-                CommonOperations.generateAll0And2Moves(canonical.getSpi(), canonical.getPi())
-                        .filter(p -> p.getSecond() == 0)
-                        .map(pair -> {
-                            final var spi_ = computeProduct(canonical.getSpi(), pair.getFirst().getInverse());
-                            final var pi_ = CommonOperations.applyTransposition(canonical.getPi(), pair.getFirst());
-                            final var b_ = getComponents(spi_, pi_).stream().mapToInt(component -> component.stream().mapToInt(Cycle::size).sum()).max();
-                            return new Pair<>(b_.getAsInt(), pair.getFirst());
-                        }).sorted(Comparator.comparing(o -> ((Pair<Integer, Cycle>) o).getFirst()).reversed()).map(Pair::getSecond);
+        final var list =
+                CommonOperations.generateAll0And2Moves(configuration.getSpi(), configuration.getPi())
+                        .filter(p -> p.getSecond() == 0).map(Pair::getFirst).collect(Collectors.toList());
+
+        Collections.shuffle(list);
 
         final var executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         final var completionService = new ExecutorCompletionService<List<int[]>>(executorService);
 
         final var submittedTasks = new ArrayList<Future<List<int[]>>>();
 
-        stream.forEach(move -> {
+        list.forEach(move -> {
             for (final var root : rootMove.getChildren()) {
                 submittedTasks.add(completionService.submit(() -> {
                     final var name = Thread.currentThread().getName();
@@ -83,17 +76,19 @@ public class FinalPermutations {
                     final var partialSorting = new Stack<int[]>();
                     partialSorting.push(move.getSymbols());
 
-                    final var spi = computeProduct(canonical.getSpi(), move.getInverse())
+                    final var spi = computeProduct(configuration.getSpi(), move.getInverse())
                             .stream().map(Cycle::getSymbols).collect(Collectors.toCollection(LinkedList::new));
 
-                    int[][] spiIndex = new int[canonical.getPi().size()][];
+                    int[][] spiIndex = new int[configuration.getPi().size()][];
                     spi.forEach(cycle -> {
                         for (int i : cycle) {
                             spiIndex[i] = cycle;
                         }
                     });
 
-                    final var pi = applyTransposition(canonical.getPi().getSymbols(), move.getSymbols());
+                    removeTrivialCycles(spi);
+
+                    final var pi = applyTransposition(configuration.getPi().getSymbols(), move.getSymbols());
 
                     try {
                         return search(spi, spiIndex, pi, partialSorting, root);
@@ -111,13 +106,13 @@ public class FinalPermutations {
             final var sorting = completionService.take();
             if (sorting.get().size() > 0) {
                 final var s = sorting.get().stream().map(Cycle::create).collect(Collectors.toList());
-                boolean is16_12 = is16_12(canonical.getSpi(), canonical.getPi(), s);
+                boolean is16_12 = is16_12(configuration.getSpi(), configuration.getPi(), s);
                 if (is16_12) {
                     hasSorting = true;
-                    System.out.println("Sorted: " + conf.getSpi() + ", sorting: " + sorting.get().stream().map(Arrays::toString).collect(Collectors.joining(",")) + ", is 16/12: " + is16_12);
+                    System.out.println("Sorted: " + configuration.getSpi() + ", sorting: " + sorting.get().stream().map(Arrays::toString).collect(Collectors.joining(",")) + ", is 16/12: " + is16_12);
                     System.out.println();
                     try (final var out = new FileWriter(outputDir + "/comb/" + canonical.getSpi() + ".html")) {
-                        renderSorting(canonical, s, out);
+                        renderSorting(canonical, canonical.translatedSorting(configuration, s), out);
                     }
                     break;
                 }
@@ -127,14 +122,18 @@ public class FinalPermutations {
         executorService.shutdownNow();
 
         if (!hasSorting)
-            System.out.println("Didn't find sorting for " + conf.getSpi());
+            System.out.println("Didn't find sorting for " + configuration.getSpi());
+    }
+
+    private static void removeTrivialCycles(List<int[]> spi) {
+        spi.removeIf(cycle -> cycle.length == 1);
     }
 
     public static List<int[]> search(final List<int[]> spi,
                                      final int[][] spiIndex,
                                      final int[] pi,
                                      final Stack<int[]> moves,
-                                     final ProofGenerator.Move root) {
+                                     final Move root) {
 
         if (Thread.currentThread().isInterrupted()) {
             return Collections.emptyList();
@@ -178,7 +177,9 @@ public class FinalPermutations {
 
                         // ========== apply the move
                         spi.removeAll(triplet.first);
-                        spi.addAll(triplet.second);
+                        for (int[] cycle : triplet.second) {
+                            if (cycle.length > 1) spi.add(cycle);
+                        }
                         updateIndex(spiIndex, triplet.second);
                         // ==============================
 
@@ -194,7 +195,9 @@ public class FinalPermutations {
                         }
 
                         // ========== rollback
-                        spi.removeAll(triplet.second);
+                        for (int[] cycle : triplet.second) {
+                            if (cycle.length > 1) spi.remove(cycle);
+                        }
                         spi.addAll(triplet.first);
                         updateIndex(spiIndex, triplet.first);
                         // ==============================
@@ -211,7 +214,7 @@ public class FinalPermutations {
 
             final var orientedCycles = new LinkedList<int[]>();
             for (final var cycle : spi) {
-                if (cycle.length > 1 && isOriented(piInverseIndex, cycle))
+                if (isOriented(piInverseIndex, cycle))
                     orientedCycles.add(cycle);
             }
 
@@ -248,9 +251,9 @@ public class FinalPermutations {
 
                                     // ========== apply the move
                                     spi.remove(cycle);
-                                    spi.add(aCycle);
-                                    spi.add(bCycle);
-                                    spi.add(cCycle);
+                                    if (aCycle.length > 1) spi.add(aCycle);
+                                    if (bCycle.length > 1) spi.add(bCycle);
+                                    if (cCycle.length > 1) spi.add(cCycle);
                                     updateIndex(spiIndex, aCycle, bCycle, cCycle);
                                     // ==============================
 
@@ -266,9 +269,9 @@ public class FinalPermutations {
                                     }
 
                                     // ========== rollback
-                                    spi.remove(aCycle);
-                                    spi.remove(bCycle);
-                                    spi.remove(cCycle);
+                                    if (aCycle.length > 1) spi.remove(aCycle);
+                                    if (bCycle.length > 1) spi.remove(bCycle);
+                                    if (cCycle.length > 1) spi.remove(cCycle);
                                     spi.add(cycle);
                                     updateIndex(spiIndex, cycle);
                                     // ====================
@@ -310,7 +313,9 @@ public class FinalPermutations {
 
                         // ========== apply the move
                         spi.removeAll(triplet.first);
-                        spi.addAll(triplet.second);
+                        for (int[] cycle : triplet.second) {
+                            if (cycle.length > 1) spi.add(cycle);
+                        }
                         updateIndex(spiIndex, triplet.second);
                         // ==============================
 
@@ -326,7 +331,9 @@ public class FinalPermutations {
                         }
 
                         // ========== rollback
-                        spi.removeAll(triplet.second);
+                        for (int[] cycle : triplet.second) {
+                            if (cycle.length > 1) spi.remove(cycle);
+                        }
                         spi.addAll(triplet.first);
                         updateIndex(spiIndex, triplet.first);
                         // ==============================
@@ -341,7 +348,9 @@ public class FinalPermutations {
     }
 
     private static void updateIndex(int[][] index, List<int[]> cycles) {
-        cycles.forEach(cycle -> updateIndex(index, cycle));
+        for (int[] cycle : cycles) {
+            updateIndex(index, cycle);
+        }
     }
 
     private static void updateIndex(int[][] index, int[]... cycles) {
