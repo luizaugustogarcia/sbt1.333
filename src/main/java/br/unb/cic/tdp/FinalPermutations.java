@@ -77,11 +77,14 @@ public class FinalPermutations {
         stream.forEach(move -> {
             for (final var root : rootMove.getChildren()) {
                 submittedTasks.add(completionService.submit(() -> {
+                    final var name = Thread.currentThread().getName();
+                    Thread.currentThread().setName(Thread.currentThread().getName() + "-" + move + "-" + root.getMu());
+
                     final var partialSorting = new Stack<int[]>();
                     partialSorting.push(move.getSymbols());
 
                     final var spi = computeProduct(canonical.getSpi(), move.getInverse())
-                            .stream().map(Cycle::getSymbols).collect(Collectors.toList());
+                            .stream().map(Cycle::getSymbols).collect(Collectors.toCollection(LinkedList::new));
 
                     int[][] spiIndex = new int[canonical.getPi().size()][];
                     spi.forEach(cycle -> {
@@ -92,7 +95,11 @@ public class FinalPermutations {
 
                     final var pi = applyTransposition(canonical.getPi().getSymbols(), move.getSymbols());
 
-                    return search(spi, spiIndex, pi, partialSorting, root);
+                    try {
+                        return search(spi, spiIndex, pi, partialSorting, root);
+                    } finally {
+                        Thread.currentThread().setName(name);
+                    }
                 }));
             }
         });
@@ -202,8 +209,13 @@ public class FinalPermutations {
                 piInverseIndex[pi[pi.length - i - 1]] = i;
             }
 
-            for (final var cycle : spi.stream().filter(c -> c.length > 1 &&
-                    isOriented(piInverseIndex, c)).collect(Collectors.toCollection(LinkedList::new))) {
+            final var orientedCycles = new LinkedList<int[]>();
+            for (final var cycle : spi) {
+                if (cycle.length > 1 && isOriented(piInverseIndex, cycle))
+                    orientedCycles.add(cycle);
+            }
+
+            for (final var cycle : orientedCycles) {
                 final var before = isEven(cycle) ? 1 : 0;
                 for (var i = 0; i < cycle.length - 2; i++) {
                     for (var j = i + 1; j < cycle.length - 1; j++) {
