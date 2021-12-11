@@ -56,16 +56,18 @@ public class FinalPermutations {
 
         System.out.println("Sorting " + configuration.getSpi());
 
-        final var stream =
-                CommonOperations.generateAll0And2Moves(configuration.getSpi(), configuration.getPi())
-                        .filter(p -> p.getSecond() == 0).map(Pair::getFirst);
+        var list = CommonOperations.generateAll0And2Moves(configuration.getSpi(), configuration.getPi())
+                        .filter(p -> p.getSecond() == 0).map(Pair::getFirst).collect(Collectors.toList());
+        list.stream().map(Cycle::toString).collect(Collectors.joining(","));
+        System.out.println(list.size() + " 0-moves");
+        Collections.shuffle(list);
 
         final var executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         final var completionService = new ExecutorCompletionService<List<int[]>>(executorService);
 
         final var submittedTasks = new ArrayList<Future<List<int[]>>>();
 
-        stream.forEach(move -> {
+        list.forEach(move -> {
             for (final var root : rootMove.getChildren()) {
                 submittedTasks.add(completionService.submit(() -> {
                     final var name = Thread.currentThread().getName();
@@ -91,7 +93,11 @@ public class FinalPermutations {
                     final var maxSymbol = Ints.max(pi);
 
                     try {
-                        return search(spi, spiIndex, pi, partialSorting, root, maxSymbol);
+                        final var sorting = search(spi, spiIndex, pi, partialSorting, root, maxSymbol);
+                        if (sorting.isEmpty()) {
+                            System.out.println(move + ", branch " + root.getMu() + " unsuccessful");
+                        }
+                        return sorting;
                     } finally {
                         Thread.currentThread().setName(name);
                     }
@@ -446,7 +452,7 @@ public class FinalPermutations {
             a = move[0];
             b = move[2];
             c = move[1];
-            numberOfEvenCycles += spiIndex[move[0]].length % 2;
+            numberOfEvenCycles += spiIndex[move[0]].length & 1;
             numberOfEvenCycles += spiIndex[move[1]].length % 2;
         } else if (spiIndex[move[0]] == spiIndex[move[1]]) {
             a = move[1];
