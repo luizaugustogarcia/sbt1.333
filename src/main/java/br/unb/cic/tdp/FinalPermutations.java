@@ -56,18 +56,17 @@ public class FinalPermutations {
 
         System.out.println("Sorting " + configuration.getSpi());
 
-        final var list =
+        final var stream =
                 CommonOperations.generateAll0And2Moves(configuration.getSpi(), configuration.getPi())
-                        .filter(p -> p.getSecond() == 0).map(Pair::getFirst).collect(Collectors.toList());
-
-        Collections.shuffle(list);
+                        .filter(p -> p.getSecond() == 0).map(p -> p.getFirst().toString()).sorted();
 
         final var executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         final var completionService = new ExecutorCompletionService<List<int[]>>(executorService);
 
         final var submittedTasks = new ArrayList<Future<List<int[]>>>();
 
-        list.forEach(move -> {
+        stream.forEach(moveStr -> {
+            final var move = Cycle.create(moveStr);
             for (final var root : rootMove.getChildren()) {
                 submittedTasks.add(completionService.submit(() -> {
                     final var name = Thread.currentThread().getName();
@@ -86,12 +85,14 @@ public class FinalPermutations {
                         }
                     });
 
-                    removeTrivialCycles(spi);
+                    final var removed = removeTrivialCycles(spi);
 
-                    final var pi = applyTransposition(configuration.getPi().getSymbols(), move.getSymbols());
+                    final var pi = applyTransposition(configuration.getPi().getSymbols(), move.getSymbols(), configuration.getPi().size() - removed, spiIndex);
+
+                    final var maxSymbol = Ints.max(pi);
 
                     try {
-                        return search(spi, spiIndex, pi, partialSorting, root);
+                        return search(spi, spiIndex, pi, partialSorting, root, maxSymbol);
                     } finally {
                         Thread.currentThread().setName(name);
                     }
@@ -125,15 +126,25 @@ public class FinalPermutations {
             System.out.println("Didn't find sorting for " + configuration.getSpi());
     }
 
-    private static void removeTrivialCycles(List<int[]> spi) {
-        spi.removeIf(cycle -> cycle.length == 1);
+    private static int removeTrivialCycles(List<int[]> spi) {
+        var removed = 0;
+        final var iterator = spi.iterator();
+        while (iterator.hasNext()) {
+            final var cycle = iterator.next();
+            if (cycle.length == 1) {
+                iterator.remove();
+                removed++;
+            }
+        }
+        return removed;
     }
 
     public static List<int[]> search(final List<int[]> spi,
                                      final int[][] spiIndex,
                                      final int[] pi,
                                      final Stack<int[]> moves,
-                                     final Move root) {
+                                     final Move root,
+                                     final int maxSymbol) {
 
         if (Thread.currentThread().isInterrupted()) {
             return Collections.emptyList();
@@ -176,9 +187,14 @@ public class FinalPermutations {
                         moves.push(move);
 
                         // ========== apply the move
+                        var numberOfTrivialCycles = 0;
                         spi.removeAll(triplet.first);
                         for (int[] cycle : triplet.second) {
-                            if (cycle.length > 1) spi.add(cycle);
+                            if (cycle.length > 1) {
+                                spi.add(cycle);
+                            } else {
+                                numberOfTrivialCycles++;
+                            }
                         }
                         updateIndex(spiIndex, triplet.second);
                         // ==============================
@@ -187,7 +203,8 @@ public class FinalPermutations {
                             return moves;
                         } else {
                             for (final var m : root.getChildren()) {
-                                final var sorting = search(spi, spiIndex, applyTransposition(pi, move), moves, m);
+                                final var sorting = search(spi, spiIndex, applyTransposition(pi, move,
+                                        pi.length - numberOfTrivialCycles, spiIndex), moves, m, maxSymbol);
                                 if (!sorting.isEmpty()) {
                                     return moves;
                                 }
@@ -207,7 +224,7 @@ public class FinalPermutations {
                 }
             }
         } else {
-            final var piInverseIndex = new int[pi.length];
+            final var piInverseIndex = new int[maxSymbol + 1];
             for (var i = 0; i < pi.length; i++) {
                 piInverseIndex[pi[pi.length - i - 1]] = i;
             }
@@ -251,9 +268,10 @@ public class FinalPermutations {
 
                                     // ========== apply the move
                                     spi.remove(cycle);
-                                    if (aCycle.length > 1) spi.add(aCycle);
-                                    if (bCycle.length > 1) spi.add(bCycle);
-                                    if (cCycle.length > 1) spi.add(cCycle);
+                                    var numberOfTrivialCycles = 0;
+                                    if (aCycle.length > 1) spi.add(aCycle); else numberOfTrivialCycles++;
+                                    if (bCycle.length > 1) spi.add(bCycle); else numberOfTrivialCycles++;
+                                    if (cCycle.length > 1) spi.add(cCycle); else numberOfTrivialCycles++;
                                     updateIndex(spiIndex, aCycle, bCycle, cCycle);
                                     // ==============================
 
@@ -261,7 +279,8 @@ public class FinalPermutations {
                                         return moves;
                                     } else {
                                         for (final var m : root.getChildren()) {
-                                            final var sorting = search(spi, spiIndex, applyTransposition(pi, move), moves, m);
+                                            final var sorting = search(spi, spiIndex, applyTransposition(pi, move,
+                                                    pi.length - numberOfTrivialCycles, spiIndex), moves, m, maxSymbol);
                                             if (!sorting.isEmpty()) {
                                                 return moves;
                                             }
@@ -313,8 +332,14 @@ public class FinalPermutations {
 
                         // ========== apply the move
                         spi.removeAll(triplet.first);
+                        var numberOfTrivialCycles = 0;
+                        spi.removeAll(triplet.first);
                         for (int[] cycle : triplet.second) {
-                            if (cycle.length > 1) spi.add(cycle);
+                            if (cycle.length > 1) {
+                                spi.add(cycle);
+                            } else {
+                                numberOfTrivialCycles++;
+                            }
                         }
                         updateIndex(spiIndex, triplet.second);
                         // ==============================
@@ -323,7 +348,8 @@ public class FinalPermutations {
                             return moves;
                         } else {
                             for (final var m : root.getChildren()) {
-                                final var sorting = search(spi, spiIndex, applyTransposition(pi, move), moves, m);
+                                final var sorting = search(spi, spiIndex, applyTransposition(pi, move,
+                                        pi.length - numberOfTrivialCycles, spiIndex), moves, m, maxSymbol);
                                 if (!sorting.isEmpty()) {
                                     return moves;
                                 }
@@ -362,7 +388,7 @@ public class FinalPermutations {
     }
 
     private static boolean isEven(int[] cycle) {
-        return cycle.length % 2 == 1;
+        return (cycle.length & 1) == 1;
     }
 
     public static boolean isOriented(final int[] piInverseIndex, final int[] cycle) {
@@ -505,7 +531,7 @@ public class FinalPermutations {
         return result;
     }
 
-    private static int[] applyTransposition(final int[] pi, final int[] move) {
+    private static int[] applyTransposition(final int[] pi, final int[] move, int numberOfSymbols, int[][] spiIndex) {
         final var a = move[0];
         final var b = move[1];
         final var c = move[2];
@@ -522,11 +548,32 @@ public class FinalPermutations {
 
         Arrays.sort(indexes);
 
-        final var result = new int[pi.length];
-        System.arraycopy(pi, 0, result, 0, indexes[0]);
-        System.arraycopy(pi, indexes[1], result, indexes[0], indexes[2] - indexes[1]);
-        System.arraycopy(pi, indexes[0], result, indexes[0] + (indexes[2] - indexes[1]), indexes[1] - indexes[0]);
-        System.arraycopy(pi, indexes[2], result, indexes[2], pi.length - indexes[2]);
+        final var result = new int[numberOfSymbols];
+
+        int counter = 0;
+        for (int i = 0; i < indexes[0]; i++) {
+            if (spiIndex[pi[i]].length == 1) continue;
+            result[counter] = pi[i];
+            counter++;
+        }
+
+        for (int i = 0; i < indexes[2] - indexes[1]; i++) {
+            if (spiIndex[pi[indexes[1] + i]].length == 1) continue;
+            result[counter] = pi[indexes[1] + i];
+            counter++;
+        }
+
+        for (int i = 0; i < indexes[1] - indexes[0]; i++) {
+            if (spiIndex[pi[indexes[0] + i]].length == 1) continue;
+            result[counter] = pi[indexes[0] + i];
+            counter++;
+        }
+
+        for (int i = 0; i < pi.length - indexes[2]; i++) {
+            if (spiIndex[pi[indexes[2] + i]].length == 1) continue;
+            result[counter] = pi[indexes[2] + i];
+            counter++;
+        }
 
         return result;
     }
