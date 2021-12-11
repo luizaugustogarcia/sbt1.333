@@ -151,11 +151,8 @@ public class FinalPermutations {
 
         if (root.getMu() == 0) {
             for (int i = 0; i < pi.length - 2; i++) {
-                if (spiIndex[pi[i]].length == 1) continue;
                 for (int j = i + 1; j < pi.length - 1; j++) {
-                    if (spiIndex[pi[j]].length == 1) continue;
                     for (int k = j + 1; k < pi.length; k++) {
-                        if (spiIndex[pi[k]].length == 1) continue;
 
                         int a = pi[i], b = pi[j], c = pi[k];
 
@@ -172,10 +169,39 @@ public class FinalPermutations {
                             final var cycle = spiIndex[a];
                             final var index = cycleIndex(cycle);
                             if (areSymbolsInCyclicOrder(index, a, b, c)) {
-                                // it's 2-move, skip
-                                continue;
+                                final var before = cycle.length & 1;
+
+                                var after = getK(index, cycle, a, b) & 1;
+                                after += getK(index, cycle, b, c) & 1;
+                                after += getK(index, cycle, c, a) & 1;
+
+                                if (after - before == 2) {
+                                    // skip, it's a 2-move
+                                    continue;
+                                }
+
+                                after = 0;
+
+                                final int[] symbols = startingBy(cycle, a);
+                                final var aCycle = new int[getK(index, cycle, c, a)];
+                                aCycle[0] = a;
+                                System.arraycopy(symbols, getK(index, cycle, a, b) + getK(index, cycle, b, c) + 1, aCycle, 1, getK(index, cycle, c, a) - 1);
+                                after += aCycle.length & 1;
+
+                                final var bCycle = new int[getK(index, cycle, a, b)];
+                                bCycle[0] = b;
+                                System.arraycopy(symbols, 1, bCycle, 1, getK(index, cycle, a, b) - 1);
+                                after += bCycle.length & 1;
+
+                                final var cCycle = new int[getK(index, cycle, b, c)];
+                                cCycle[0] = c;
+                                System.arraycopy(symbols, getK(index, cycle, a, b) + 1, cCycle, 1, getK(index, cycle, b, c) - 1);
+                                after += cCycle.length & 1;
+
+                                triplet = new Triplet<>(Collections.singletonList(cycle), Arrays.asList(aCycle, bCycle, cCycle), after - before);
+                            } else {
+                                triplet = simulate0MoveSameCycle(spiIndex, move);
                             }
-                            triplet = simulate0MoveSameCycle(spiIndex, move);
                         } else {
                             triplet = simulate0MoveTwoCycles(spiIndex, move);
                         }
@@ -210,7 +236,7 @@ public class FinalPermutations {
                             }
                         }
 
-                        // ========== rollback
+                        // ========== ROLLBACK
                         for (int[] cycle : triplet.second) {
                             if (cycle.length > 1) spi.remove(cycle);
                         }
@@ -286,7 +312,7 @@ public class FinalPermutations {
                                         }
                                     }
 
-                                    // ========== rollback
+                                    // ========== ROLLBACK
                                     if (aCycle.length > 1) spi.remove(aCycle);
                                     if (bCycle.length > 1) spi.remove(bCycle);
                                     if (cCycle.length > 1) spi.remove(cCycle);
@@ -303,11 +329,11 @@ public class FinalPermutations {
             }
 
             for (int i = 0; i < pi.length - 2; i++) {
-                if (spiIndex[pi[i]].length == 1 || isEven(spiIndex[pi[i]])) continue;
+                if (isEven(spiIndex[pi[i]])) continue;
                 for (int j = i + 1; j < pi.length - 1; j++) {
-                    if (spiIndex[pi[j]].length == 1 || isEven(spiIndex[pi[j]])) continue;
+                    if (isEven(spiIndex[pi[j]])) continue;
                     for (int k = j + 1; k < pi.length; k++) {
-                        if (spiIndex[pi[k]].length == 1 || isEven(spiIndex[pi[k]])) continue;
+                        if (isEven(spiIndex[pi[k]])) continue;
 
                         int a = pi[i], b = pi[j], c = pi[k];
 
@@ -355,7 +381,7 @@ public class FinalPermutations {
                             }
                         }
 
-                        // ========== rollback
+                        // ========== ROLLBACK
                         for (int[] cycle : triplet.second) {
                             if (cycle.length > 1) spi.remove(cycle);
                         }
