@@ -58,15 +58,14 @@ public class FinalPermutations {
 
         final var stream =
                 CommonOperations.generateAll0And2Moves(configuration.getSpi(), configuration.getPi())
-                        .filter(p -> p.getSecond() == 0).map(p -> p.getFirst().toString()).sorted();
+                        .filter(p -> p.getSecond() == 0).map(Pair::getFirst);
 
         final var executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         final var completionService = new ExecutorCompletionService<List<int[]>>(executorService);
 
         final var submittedTasks = new ArrayList<Future<List<int[]>>>();
 
-        stream.forEach(moveStr -> {
-            final var move = Cycle.create(moveStr);
+        stream.forEach(move -> {
             for (final var root : rootMove.getChildren()) {
                 submittedTasks.add(completionService.submit(() -> {
                     final var name = Thread.currentThread().getName();
