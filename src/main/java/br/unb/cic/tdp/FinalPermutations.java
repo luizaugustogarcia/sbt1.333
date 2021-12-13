@@ -10,7 +10,9 @@ import com.google.common.primitives.Ints;
 import lombok.SneakyThrows;
 import org.apache.velocity.app.Velocity;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.util.*;
 import java.util.concurrent.ExecutorCompletionService;
@@ -46,6 +48,8 @@ public class FinalPermutations {
 
     @SneakyThrows
     public static void sort(final Configuration configuration, String outputDir, ProofGenerator.Move rootMove) {
+        Set<String> badCases = loadBadCases(outputDir);
+
         final var canonical = configuration.getCanonical();
 
         final var sortingFile = new File(outputDir + "/comb/" + canonical.getSpi() + ".html");
@@ -69,6 +73,8 @@ public class FinalPermutations {
 
         list.forEach(move -> {
             for (final var root : rootMove.getChildren()) {
+                if (badCases.contains(configuration.getSpi() + "-" + move + "-" + root.getMu())) continue;
+
                 submittedTasks.add(completionService.submit(() -> {
                     final var name = Thread.currentThread().getName();
                     Thread.currentThread().setName(Thread.currentThread().getName() + "-" + move + "-" + root.getMu());
@@ -129,6 +135,20 @@ public class FinalPermutations {
 
         if (!hasSorting)
             System.out.println("Didn't find sorting for " + configuration.getSpi());
+    }
+
+    @SneakyThrows
+    private static Set<String> loadBadCases(String outputDir) {
+        final var result = new HashSet<String>();
+
+        try (final var reader = new BufferedReader(new FileReader(outputDir + "/bad-cases.txt"))) {
+            var line = reader.readLine();
+            while ((line = reader.readLine()) != null) {
+                result.add(line);
+            }
+        }
+
+        return result;
     }
 
     private static int removeTrivialCycles(List<int[]> spi) {
