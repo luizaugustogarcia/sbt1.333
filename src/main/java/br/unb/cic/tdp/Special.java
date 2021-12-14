@@ -3,6 +3,7 @@ package br.unb.cic.tdp;
 import br.unb.cic.tdp.base.CommonOperations;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
+import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.proof.ProofGenerator;
 import br.unb.cic.tdp.util.Pair;
 import br.unb.cic.tdp.util.Triplet;
@@ -10,9 +11,7 @@ import com.google.common.primitives.Ints;
 import lombok.SneakyThrows;
 import org.apache.velocity.app.Velocity;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.util.*;
 import java.util.concurrent.ExecutorCompletionService;
@@ -21,11 +20,19 @@ import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static br.unb.cic.tdp.base.CommonOperations.*;
+import static br.unb.cic.tdp.base.CommonOperations.getComponents;
+import static br.unb.cic.tdp.base.CommonOperations.is16_12;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 import static br.unb.cic.tdp.proof.ProofGenerator.*;
 
-public class FinalPermutations {
+public class Special {
+    static final int[][] _19_14 = new int[][]{{0,0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2,2,2}};
+
+    public static final ProofGenerator.Move _19_14_SEQS = new ProofGenerator.Move(0, new LinkedList<>());
+
+    static {
+        toTrie(_19_14, _19_14_SEQS);
+    }
 
     public static void main(String[] args) {
         Velocity.setProperty("resource.loader", "class");
@@ -33,23 +40,13 @@ public class FinalPermutations {
         Velocity.init();
 
         Stream.of(
-                new Configuration("(0 4 2)(1 5 3)(6 10 8)(7 11 9)(12 16 14)(13 17 15)(24 34 26)(25 35 27)(28 32 30)(29 33 31)(18 22 20)(19 23 21)"),
-                new Configuration("(0 4 2)(1 35 3)(5 9 7)(6 10 8)(11 15 13)(12 16 14)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"),
-                new Configuration("(0 4 2)(1 5 3)(6 16 14)(7 11 9)(8 12 10)(13 35 15)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"),
-                new Configuration("(0 4 2)(1 5 3)(6 10 8)(7 11 9)(12 16 14)(13 17 15)(18 34 32)(19 35 33)(20 24 22)(21 25 23)(26 30 28)(27 31 29)"),
-                new Configuration("(0 4 2)(1 5 3)(12 34 14)(13 35 33)(15 19 17)(16 20 18)(21 25 23)(22 26 24)(27 31 29)(28 32 30)(6 10 8)(7 11 9)"),
-                new Configuration("(0 4 2)(1 5 3)(6 34 8)(7 35 33)(9 13 11)(10 14 12)(15 19 17)(16 20 18)(21 25 23)(22 26 24)(27 31 29)(28 32 30)"),
-                new Configuration("(0 4 2)(1 5 3)(6 16 8)(7 35 9)(10 14 12)(11 15 13)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"),
-                new Configuration("(0 4 2)(1 5 3)(6 10 8)(7 11 9)(12 22 20)(13 17 15)(14 18 16)(19 35 21)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"),
-                new Configuration("(0 4 2)(1 5 3)(6 10 8)(7 11 9)(12 28 14)(13 35 15)(16 20 18)(17 21 19)(29 33 31)(30 34 32)(22 26 24)(23 27 25)")
-
-        ).forEach(conf -> sort(conf, "/home/luiskowada/proof1.333", _16_12_SEQS));
+                new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)")
+        ).forEach(conf -> sort(conf, "/home/luiskowada/proof1.333", _19_14_SEQS));
     }
+
 
     @SneakyThrows
     public static void sort(final Configuration configuration, String outputDir, ProofGenerator.Move rootMove) {
-        Set<String> badCases = loadBadCases(outputDir);
-
         final var canonical = configuration.getCanonical();
 
         final var sortingFile = new File(outputDir + "/comb/" + canonical.getSpi() + ".html");
@@ -61,24 +58,27 @@ public class FinalPermutations {
         System.out.println("Sorting " + configuration.getSpi());
 
         var list = CommonOperations.generateAll0And2Moves(configuration.getSpi(), configuration.getPi())
-                        .filter(p -> p.getSecond() == 0).map(Pair::getFirst).collect(Collectors.toList());
+                .filter(p -> p.getSecond() == 0).map(Pair::getFirst).collect(Collectors.toList());
         list.stream().map(Cycle::toString).collect(Collectors.joining(","));
-        System.out.println(list.size() + " 0-moves");
-        Collections.shuffle(list);
+
+        final var increasingMoves = new ArrayList<Cycle>();
+        list.forEach(move -> {
+            if (getComponents(configuration.getSpi(), configuration.getPi()).size() >
+                    getComponents(computeProduct(configuration.getSpi(), move.getInverse()), CommonOperations.applyTransposition(configuration.getPi(), move)).size()) {
+                increasingMoves.add(move);
+            }
+        });
+
+        Collections.shuffle(increasingMoves);
 
         final var executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         final var completionService = new ExecutorCompletionService<List<int[]>>(executorService);
 
         final var submittedTasks = new ArrayList<Future<List<int[]>>>();
 
-        list.forEach(move -> {
+        increasingMoves.forEach(move -> {
             for (final var root : rootMove.getChildren()) {
-                if (badCases.contains(configuration.getSpi() + "-" + move + "-" + root.getMu())) continue;
-
                 submittedTasks.add(completionService.submit(() -> {
-                    final var name = Thread.currentThread().getName();
-                    Thread.currentThread().setName(Thread.currentThread().getName() + "-" + move + "-" + root.getMu());
-
                     final var partialSorting = new Stack<int[]>();
                     partialSorting.push(move.getSymbols());
 
@@ -98,15 +98,11 @@ public class FinalPermutations {
 
                     final var maxSymbol = Ints.max(pi);
 
-                    try {
-                        final var sorting = search(spi, spiIndex, pi, partialSorting, root, maxSymbol);
-                        if (sorting.isEmpty() && !Thread.currentThread().isInterrupted()) {
-                            System.out.println(move + ", branch " + root.getMu() + " unsuccessful");
-                        }
-                        return sorting;
-                    } finally {
-                        Thread.currentThread().setName(name);
+                    final var sorting = search(spi, spiIndex, pi, partialSorting, root, maxSymbol);
+                    if (sorting.isEmpty() && !Thread.currentThread().isInterrupted()) {
+                        System.out.println(move + ", branch " + root.getMu() + " unsuccessful");
                     }
+                    return sorting;
                 }));
             }
         });
@@ -137,20 +133,6 @@ public class FinalPermutations {
             System.out.println("Didn't find sorting for " + configuration.getSpi());
     }
 
-    @SneakyThrows
-    private static Set<String> loadBadCases(String outputDir) {
-        final var result = new HashSet<String>();
-
-        try (final var reader = new BufferedReader(new FileReader(outputDir + "/bad-cases.txt"))) {
-            var line = reader.readLine();
-            while ((line = reader.readLine()) != null) {
-                result.add(line);
-            }
-        }
-
-        return result;
-    }
-
     private static int removeTrivialCycles(List<int[]> spi) {
         var removed = 0;
         final var iterator = spi.iterator();
@@ -170,7 +152,6 @@ public class FinalPermutations {
                                      final Stack<int[]> moves,
                                      final Move root,
                                      final int maxSymbol) {
-
         if (Thread.currentThread().isInterrupted()) {
             return Collections.emptyList();
         }
@@ -189,6 +170,24 @@ public class FinalPermutations {
                             continue;
 
                         final var move = new int[]{a, b, c};
+
+                        final var spi_ = new MulticyclePermutation(spi.stream().map(Cycle::create).collect(Collectors.toList()));
+                        final var pi_ = Cycle.create(pi);
+
+                        final var spi__ = computeProduct(spi_, Cycle.create(move).getInverse());
+                        final var pi__ = CommonOperations.applyTransposition(pi_, Cycle.create(move));
+
+                        if (moves.size() == 1 && getComponents(spi__, pi__).size() <= getComponents(spi_, pi_).size())
+                            continue;
+
+                        if (moves.size() == 2 && getComponents(spi__, pi__).size() < getComponents(spi_, pi_).size())
+                            continue;
+
+                        if (moves.size() == 3 && getComponents(spi__, pi__).size() < getComponents(spi_, pi_).size())
+                            continue;
+
+                        if (moves.size() == 4 && getComponents(spi__, pi__).size() != 1)
+                            continue;
 
                         final Triplet<List<int[]>, List<int[]>, Integer> triplet;
                         if (isSameCycle(spiIndex, a, b, c)) {

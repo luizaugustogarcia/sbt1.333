@@ -160,7 +160,7 @@ public class ProofGenerator {
         toTrie(_16_12, _16_12_SEQS);
     }
 
-    private static void toTrie(final int[][] seqs, Move root) {
+    public static void toTrie(final int[][] seqs, Move root) {
         final var root_ = root;
         for (int[] seq : seqs) {
             root = root_;
