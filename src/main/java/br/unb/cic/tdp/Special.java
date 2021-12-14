@@ -115,7 +115,7 @@ public class Special {
             if (sorting.get().size() > 0) {
                 final var s = sorting.get().stream().map(Cycle::create).collect(Collectors.toList());
                 hasSorting = true;
-                System.out.println("Sorted: " + configuration.getSpi() + ", sorting: " + sorting.get().stream().map(Arrays::toString).collect(Collectors.joining(",")) + ", is 16/12: " + is16_12);
+                System.out.println("Sorted: " + configuration.getSpi() + ", sorting: " + sorting.get().stream().map(Arrays::toString).collect(Collectors.joining(",")));
                 System.out.println();
                 try (final var out = new FileWriter(outputDir + "/comb/" + canonical.getSpi() + ".html")) {
                     renderSorting(canonical, canonical.translatedSorting(configuration, s), out);
