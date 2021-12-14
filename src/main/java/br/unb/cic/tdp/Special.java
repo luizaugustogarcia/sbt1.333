@@ -114,16 +114,13 @@ public class Special {
             final var sorting = completionService.take();
             if (sorting.get().size() > 0) {
                 final var s = sorting.get().stream().map(Cycle::create).collect(Collectors.toList());
-                boolean is16_12 = is16_12(configuration.getSpi(), configuration.getPi(), s);
-                if (is16_12) {
-                    hasSorting = true;
-                    System.out.println("Sorted: " + configuration.getSpi() + ", sorting: " + sorting.get().stream().map(Arrays::toString).collect(Collectors.joining(",")) + ", is 16/12: " + is16_12);
-                    System.out.println();
-                    try (final var out = new FileWriter(outputDir + "/comb/" + canonical.getSpi() + ".html")) {
-                        renderSorting(canonical, canonical.translatedSorting(configuration, s), out);
-                    }
-                    break;
+                hasSorting = true;
+                System.out.println("Sorted: " + configuration.getSpi() + ", sorting: " + sorting.get().stream().map(Arrays::toString).collect(Collectors.joining(",")) + ", is 16/12: " + is16_12);
+                System.out.println();
+                try (final var out = new FileWriter(outputDir + "/comb/" + canonical.getSpi() + ".html")) {
+                    renderSorting(canonical, canonical.translatedSorting(configuration, s), out);
                 }
+                break;
             }
         }
 
