@@ -194,7 +194,7 @@ public class FinalPermutations {
                         final var move = new int[]{a, b, c};
 
                         final Triplet<List<int[]>, List<int[]>, Integer> triplet;
-                        if (isSameCycle(spiIndex, a, b, c)) {
+                        if (spiIndex[a] == spiIndex[b] && spiIndex[b] == spiIndex[c]) {
                             final var cycle = spiIndex[a];
 
                             if (cycleIndexes[a] == null) {
@@ -296,7 +296,7 @@ public class FinalPermutations {
 
                         int a = pi[i], b = pi[j], c = pi[k];
 
-                        if (!isSameCycle(spiIndex, a, b, c)) continue;
+                        if (!(spiIndex[a] == spiIndex[b] && spiIndex[b] == spiIndex[c])) continue;
 
                         final var cycle = spiIndex[a];
 
@@ -381,7 +381,7 @@ public class FinalPermutations {
 
                         int a = pi[i], b = pi[j], c = pi[k];
 
-                        if (isSameCycle(spiIndex, a, b, c))
+                        if (spiIndex[a] == spiIndex[b] && spiIndex[b] == spiIndex[c])
                             continue;
 
                         final var is_2Move = spiIndex[a] != spiIndex[b] &&
@@ -491,10 +491,6 @@ public class FinalPermutations {
         }
 
         return true;
-    }
-
-    private static boolean isSameCycle(final int[][] cycleIndex, int a, int b, int c) {
-        return cycleIndex[a] == cycleIndex[b] && cycleIndex[b] == cycleIndex[c];
     }
 
     private static Triplet<List<int[]>, List<int[]>, Integer> simulate0MoveTwoCycles(final int[][] spiIndex, final int[] move) {
