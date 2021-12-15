@@ -308,7 +308,7 @@ public class ProofGenerator {
 
     @Getter
     public static class Move implements Serializable {
-        private final int mu;
+        public final int mu;
         private final List<Move> children;
 
         public Move(int mu, List<Move> children) {
