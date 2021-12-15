@@ -32,17 +32,20 @@ public class FinalPermutations {
         Velocity.setProperty("class.resource.loader.class", "org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader");
         Velocity.init();
 
-        Stream.of(
-                new Configuration("(0 4 2)(1 5 3)(6 10 8)(7 11 9)(12 16 14)(13 17 15)(24 34 26)(25 35 27)(28 32 30)(29 33 31)(18 22 20)(19 23 21)"),
-                new Configuration("(0 4 2)(1 35 3)(5 9 7)(6 10 8)(11 15 13)(12 16 14)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"),
-                new Configuration("(0 4 2)(1 5 3)(6 16 14)(7 11 9)(8 12 10)(13 35 15)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"),
-                new Configuration("(0 4 2)(1 5 3)(6 10 8)(7 11 9)(12 16 14)(13 17 15)(18 34 32)(19 35 33)(20 24 22)(21 25 23)(26 30 28)(27 31 29)"),
-                new Configuration("(0 4 2)(1 5 3)(12 34 14)(13 35 33)(15 19 17)(16 20 18)(21 25 23)(22 26 24)(27 31 29)(28 32 30)(6 10 8)(7 11 9)"),
-                new Configuration("(0 4 2)(1 5 3)(6 34 8)(7 35 33)(9 13 11)(10 14 12)(15 19 17)(16 20 18)(21 25 23)(22 26 24)(27 31 29)(28 32 30)"),
-                new Configuration("(0 4 2)(1 5 3)(6 16 8)(7 35 9)(10 14 12)(11 15 13)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"),
-                new Configuration("(0 4 2)(1 5 3)(6 10 8)(7 11 9)(12 22 20)(13 17 15)(14 18 16)(19 35 21)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"),
-                new Configuration("(0 4 2)(1 5 3)(6 10 8)(7 11 9)(12 28 14)(13 35 15)(16 20 18)(17 21 19)(29 33 31)(30 34 32)(22 26 24)(23 27 25)")
+//        Stream.of(
+//                new Configuration("(0 4 2)(1 5 3)(6 10 8)(7 11 9)(12 16 14)(13 17 15)(24 34 26)(25 35 27)(28 32 30)(29 33 31)(18 22 20)(19 23 21)"), // bad-case
+//                new Configuration("(0 4 2)(1 35 3)(5 9 7)(6 10 8)(11 15 13)(12 16 14)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"),
+//                new Configuration("(0 4 2)(1 5 3)(6 16 14)(7 11 9)(8 12 10)(13 35 15)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"),
+//                new Configuration("(0 4 2)(1 5 3)(6 10 8)(7 11 9)(12 16 14)(13 17 15)(18 34 32)(19 35 33)(20 24 22)(21 25 23)(26 30 28)(27 31 29)"),
+//                new Configuration("(0 4 2)(1 5 3)(12 34 14)(13 35 33)(15 19 17)(16 20 18)(21 25 23)(22 26 24)(27 31 29)(28 32 30)(6 10 8)(7 11 9)"),
+//                new Configuration("(0 4 2)(1 5 3)(6 34 8)(7 35 33)(9 13 11)(10 14 12)(15 19 17)(16 20 18)(21 25 23)(22 26 24)(27 31 29)(28 32 30)"),
+//                new Configuration("(0 4 2)(1 5 3)(6 16 8)(7 35 9)(10 14 12)(11 15 13)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"),
+//                new Configuration("(0 4 2)(1 5 3)(6 10 8)(7 11 9)(12 22 20)(13 17 15)(14 18 16)(19 35 21)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"),
+//                new Configuration("(0 4 2)(1 5 3)(6 10 8)(7 11 9)(12 28 14)(13 35 15)(16 20 18)(17 21 19)(29 33 31)(30 34 32)(22 26 24)(23 27 25)")
+//        ).forEach(conf -> sort(conf, "/home/luiskowada/proof1.333", _16_12_SEQS));
 
+        Stream.of(
+                new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)")
         ).forEach(conf -> sort(conf, "/home/luiskowada/proof1.333", _16_12_SEQS));
     }
 
@@ -194,6 +197,7 @@ public class FinalPermutations {
                         final var move = new int[]{a, b, c};
 
                         final Triplet<List<int[]>, List<int[]>, Integer> triplet;
+                        // if it's the same cycle
                         if (spiIndex[a] == spiIndex[b] && spiIndex[b] == spiIndex[c]) {
                             final var cycle = spiIndex[a];
 
@@ -209,9 +213,12 @@ public class FinalPermutations {
                             if (areSymbolsInCyclicOrder(index, a, b, c)) {
                                 final var before = cycle.length & 1;
 
-                                var after = getK(index, cycle, a, b) & 1;
-                                after += getK(index, cycle, b, c) & 1;
-                                after += getK(index, cycle, c, a) & 1;
+                                final var ab_k = getK(index, cycle, a, b);
+                                var after = ab_k & 1;
+                                final var bc_k = getK(index, cycle, b, c);
+                                after += bc_k & 1;
+                                final var ca_k = getK(index, cycle, c, a);
+                                after += ca_k & 1;
 
                                 if (after - before == 2) {
                                     // skip, it's a 2-move
@@ -221,19 +228,19 @@ public class FinalPermutations {
                                 after = 0;
 
                                 final int[] symbols = startingBy(cycle, a);
-                                final var aCycle = new int[getK(index, cycle, c, a)];
+                                final var aCycle = new int[ca_k];
                                 aCycle[0] = a;
-                                System.arraycopy(symbols, getK(index, cycle, a, b) + getK(index, cycle, b, c) + 1, aCycle, 1, getK(index, cycle, c, a) - 1);
+                                System.arraycopy(symbols, ab_k + bc_k + 1, aCycle, 1, ca_k - 1);
                                 after += aCycle.length & 1;
 
-                                final var bCycle = new int[getK(index, cycle, a, b)];
+                                final var bCycle = new int[ab_k];
                                 bCycle[0] = b;
-                                System.arraycopy(symbols, 1, bCycle, 1, getK(index, cycle, a, b) - 1);
+                                System.arraycopy(symbols, 1, bCycle, 1, ab_k - 1);
                                 after += bCycle.length & 1;
 
-                                final var cCycle = new int[getK(index, cycle, b, c)];
+                                final var cCycle = new int[bc_k];
                                 cCycle[0] = c;
-                                System.arraycopy(symbols, getK(index, cycle, a, b) + 1, cCycle, 1, getK(index, cycle, b, c) - 1);
+                                System.arraycopy(symbols, ab_k + 1, cCycle, 1, bc_k - 1);
                                 after += cCycle.length & 1;
 
                                 triplet = new Triplet<>(Collections.singletonList(cycle), Arrays.asList(aCycle, bCycle, cCycle), after - before);
@@ -296,6 +303,7 @@ public class FinalPermutations {
 
                         int a = pi[i], b = pi[j], c = pi[k];
 
+                        // if it's not the same cycle, skip it
                         if (!(spiIndex[a] == spiIndex[b] && spiIndex[b] == spiIndex[c])) continue;
 
                         final var cycle = spiIndex[a];
@@ -312,23 +320,26 @@ public class FinalPermutations {
                         if (areSymbolsInCyclicOrder(index, a, b, c)) {
                             final var before = cycle.length & 1;
 
-                            var after = getK(index, cycle, a, b) & 1;
-                            after += getK(index, cycle, b, c) & 1;
-                            after += getK(index, cycle, c, a) & 1;
+                            final var ab_k = getK(index, cycle, a, b);
+                            var after = ab_k & 1;
+                            final var bc_k = getK(index, cycle, b, c);
+                            after += bc_k & 1;
+                            final var ca_k = getK(index, cycle, c, a);
+                            after += ca_k & 1;
 
                             if (after - before == 2) {
                                 final int[] symbols = startingBy(cycle, a);
-                                final var aCycle = new int[getK(index, cycle, c, a)];
+                                final var aCycle = new int[ca_k];
                                 aCycle[0] = a;
-                                System.arraycopy(symbols, getK(index, cycle, a, b) + getK(index, cycle, b, c) + 1, aCycle, 1, getK(index, cycle, c, a) - 1);
+                                System.arraycopy(symbols, ab_k + bc_k + 1, aCycle, 1, ca_k - 1);
 
-                                final var bCycle = new int[getK(index, cycle, a, b)];
+                                final var bCycle = new int[ab_k];
                                 bCycle[0] = b;
-                                System.arraycopy(symbols, 1, bCycle, 1, getK(index, cycle, a, b) - 1);
+                                System.arraycopy(symbols, 1, bCycle, 1, ab_k - 1);
 
-                                final var cCycle = new int[getK(index, cycle, b, c)];
+                                final var cCycle = new int[bc_k];
                                 cCycle[0] = c;
-                                System.arraycopy(symbols, getK(index, cycle, a, b) + 1, cCycle, 1, getK(index, cycle, b, c) - 1);
+                                System.arraycopy(symbols, ab_k + 1, cCycle, 1, bc_k - 1);
 
                                 final var move = new int[]{a, b, c};
                                 moves.push(move);
@@ -381,6 +392,7 @@ public class FinalPermutations {
 
                         int a = pi[i], b = pi[j], c = pi[k];
 
+                        // if it's the same cycle, skip it
                         if (spiIndex[a] == spiIndex[b] && spiIndex[b] == spiIndex[c])
                             continue;
 
@@ -440,23 +452,6 @@ public class FinalPermutations {
         }
 
         return Collections.emptyList();
-    }
-
-    private static int[] getPiInverseIndex(final int[] pi, final int maxSymbol) {
-        final var piInverseIndex = new int[maxSymbol + 1];
-        for (var i = 0; i < pi.length; i++) {
-            piInverseIndex[pi[pi.length - i - 1]] = i;
-        }
-        return piInverseIndex;
-    }
-
-    private static List<int[]> getOrientedCycles(List<int[]> spi, int[] piInverseIndex) {
-        final var orientedCycles = new LinkedList<int[]>();
-        for (final var cycle : spi) {
-            if (isOriented(piInverseIndex, cycle))
-                orientedCycles.add(cycle);
-        }
-        return orientedCycles;
     }
 
     private static void updateIndex(final int[][] index, final boolean[] parity, final List<int[]> cycles) {
@@ -524,14 +519,16 @@ public class FinalPermutations {
 
         final var abCycleIndex = cycleIndex(abCycle);
 
-        final var newaCycle = new int[1 + getK(abCycleIndex, abCycle, b, a) - 1];
+        final var ba_k = getK(abCycleIndex, abCycle, b, a);
+        final var newaCycle = new int[1 + ba_k - 1];
         newaCycle[0] = a;
-        System.arraycopy(abCycle,  getK(abCycleIndex, abCycle, a, b) + 1, newaCycle, 1, getK(abCycleIndex, abCycle, b, a) - 1);
+        final var ab_k = getK(abCycleIndex, abCycle, a, b);
+        System.arraycopy(abCycle,  ab_k + 1, newaCycle, 1, ba_k - 1);
 
-        final var newbCycle = new int[1 + cCycle.length + (getK(abCycleIndex, abCycle, a, b) - 1)];
+        final var newbCycle = new int[1 + cCycle.length + (ab_k - 1)];
         newbCycle[0] = b;
         System.arraycopy(cCycle, 0, newbCycle, 1, cCycle.length);
-        System.arraycopy(abCycle, 1, newbCycle, 1 + cCycle.length, getK(abCycleIndex, abCycle, a, b) - 1);
+        System.arraycopy(abCycle, 1, newbCycle, 1 + cCycle.length, ab_k - 1);
 
         var newNumberOfEvenCycles = 0;
         newNumberOfEvenCycles += newaCycle.length % 2;
@@ -566,14 +563,17 @@ public class FinalPermutations {
         final int[] oldCycleIndex = cycleIndex(oldCycle);
 
         newCycle[0] = a;
-        System.arraycopy(symbols, getK(oldCycleIndex, oldCycle, a, b) + 1, newCycle, 1, getK(oldCycleIndex, oldCycle, b, c) - 1);
-        newCycle[getK(oldCycleIndex, oldCycle, b, c)] = c;
+        final var ab_k = getK(oldCycleIndex, oldCycle, a, b);
+        final var bc_k = getK(oldCycleIndex, oldCycle, b, c);
+        System.arraycopy(symbols, ab_k + 1, newCycle, 1, bc_k - 1);
+        newCycle[bc_k] = c;
 
-        System.arraycopy(symbols, 1, newCycle, 1 + getK(oldCycleIndex, oldCycle, b, c), getK(oldCycleIndex, oldCycle, a, b) - 1);
-        newCycle[getK(oldCycleIndex, oldCycle, a, b) + getK(oldCycleIndex, oldCycle, b, c)] = b;
+        System.arraycopy(symbols, 1, newCycle, 1 + bc_k, ab_k - 1);
+        newCycle[ab_k + bc_k] = b;
 
-        System.arraycopy(symbols, getK(oldCycleIndex, oldCycle, a, b) + getK(oldCycleIndex, oldCycle, b, c) + 1,
-                newCycle,getK(oldCycleIndex, oldCycle, a, b) + getK(oldCycleIndex, oldCycle, b, c) + 1, getK(oldCycleIndex, oldCycle, c, a) - 1);
+        final var ca_k = getK(oldCycleIndex, oldCycle, c, a);
+        System.arraycopy(symbols, ab_k + bc_k + 1,
+                newCycle, ab_k + bc_k + 1, ca_k - 1);
 
         return new Triplet<>(Collections.singletonList(oldCycle), Collections.singletonList(newCycle), 0);
     }
