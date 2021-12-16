@@ -179,10 +179,9 @@ public class FinalPermutations {
             return Collections.emptyList();
         }
 
-
         if (root.mu == 0) {
             final var cycleIndexes = new int[maxSymbol + 1][];
-            final var sorting = analizeOMoves(spi, parity, spiIndex, maxSymbol, pi, moves, root, cycleIndexes);
+            final var sorting = analyzeOMoves(spi, parity, spiIndex, maxSymbol, pi, moves, root, cycleIndexes);
             if (!sorting.isEmpty()) {
                 return sorting;
             }
@@ -201,7 +200,7 @@ public class FinalPermutations {
         return Collections.emptyList();
     }
 
-    private static List<int[]> analizeOMoves(final ArrayList<int[]> spi,
+    private static List<int[]> analyzeOMoves(final ArrayList<int[]> spi,
                                              final boolean[] parity, final int[][] spiIndex,
                                              final int maxSymbol, final int[] pi,
                                              final Stack<int[]> moves,
