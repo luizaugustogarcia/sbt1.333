@@ -5,7 +5,6 @@ import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.proof.ProofGenerator;
 import br.unb.cic.tdp.util.Pair;
-import br.unb.cic.tdp.util.Triplet;
 import com.google.common.primitives.Ints;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
@@ -44,7 +43,9 @@ public class FinalPermutations {
                 new Configuration("(0 4 2)(1 5 3)(6 10 8)(7 11 9)(12 22 20)(13 17 15)(14 18 16)(19 35 21)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"),
                 new Configuration("(0 4 2)(1 5 3)(6 10 8)(7 11 9)(12 28 14)(13 35 15)(16 20 18)(17 21 19)(29 33 31)(30 34 32)(22 26 24)(23 27 25)"),
                 new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)") // 7 interleaving pairs
-        ).forEach(conf -> sort(conf, "/home/luiskowada/proof1.333", _16_12_SEQS));
+        ).forEach(conf -> {
+            sort(conf, "/home/luiskowada/proof1.333", _16_12_SEQS);
+        });
     }
 
     @SneakyThrows
@@ -61,12 +62,18 @@ public class FinalPermutations {
 
         System.out.println("Sorting " + configuration.getSpi());
 
-        var list = CommonOperations.generateAll0And2Moves(configuration.getSpi(), configuration.getPi())
-                .filter(p -> p.getSecond() == 0).map(Pair::getFirst).collect(Collectors.toList());
+        // prioritize the ones that create big components
+        final var list =
+                CommonOperations.generateAll0And2Moves(canonical.getSpi(), canonical.getPi())
+                        .filter(p -> p.getSecond() == 0)
+                        .map(pair -> {
+                            final var spi_ = computeProduct(canonical.getSpi(), pair.getFirst().getInverse());
+                            final var pi_ = CommonOperations.applyTransposition(canonical.getPi(), pair.getFirst());
+                            final var b_ = getComponents(spi_, pi_).stream().mapToInt(component -> component.stream().mapToInt(Cycle::size).sum()).max();
+                            return new Pair<>(b_.getAsInt(), pair.getFirst());
+                        }).sorted(Comparator.comparing(o -> ((Pair<Integer, Cycle>) o).getFirst()).reversed()).map(Pair::getSecond).collect(Collectors.toList());
 
         System.out.println(list.size() + " 0-moves");
-
-        Collections.shuffle(list);
 
         final var executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         final var completionService = new ExecutorCompletionService<List<int[]>>(executorService);
@@ -84,20 +91,18 @@ public class FinalPermutations {
                     final var partialSorting = new Stack<int[]>();
                     partialSorting.push(move.getSymbols());
 
-                    final var spi = new ListOfCycles();
+                    final var spi = new ArrayList<int[]>();
                     computeProduct(configuration.getSpi(), move.getInverse())
                             .stream().map(Cycle::getSymbols).forEach(spi::add);
 
                     final var parity = new boolean[configuration.getPi().size()];
                     int[][] spiIndex = new int[configuration.getPi().size()][];
-                    var current = spi.head;
-                    while (current != null) {
-                        final var cycle = current.data;
+
+                    for (int[] cycle : spi) {
                         for (int i : cycle) {
                             spiIndex[i] = cycle;
                             parity[i] = (cycle.length & 1) == 1;
                         }
-                        current = current.next;
                     }
 
                     final var removed = removeTrivialCycles(spi);
@@ -111,7 +116,7 @@ public class FinalPermutations {
                         if (sorting.isEmpty() && !Thread.currentThread().isInterrupted()) {
                             System.out.println(move + ", branch " + root.getMu() + " unsuccessful");
                         }
-                        return sorting.toList();
+                        return sorting;
                     } finally {
                         Thread.currentThread().setName(name);
                     }
@@ -158,325 +163,317 @@ public class FinalPermutations {
         return result;
     }
 
-    private static int removeTrivialCycles(ListOfCycles spi) {
-        final var toRemove = new ArrayList<int[]>();
-        var removed = 0;
-        var current = spi.head;
-        while (current != null) {
-            final var cycle = current.data;
-            if (cycle.length == 1) {
-                toRemove.add(cycle);
-                removed++;
-            }
-            current = current.next;
-        }
-
-        spi.removeAll(toRemove);
-        return removed;
+    private static int removeTrivialCycles(List<int[]> spi) {
+        final var removed = spi.stream().filter(cycle -> cycle.length == 1).count();
+        spi.removeIf(cycle -> cycle.length == 1);
+        return (int) removed;
     }
 
-    public static ListOfCycles search(final ListOfCycles spi,
+    public static List<int[]> search(final ArrayList<int[]> spi,
                                      final boolean[] parity, final int[][] spiIndex,
                                      final int maxSymbol, final int[] pi,
                                      final Stack<int[]> moves,
                                      final Move root) {
 
         if (Thread.currentThread().isInterrupted()) {
-            return ListOfCycles.emptyList();
+            return Collections.emptyList();
         }
 
-        final var cycleIndexes = new int[maxSymbol + 1][];
 
         if (root.mu == 0) {
-            for (int i = 0; i < pi.length - 2; i++) {
-                for (int j = i + 1; j < pi.length - 1; j++) {
-                    for (int k = j + 1; k < pi.length; k++) {
+            final var cycleIndexes = new int[maxSymbol + 1][];
+            final var sorting = analizeOMoves(spi, parity, spiIndex, maxSymbol, pi, moves, root, cycleIndexes);
+            if (!sorting.isEmpty()) {
+                return sorting;
+            }
+        } else {
+            var sorting = analyzeOrientedCycles(spi, parity, spiIndex, maxSymbol, pi, moves, root);
+            if (!sorting.isEmpty()) {
+                return sorting;
+            }
 
-                        int a = pi[i], b = pi[j], c = pi[k];
+            sorting = analyzeOddCycles(spi, parity, spiIndex, maxSymbol, pi, moves, root);
+            if (!sorting.isEmpty()) {
+                return sorting;
+            }
+        }
 
-                        final var is_2Move = spiIndex[a] != spiIndex[b] &&
-                                spiIndex[b] != spiIndex[c] &&
-                                spiIndex[a] != spiIndex[c];
-                        if (is_2Move)
-                            continue;
+        return Collections.emptyList();
+    }
 
-                        final var move = new int[]{a, b, c};
+    private static List<int[]> analizeOMoves(final ArrayList<int[]> spi,
+                                             final boolean[] parity, final int[][] spiIndex,
+                                             final int maxSymbol, final int[] pi,
+                                             final Stack<int[]> moves,
+                                             final Move root, int[][] cycleIndexes) {
+        for (int i = 0; i < pi.length - 2; i++) {
+            for (int j = i + 1; j < pi.length - 1; j++) {
+                for (int k = j + 1; k < pi.length; k++) {
 
-                        final Triplet triplet;
-                        // if it's the same cycle
-                        if (spiIndex[a] == spiIndex[b] && spiIndex[b] == spiIndex[c]) {
-                            final var cycle = spiIndex[a];
+                    int a = pi[i], b = pi[j], c = pi[k];
 
-                            if (cycleIndexes[a] == null) {
-                                final var index = cycleIndex(cycle);
-                                cycleIndexes[a] = index;
-                                cycleIndexes[b] = index;
-                                cycleIndexes[c] = index;
+                    final var is_2Move = spiIndex[a] != spiIndex[b] &&
+                            spiIndex[b] != spiIndex[c] &&
+                            spiIndex[a] != spiIndex[c];
+                    if (is_2Move)
+                        continue;
+
+                    final var move = new int[]{a, b, c};
+
+                    final Triplet triplet;
+                    // if it's the same cycle
+                    if (spiIndex[a] == spiIndex[b] && spiIndex[b] == spiIndex[c]) {
+                        final var cycle = spiIndex[a];
+
+                        if (cycleIndexes[a] == null) {
+                            final var index = cycleIndex(cycle);
+                            cycleIndexes[a] = index;
+                            cycleIndexes[b] = index;
+                            cycleIndexes[c] = index;
+                        }
+
+                        final var index = cycleIndexes[a];
+
+                        if (areSymbolsInCyclicOrder(index, a, b, c)) {
+                            final var before = cycle.length & 1;
+
+                            final var ab_k = getK(index, cycle, a, b);
+                            var after = ab_k & 1;
+                            final var bc_k = getK(index, cycle, b, c);
+                            after += bc_k & 1;
+                            final var ca_k = getK(index, cycle, c, a);
+                            after += ca_k & 1;
+
+                            if (after - before == 2) {
+                                // skip, it's a 2-move
+                                continue;
                             }
 
-                            final var index = cycleIndexes[a];
+                            after = 0;
 
-                            if (areSymbolsInCyclicOrder(index, a, b, c)) {
-                                final var before = cycle.length & 1;
+                            final int[] symbols = startingBy(cycle, a);
+                            final var aCycle = new int[ca_k];
+                            aCycle[0] = a;
+                            System.arraycopy(symbols, ab_k + bc_k + 1, aCycle, 1, ca_k - 1);
+                            after += aCycle.length & 1;
 
-                                final var ab_k = getK(index, cycle, a, b);
-                                var after = ab_k & 1;
-                                final var bc_k = getK(index, cycle, b, c);
-                                after += bc_k & 1;
-                                final var ca_k = getK(index, cycle, c, a);
-                                after += ca_k & 1;
+                            final var bCycle = new int[ab_k];
+                            bCycle[0] = b;
+                            System.arraycopy(symbols, 1, bCycle, 1, ab_k - 1);
+                            after += bCycle.length & 1;
 
-                                if (after - before == 2) {
-                                    // skip, it's a 2-move
-                                    continue;
-                                }
+                            final var cCycle = new int[bc_k];
+                            cCycle[0] = c;
+                            System.arraycopy(symbols, ab_k + 1, cCycle, 1, bc_k - 1);
+                            after += cCycle.length & 1;
 
-                                after = 0;
+                            triplet = new Triplet(Collections.singletonList(cycle), Arrays.asList(aCycle, bCycle, cCycle), after - before);
+                        } else {
+                            triplet = simulate0MoveSameCycle(spiIndex, move);
+                        }
+                    } else {
+                        triplet = simulate0MoveTwoCycles(spiIndex, move);
+                    }
 
+                    if (triplet.third != 0)
+                        continue;
+
+                    moves.push(move);
+
+                    // ========== apply the move
+                    spi.removeAll(triplet.first);
+
+                    var numberOfTrivialCycles = 0;
+                    for (int[] cycle : triplet.second) {
+                        if (cycle.length > 1) spi.add(cycle); else numberOfTrivialCycles++;
+                    }
+                    update(spiIndex, parity, triplet.second);
+                    // ==============================
+
+                    if (root.getChildren().isEmpty()) {
+                        return moves;
+                    } else {
+                        for (final var m : root.getChildren()) {
+                            final var sorting = search(spi, parity, spiIndex, maxSymbol, applyTransposition(pi, move,
+                                    pi.length - numberOfTrivialCycles, spiIndex), moves, m);
+                            if (!sorting.isEmpty()) {
+                                return moves;
+                            }
+                        }
+                    }
+
+                    // ========== ROLLBACK
+                    for (int[] cycle : triplet.second) {
+                        if (cycle.length > 1) spi.remove(cycle);
+                    }
+                    spi.addAll(triplet.first);
+                    update(spiIndex, parity, triplet.first);
+                    // ==============================
+
+                    moves.pop();
+                }
+            }
+        }
+        return Collections.emptyList();
+    }
+
+    private static List<int[]> analyzeOddCycles(final ArrayList<int[]> spi,
+                                                final boolean[] parity, final int[][] spiIndex,
+                                                final int maxSymbol, final int[] pi,
+                                                final Stack<int[]> moves,
+                                                final Move root) {
+        for (int i = 0; i < pi.length - 2; i++) {
+            if (parity[pi[i]]) continue;
+            for (int j = i + 1; j < pi.length - 1; j++) {
+                if (parity[pi[j]]) continue;
+                for (int k = j + 1; k < pi.length; k++) {
+                    if (parity[pi[k]]) continue;
+
+                    int a = pi[i], b = pi[j], c = pi[k];
+
+                    // if it's the same cycle, skip it
+                    if (spiIndex[a] == spiIndex[b] && spiIndex[b] == spiIndex[c])
+                        continue;
+
+                    final var is_2Move = spiIndex[a] != spiIndex[b] &&
+                            spiIndex[b] != spiIndex[c] &&
+                            spiIndex[a] != spiIndex[c];
+                    if (is_2Move)
+                        continue;
+
+                    final var move = new int[]{a, b, c};
+
+                    final Triplet triplet = simulate0MoveTwoCycles(spiIndex, move);
+
+                    if (triplet.third != 2)
+                        continue;
+
+                    moves.push(move);
+
+                    // ========== apply the move
+                    spi.removeAll(triplet.first);
+                    var numberOfTrivialCycles = 0;
+                    spi.removeAll(triplet.first);
+
+                    for (int[] cycle : triplet.second) {
+                        if (cycle.length > 1) {
+                            spi.add(cycle);
+                        } else {
+                            numberOfTrivialCycles++;
+                        }
+                    }
+                    update(spiIndex, parity, triplet.second);
+                    // ==============================
+
+                    if (root.getChildren().isEmpty()) {
+                        return moves;
+                    } else {
+                        for (final var m : root.getChildren()) {
+                            final var sorting = search(spi, parity, spiIndex, maxSymbol, applyTransposition(pi, move,
+                                    pi.length - numberOfTrivialCycles, spiIndex), moves, m);
+                            if (!sorting.isEmpty()) {
+                                return moves;
+                            }
+                        }
+                    }
+
+                    // ========== ROLLBACK
+                    for (int[] cycle : triplet.second) {
+                        if (cycle.length > 1) spi.remove(cycle);
+                    }
+                    spi.addAll(triplet.first);
+                    update(spiIndex, parity, triplet.first);
+                    // ==============================
+
+                    moves.pop();
+                }
+            }
+        }
+
+        return Collections.emptyList();
+    }
+
+    private static List<int[]> analyzeOrientedCycles(final ArrayList<int[]> spi,
+                                                     final boolean[] parity, final int[][] spiIndex,
+                                                     final int maxSymbol, final int[] pi,
+                                                     final Stack<int[]> moves,
+                                                     final Move root) {
+        final var piInverseIndex = getPiInverseIndex(pi, maxSymbol);
+
+        final var orientedCycles = getOrientedCycles(spi, piInverseIndex);
+
+        for (int[] cycle : orientedCycles) {
+            final var before = parity[cycle[0]] ? 1 : 0;
+            for (var i = 0; i < cycle.length - 2; i++) {
+                for (var j = i + 1; j < cycle.length - 1; j++) {
+                    for (var k = j + 1; k < cycle.length; k++) {
+                        final var a = cycle[i];
+                        final var b = cycle[j];
+                        final var c = cycle[k];
+                        // check if it's applicable
+                        if (areSymbolsInCyclicOrder(piInverseIndex, a, c, b)) {
+                            int[] index = cycleIndex(cycle);
+                            final var ab_k = getK(index, cycle, a, b);
+                            var after = ab_k % 2 & 1;
+                            final var bc_k = getK(index, cycle, b, c);
+                            after += bc_k & 1;
+                            final var ca_k = getK(index, cycle, c, a);
+                            after += ca_k & 1;
+                            if (after - before == 2) {
                                 final int[] symbols = startingBy(cycle, a);
                                 final var aCycle = new int[ca_k];
                                 aCycle[0] = a;
                                 System.arraycopy(symbols, ab_k + bc_k + 1, aCycle, 1, ca_k - 1);
-                                after += aCycle.length & 1;
 
                                 final var bCycle = new int[ab_k];
                                 bCycle[0] = b;
                                 System.arraycopy(symbols, 1, bCycle, 1, ab_k - 1);
-                                after += bCycle.length & 1;
 
                                 final var cCycle = new int[bc_k];
                                 cCycle[0] = c;
                                 System.arraycopy(symbols, ab_k + 1, cCycle, 1, bc_k - 1);
-                                after += cCycle.length & 1;
 
-                                triplet = new Triplet(ListOfCycles.singleton(cycle), ListOfCycles.asList(aCycle, bCycle, cCycle), after - before);
-                            } else {
-                                triplet = simulate0MoveSameCycle(spiIndex, move);
-                            }
-                        } else {
-                            triplet = simulate0MoveTwoCycles(spiIndex, move);
-                        }
+                                final var move = new int[]{a, b, c};
+                                moves.push(move);
 
-                        if (triplet.third != 0)
-                            continue;
+                                // ========== apply the move
+                                spi.remove(cycle);
+                                var numberOfTrivialCycles = 0;
+                                if (aCycle.length > 1) spi.add(aCycle); else numberOfTrivialCycles++;
+                                if (bCycle.length > 1) spi.add(bCycle); else numberOfTrivialCycles++;
+                                if (cCycle.length > 1) spi.add(cCycle); else numberOfTrivialCycles++;
+                                update(spiIndex, parity, aCycle, bCycle, cCycle);
+                                // ==============================
 
-                        moves.push(move);
-
-                        // ========== apply the move
-                        var numberOfTrivialCycles = 0;
-                        spi.removeAll(triplet.first);
-
-                        var current = triplet.second.head;
-                        while (current != null) {
-                            final var cycle = current.data;
-
-                            if (cycle.length > 1) {
-                                spi.add(cycle);
-                            } else {
-                                numberOfTrivialCycles++;
-                            }
-
-                            current = current.next;
-                        }
-                        update(spiIndex, parity, triplet.second);
-                        // ==============================
-
-                        if (root.getChildren().isEmpty()) {
-                            return toListOfCycles(moves);
-                        } else {
-                            for (final var m : root.getChildren()) {
-                                final var sorting = search(spi, parity, spiIndex, maxSymbol, applyTransposition(pi, move,
-                                        pi.length - numberOfTrivialCycles, spiIndex), moves, m);
-                                if (!sorting.isEmpty()) {
-                                    return toListOfCycles(moves);
-                                }
-                            }
-                        }
-
-                        // ========== ROLLBACK
-                        current = triplet.second.head;
-                        while (current != null) {
-                            final var cycle = current.data;
-                            if (cycle.length > 1) spi.remove(cycle);
-                            current = current.next;
-                        }
-                        spi.addAll(triplet.first);
-                        update(spiIndex, parity, triplet.first);
-                        // ==============================
-
-                        moves.pop();
-                    }
-                }
-            }
-        } else {
-            final var piInverseIndex = getPiInverseIndex(pi, maxSymbol);
-
-            final var orientedCycles = getOrientedCycles(spi, piInverseIndex);
-            var current = orientedCycles.head;
-
-            while (current != null) {
-                final var cycle = current.data;
-                final var before = parity[cycle[0]] ? 1 : 0;
-                for (var i = 0; i < cycle.length - 2; i++) {
-                    for (var j = i + 1; j < cycle.length - 1; j++) {
-                        for (var k = j + 1; k < cycle.length; k++) {
-                            final var a = cycle[i];
-                            final var b = cycle[j];
-                            final var c = cycle[k];
-                            // check if it's applicable
-                            if (areSymbolsInCyclicOrder(piInverseIndex, a, c, b)) {
-                                int[] index = cycleIndex(cycle);
-                                final var ab_k = getK(index, cycle, a, b);
-                                var after = ab_k % 2 & 1;
-                                final var bc_k = getK(index, cycle, b, c);
-                                after += bc_k & 1;
-                                final var ca_k = getK(index, cycle, c, a);
-                                after += ca_k & 1;
-                                if (after - before == 2) {
-                                    final int[] symbols = startingBy(cycle, a);
-                                    final var aCycle = new int[ca_k];
-                                    aCycle[0] = a;
-                                    System.arraycopy(symbols, ab_k + bc_k + 1, aCycle, 1, ca_k - 1);
-
-                                    final var bCycle = new int[ab_k];
-                                    bCycle[0] = b;
-                                    System.arraycopy(symbols, 1, bCycle, 1, ab_k - 1);
-
-                                    final var cCycle = new int[bc_k];
-                                    cCycle[0] = c;
-                                    System.arraycopy(symbols, ab_k + 1, cCycle, 1, bc_k - 1);
-
-                                    final var move = new int[]{a, b, c};
-                                    moves.push(move);
-
-                                    // ========== apply the move
-                                    spi.remove(cycle);
-                                    var numberOfTrivialCycles = 0;
-                                    if (aCycle.length > 1) spi.add(aCycle);
-                                    else numberOfTrivialCycles++;
-                                    if (bCycle.length > 1) spi.add(bCycle);
-                                    else numberOfTrivialCycles++;
-                                    if (cCycle.length > 1) spi.add(cCycle);
-                                    else numberOfTrivialCycles++;
-                                    update(spiIndex, parity, aCycle, bCycle, cCycle);
-                                    // ==============================
-
-                                    if (root.getChildren().isEmpty()) {
-                                        return toListOfCycles(moves);
-                                    } else {
-                                        for (final var m : root.getChildren()) {
-                                            final var sorting = search(spi, parity, spiIndex, maxSymbol, applyTransposition(pi, move,
-                                                    pi.length - numberOfTrivialCycles, spiIndex), moves, m);
-                                            if (!sorting.isEmpty()) {
-                                                return toListOfCycles(moves);
-                                            }
+                                if (root.getChildren().isEmpty()) {
+                                    return moves;
+                                } else {
+                                    for (final var m : root.getChildren()) {
+                                        final var sorting = search(spi, parity, spiIndex, maxSymbol, applyTransposition(pi, move,
+                                                pi.length - numberOfTrivialCycles, spiIndex), moves, m);
+                                        if (!sorting.isEmpty()) {
+                                            return moves;
                                         }
                                     }
-
-                                    // ========== ROLLBACK
-                                    if (aCycle.length > 1) spi.remove(aCycle);
-                                    if (bCycle.length > 1) spi.remove(bCycle);
-                                    if (cCycle.length > 1) spi.remove(cCycle);
-                                    spi.add(cycle);
-                                    update(spiIndex, parity, cycle);
-                                    // ====================
-
-                                    moves.pop();
                                 }
-                            }
-                        }
-                    }
-                }
-                current = current.next;
-            }
 
-            for (int i = 0; i < pi.length - 2; i++) {
-                if (parity[pi[i]]) continue;
-                for (int j = i + 1; j < pi.length - 1; j++) {
-                    if (parity[pi[j]]) continue;
-                    for (int k = j + 1; k < pi.length; k++) {
-                        if (parity[pi[k]]) continue;
-
-                        int a = pi[i], b = pi[j], c = pi[k];
-
-                        // if it's the same cycle, skip it
-                        if (spiIndex[a] == spiIndex[b] && spiIndex[b] == spiIndex[c])
-                            continue;
-
-                        final var is_2Move = spiIndex[a] != spiIndex[b] &&
-                                spiIndex[b] != spiIndex[c] &&
-                                spiIndex[a] != spiIndex[c];
-                        if (is_2Move)
-                            continue;
-
-                        final var move = new int[]{a, b, c};
-
-                        final Triplet triplet = simulate0MoveTwoCycles(spiIndex, move);
-
-                        if (triplet.third != 2)
-                            continue;
-
-                        moves.push(move);
-
-                        // ========== apply the move
-                        spi.removeAll(triplet.first);
-                        var numberOfTrivialCycles = 0;
-                        spi.removeAll(triplet.first);
-
-                        current = triplet.second.head;
-                        while (current != null) {
-                            final var cycle = current.data;
-
-                            if (cycle.length > 1) {
+                                // ========== ROLLBACK
+                                if (aCycle.length > 1) spi.remove(aCycle);
+                                if (bCycle.length > 1) spi.remove(bCycle);
+                                if (cCycle.length > 1) spi.remove(cCycle);
                                 spi.add(cycle);
-                            } else {
-                                numberOfTrivialCycles++;
-                            }
+                                update(spiIndex, parity, cycle);
+                                // ====================
 
-                            current = current.next;
-                        }
-
-                        update(spiIndex, parity, triplet.second);
-                        // ==============================
-
-                        if (root.getChildren().isEmpty()) {
-                            return toListOfCycles(moves);
-                        } else {
-                            for (final var m : root.getChildren()) {
-                                final var sorting = search(spi, parity, spiIndex, maxSymbol, applyTransposition(pi, move,
-                                        pi.length - numberOfTrivialCycles, spiIndex), moves, m);
-                                if (!sorting.isEmpty()) {
-                                    return toListOfCycles(moves);
-                                }
+                                moves.pop();
                             }
                         }
-
-                        // ========== ROLLBACK
-                        current = triplet.second.head;
-                        while (current != null) {
-                            final var cycle = current.data;
-                            if (cycle.length > 1) spi.remove(cycle);
-                            current = current.next;
-                        }
-                        spi.addAll(triplet.first);
-                        update(spiIndex, parity, triplet.first);
-                        // ==============================
-
-                        moves.pop();
                     }
                 }
             }
         }
 
-        return ListOfCycles.emptyList();
-    }
-
-    private static ListOfCycles toListOfCycles(final Stack<int[]> moves) {
-        final var sorting = new ListOfCycles();
-        for (int[] move : moves) {
-            sorting.add(move);
-        }
-        return sorting;
+        return Collections.emptyList();
     }
 
     private static int[] getPiInverseIndex(final int[] pi, final int maxSymbol) {
@@ -487,24 +484,18 @@ public class FinalPermutations {
         return piInverseIndex;
     }
 
-    private static ListOfCycles getOrientedCycles(final ListOfCycles spi, final int[] piInverseIndex) {
-        final var orientedCycles = new ListOfCycles();
-        var current = spi.head;
-        while (current != null) {
-            final int[] cycle = current.data;
+    private static ArrayList<int[]> getOrientedCycles(final ArrayList<int[]> spi, final int[] piInverseIndex) {
+        final var orientedCycles = new ArrayList<int[]>();
+        for (int[] cycle : spi) {
             if (!areSymbolsInCyclicOrder(piInverseIndex, cycle))
                 orientedCycles.add(cycle);
-            current = current.next;
         }
         return orientedCycles;
     }
 
-    private static void update(final int[][] index, final boolean[] parity, final ListOfCycles cycles) {
-        var current = cycles.head;
-        while (current != null) {
-            final var cycle = current.data;
+    private static void update(final int[][] index, final boolean[] parity, final List<int[]> cycles) {
+        for (int[] cycle : cycles) {
             update(index, parity, cycle);
-            current = current.next;
         }
     }
 
@@ -566,6 +557,7 @@ public class FinalPermutations {
         final var ba_k = getK(abCycleIndex, abCycle, b, a);
         final var newaCycle = new int[1 + ba_k - 1];
         newaCycle[0] = a;
+
         final var ab_k = getK(abCycleIndex, abCycle, a, b);
         System.arraycopy(abCycle,  ab_k + 1, newaCycle, 1, ba_k - 1);
 
@@ -578,14 +570,14 @@ public class FinalPermutations {
         newNumberOfEvenCycles += newaCycle.length % 2;
         newNumberOfEvenCycles += newbCycle.length % 2;
 
-        final var oldCycles = new ListOfCycles();
+        final var oldCycles = new ArrayList<int[]>();
         oldCycles.add(spiIndex[move[0]]);
         if (!oldCycles.contains(spiIndex[move[1]]))
             oldCycles.add(spiIndex[move[1]]);
         if (!oldCycles.contains(spiIndex[move[2]]))
             oldCycles.add(spiIndex[move[2]]);
 
-        final var newCycles = new ListOfCycles();
+        final var newCycles = new ArrayList<int[]>();
         newCycles.add(newaCycle);
         newCycles.add(newbCycle);
 
@@ -619,7 +611,7 @@ public class FinalPermutations {
         System.arraycopy(symbols, ab_k + bc_k + 1,
                 newCycle, ab_k + bc_k + 1, ca_k - 1);
 
-        return new Triplet(ListOfCycles.singleton(oldCycle), ListOfCycles.singleton(newCycle), 0);
+        return new Triplet(Collections.singletonList(oldCycle), Collections.singletonList(newCycle), 0);
     }
 
     private static int[] cycleIndex(int[] cycle) {
@@ -701,161 +693,11 @@ public class FinalPermutations {
         return result;
     }
 
-    static class ListOfCycles {
-        Node head;
-        Node tail;
-
-        public ListOfCycles() {
-        }
-
-        public static ListOfCycles singleton(int[] data) {
-            final var singleton = new ListOfCycles();
-            singleton.head = new Node(data);
-            return singleton;
-        }
-
-        public static ListOfCycles asList(int[]... elements) {
-            final var list = new ListOfCycles();
-            for (int[] element : elements) {
-                list.add(element);
-            }
-            return list;
-        }
-
-        private static ListOfCycles emptyList = new ListOfCycles();
-
-        public static ListOfCycles emptyList() {
-            return emptyList;
-        }
-
-        void add(int[] data) {
-            final var newNode = new Node(data);
-
-            if (head == null) {
-                head = tail = newNode;
-                head.previous = null;
-            } else {
-                tail.next = newNode;
-                newNode.previous = tail;
-                tail = newNode;
-            }
-
-            tail.next = null;
-        }
-
-        public void remove(int[] data) {
-            var current = head;
-
-            while (current != null && current.data != data) {
-                current = current.next;
-            }
-
-            if (current == null) {
-                return;
-            }
-
-            if (current.previous == null) {
-                head = current.next;
-            } else{
-                current.previous.next = current.next;
-            }
-
-            if (current.next == null) {
-                tail = current.previous;
-            } else {
-                current.next.previous = current.previous;
-            }
-        }
-
-        public boolean contains(final int[] data) {
-            var current = head;
-            while (current != null) {
-                if (current.data == data) {
-                    return true;
-                }
-                current = current.next;
-            }
-            return false;
-        }
-
-        public void removeAll(final List<int[]> other) {
-            for (int[] cycle : other) {
-                remove(cycle);
-            }
-        }
-
-        @Override
-        public String toString() {
-            final var str = new StringBuilder();
-            str.append("[");
-
-            Node current = head;
-
-            while (current != null) {
-                str.append(current.data);
-                str.append(" ");
-                current = current.next;
-            }
-
-            str.append("]");
-
-            return str.toString();
-        }
-
-        public void addAll(final List<int[]> other) {
-            for (int[] cycle : other) {
-                add(cycle);
-            }
-        }
-
-        public void removeAll(final ListOfCycles other) {
-            var current = other.head;
-            while (current != null) {
-                this.remove(current.data);
-                current = current.next;
-            }
-        }
-
-        public List<int[]> toList() {
-            final List<int[]> list = new ArrayList<>();
-            var current = head;
-            while (current != null) {
-                list.add(current.data);
-                current = current.next;
-            }
-            return list;
-        }
-
-        public void addAll(final ListOfCycles other) {
-            var current = other.head;
-            while (current != null) {
-                this.add(current.data);
-                current = current.next;
-            }
-        }
-
-        public boolean isEmpty() {
-            return head == null;
-        }
-    }
-
-    static class Node {
-        int[] data;
-        Node next;
-        Node previous;
-        Node(int[] d) { data = d; }
-
-        @Override
-        public String toString() {
-            return data.toString();
-        }
-    }
-
     @AllArgsConstructor
     static class Triplet {
 
-        public ListOfCycles first;
-        public ListOfCycles second;
+        public List<int[]> first;
+        public List<int[]> second;
         public int third;
 
         @Override
