@@ -294,7 +294,8 @@ public class FinalPermutations {
 
         final var orientedCycles = getOrientedCycles(spi, piInverseIndex);
 
-        for (var current = orientedCycles.head; current != null; current = current.next) {
+        var current = orientedCycles.head;
+        for (int l = 0; l < orientedCycles.size; l++) {
             final var cycle = current.data;
 
             final var before = parity[cycle[0]] ? 1 : 0;
@@ -367,6 +368,7 @@ public class FinalPermutations {
                     }
                 }
             }
+            current = current.next;
         }
 
         return ListOfCycles.emptyList;
@@ -523,10 +525,12 @@ public class FinalPermutations {
 
     private static ListOfCycles getOrientedCycles(final ListOfCycles spi, final int[] piInverseIndex) {
         final var orientedCycles = new ListOfCycles();
-        for (var current = spi.head; current != null; current = current.next) {
+        var current = spi.head;
+        for (int i = 0; i < spi.size; i++) {
             final int[] cycle = current.data;
             if (!areSymbolsInCyclicOrder(piInverseIndex, cycle))
                 orientedCycles.add(cycle);
+            current = current.next;
         }
         return orientedCycles;
     }
@@ -734,6 +738,8 @@ public class FinalPermutations {
     static class ListOfCycles {
         public static ListOfCycles emptyList = new ListOfCycles();
 
+        int size;
+
         Node head;
         Node tail;
 
@@ -743,6 +749,7 @@ public class FinalPermutations {
         public static ListOfCycles singleton(int[] data) {
             final var singleton = new ListOfCycles();
             singleton.head = new Node(data);
+            singleton.size = 1;
             return singleton;
         }
 
@@ -767,6 +774,8 @@ public class FinalPermutations {
             }
 
             tail.next = null;
+
+            size++;
         }
 
         public void remove(int[] data) {
@@ -791,6 +800,8 @@ public class FinalPermutations {
             } else {
                 current.next.previous = current.previous;
             }
+
+            size--;
         }
 
         public boolean contains(final int[] data) {
