@@ -21,11 +21,11 @@ public class DefaultSearchForSortingStrategy implements SearchForSortingStrategy
                               final Cycle pi,
                               final Stack<Cycle> moves,
                               final ProofGenerator.Move root) {
-        Thread.currentThread().setName(Thread.currentThread().getName() + "-" + root.getMu());
+        Thread.currentThread().setName(Thread.currentThread().getName() + "-" + root.mu);
 
         final Stream<Cycle> nextMoves;
-        if (root.getMu() == 0) {
-            nextMoves = generateAll0And2Moves(spi, pi).filter(p -> p.getSecond() == root.getMu()).map(Pair::getFirst);
+        if (root.mu == 0) {
+            nextMoves = generateAll0And2Moves(spi, pi).filter(p -> p.getSecond() == root.mu).map(Pair::getFirst);
         } else {
             nextMoves = generateAll2Moves(spi, pi).map(Pair::getFirst);
         }
@@ -36,10 +36,10 @@ public class DefaultSearchForSortingStrategy implements SearchForSortingStrategy
                 final var move = iterator.next();
                 moves.push(move);
 
-                if (root.getChildren().isEmpty()) {
+                if (root.children.length == 0) {
                     return moves;
                 } else {
-                    for (final var m : root.getChildren()) {
+                    for (final var m : root.children) {
                         final var sorting = search(
                                 computeProduct(true, pi.getMaxSymbol() + 1, spi, move.getInverse()),
                                 applyTransposition(pi, move), moves, m);

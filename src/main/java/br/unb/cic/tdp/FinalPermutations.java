@@ -73,12 +73,12 @@ public class FinalPermutations {
         final var submittedTasks = new ArrayList<Future<List<int[]>>>();
 
         list.forEach(move -> {
-            for (final var root : rootMove.getChildren()) {
+            for (final var root : rootMove.children) {
                 //if (badCases.contains(configuration.getSpi() + "-" + move + "-" + root.getMu())) continue;
 
                 submittedTasks.add(completionService.submit(() -> {
                     final var name = Thread.currentThread().getName();
-                    Thread.currentThread().setName(Thread.currentThread().getName() + "-" + move + "-" + root.getMu());
+                    Thread.currentThread().setName(Thread.currentThread().getName() + "-" + move + "-" + root.mu);
 
                     final var partialSorting = new Stack<int[]>();
                     partialSorting.push(move.getSymbols());
@@ -106,7 +106,7 @@ public class FinalPermutations {
                     try {
                         final var sorting = search(spi, parity, spiIndex, maxSymbol, pi, partialSorting, root);
                         if (sorting.isEmpty() && !Thread.currentThread().isInterrupted()) {
-                            System.out.println(move + ", branch " + root.getMu() + " unsuccessful");
+                            System.out.println(move + ", branch " + root.mu + " unsuccessful");
                         }
                         return sorting;
                     } finally {
@@ -227,10 +227,10 @@ public class FinalPermutations {
                                     update(spiIndex, parity, aCycle, bCycle, cCycle);
                                     // ==============================
 
-                                    if (root.getChildren().isEmpty()) {
+                                    if (root.children.length == 0) {
                                         return moves;
                                     } else {
-                                        for (final var m : root.getChildren()) {
+                                        for (final var m : root.children) {
                                             final var sorting = search(spi, parity, spiIndex, maxSymbol, applyTransposition(pi, move,
                                                     pi.length - numberOfTrivialCycles, spiIndex), moves, m);
                                             if (!sorting.isEmpty()) {
@@ -353,10 +353,10 @@ public class FinalPermutations {
                     update(spiIndex, parity, triplet.second);
                     // ==============================
 
-                    if (root.getChildren().isEmpty()) {
+                    if (root.children.length == 0) {
                         return moves;
                     } else {
-                        for (final var m : root.getChildren()) {
+                        for (final var m : root.children) {
                             final var sorting = search(spi, parity, spiIndex, maxSymbol, applyTransposition(pi, move,
                                     pi.length - numberOfTrivialCycles, spiIndex), moves, m);
                             if (!sorting.isEmpty()) {
@@ -428,10 +428,10 @@ public class FinalPermutations {
                     update(spiIndex, parity, triplet.second);
                     // ==============================
 
-                    if (root.getChildren().isEmpty()) {
+                    if (root.children.length == 0) {
                         return moves;
                     } else {
-                        for (final var m : root.getChildren()) {
+                        for (final var m : root.children) {
                             final var sorting = search(spi, parity, spiIndex, maxSymbol, applyTransposition(pi, move,
                                     pi.length - numberOfTrivialCycles, spiIndex), moves, m);
                             if (!sorting.isEmpty()) {
