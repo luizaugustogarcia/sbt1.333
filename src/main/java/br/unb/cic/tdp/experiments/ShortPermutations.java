@@ -30,7 +30,7 @@ public class ShortPermutations {
                     Runtime.getRuntime().availableProcessors(), 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(100));
             pool.setRejectedExecutionHandler(new BlockPolicy());
 
-            try (final var br = new BufferedReader(new FileReader(exactDistancesRoot + "exact" + i + ".txt"), 1024 * 1024 * 10)) {
+            try (final var br = new BufferedReader(new FileReader(exactDistancesRoot + "/exact" + i + ".txt"), 1024 * 1024 * 10)) {
                 final float[] maxRatio = {0};
                 final var lock = new Lock();
                 final BigDecimal[] sumRatios = {BigDecimal.ZERO};
@@ -46,35 +46,39 @@ public class ShortPermutations {
                     final var split = line.split(" ");
                     if (!split[1].equals("0")) {
                         pool.submit(() -> {
-                            final var pi = Cycle.create("0," + split[0]);
-                            final var exact = Integer.parseInt(split[1]);
-
-                            final var sorting = algorithm.sort(pi);
-
-                            final var ratio = sorting.getSecond().size() / (float) exact;
-                            if (ratio < 1)
-                                throw new RuntimeException();
-
                             try {
-                                lock.lock();
+                                final var pi = Cycle.create("0," + split[0]);
+                                final var exact = Integer.parseInt(split[1]);
 
-                                sumDistance[0] += sorting.getSecond().size();
+                                final var sorting = algorithm.sort(pi);
 
-                                sumRatios[0] = sumRatios[0].add(new BigDecimal(ratio));
+                                final var ratio = sorting.getSecond().size() / (float) exact;
+                                if (ratio < 1)
+                                    throw new RuntimeException();
 
-                                if (ratio > maxRatio[0]) {
-                                    maxRatio[0] = ratio;
+                                try {
+                                    lock.lock();
+
+                                    sumDistance[0] += sorting.getSecond().size();
+
+                                    sumRatios[0] = sumRatios[0].add(new BigDecimal(ratio));
+
+                                    if (ratio > maxRatio[0]) {
+                                        maxRatio[0] = ratio;
+                                    }
+
+                                    if (ratio == 1.5f) {
+                                        total1_5[0]++;
+                                    }
+
+                                    if (sorting.getSecond().size() != exact) {
+                                        wrongAnswers[0]++;
+                                    }
+                                } finally {
+                                    lock.unlock();
                                 }
-
-                                if (ratio == 1.5f) {
-                                    total1_5[0]++;
-                                }
-
-                                if (sorting.getSecond().size() != exact) {
-                                    wrongAnswers[0]++;
-                                }
-                            } finally {
-                                lock.unlock();
+                            } catch (Throwable e) {
+                                e.printStackTrace();
                             }
                         });
                     }

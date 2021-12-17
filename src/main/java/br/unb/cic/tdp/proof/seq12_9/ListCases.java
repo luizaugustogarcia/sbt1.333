@@ -8,13 +8,12 @@ import com.google.common.base.Throwables;
 import lombok.SneakyThrows;
 
 import java.io.*;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static br.unb.cic.tdp.base.CommonOperations.is12_9;
+import static br.unb.cic.tdp.base.CommonOperations.is16_12;
 
 public class ListCases {
 
@@ -60,7 +59,7 @@ public class ListCases {
                                                     .replace("<br>", "");
                                             sorting.add(Cycle.create(move));
                                         }
-                                        is12_9(spi, CommonOperations.CANONICAL_PI[spi.getNumberOfSymbols()], sorting);
+                                        is16_12(spi, CommonOperations.CANONICAL_PI[spi.getNumberOfSymbols()], sorting);
                                         writer.append(spi + "->" + sorting + "\n");
                                     }
                                 }

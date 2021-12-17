@@ -29,12 +29,12 @@ public class MaximizeSizeOfComponentsStrategy implements SearchForSortingStrateg
             return Collections.emptyList();
         }
 
-        Thread.currentThread().setName(Thread.currentThread().getName() + "-" + root.getMu());
+        Thread.currentThread().setName(Thread.currentThread().getName() + "-" + root.mu);
 
         final Stream<Cycle> nextMoves;
-        if (root.getMu() == 0) {
+        if (root.mu == 0) {
             nextMoves = generateAll0And2Moves(spi, pi)
-                    .filter(p -> p.getSecond() == root.getMu())
+                    .filter(p -> p.getSecond() == root.mu)
                     .map(Pair::getFirst)
                     .map(move -> {
                         final var spi_ = computeProduct(true, pi.getMaxSymbol() + 1, spi, move.getInverse());
@@ -52,13 +52,13 @@ public class MaximizeSizeOfComponentsStrategy implements SearchForSortingStrateg
                 final var move = iterator.next();
                 moves.push(move);
 
-                if (root.getChildren().isEmpty()) {
+                if (root.children.length == 0) {
                     return moves;
                 } else {
                     final var spi_ = computeProduct(true, pi.getMaxSymbol() + 1, spi, move.getInverse());
                     final var pi_ = applyTransposition(pi, move);
 
-                    for (final var m : root.getChildren()) {
+                    for (final var m : root.children) {
                         final var sorting = search(spi_, pi_, moves, m);
                         if (!sorting.isEmpty()) {
                             return moves;

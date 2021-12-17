@@ -80,7 +80,7 @@ public class Extensions {
                             } else {
                                 final var canonical = new Configuration(new MulticyclePermutation(f.getName().replace(" ", ",")));
                                 final var sorting = getSorting(file.toPath());
-                                if (!is12_9(canonical.getSpi(), canonical.getPi(), sorting.getSecond())) {
+                                if (!is16_12(canonical.getSpi(), canonical.getPi(), sorting.getSecond())) {
                                     files.add(file);
                                 }
                             }

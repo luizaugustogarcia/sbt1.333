@@ -50,7 +50,7 @@ public class EliasAndHartman extends BaseAlgorithm {
             spi = computeProduct(true, sigma, pi.getInverse());
         }
 
-        final List<List<Cycle>> badSmallComponents = new ArrayList<>();
+        final List<Collection<Cycle>> badSmallComponents = new ArrayList<>();
 
         final var nonBadSmallComponents = new HashSet<>(spi.getNonTrivialCycles());
         while (!nonBadSmallComponents.isEmpty()) {
@@ -60,7 +60,7 @@ public class EliasAndHartman extends BaseAlgorithm {
                 spi = computeProduct(true, sigma, pi.getInverse());
                 sorting.add(_2move.get());
             } else {
-                List<Cycle> component = new ArrayList<>();
+                Collection<Cycle> component = new ArrayList<>();
                 final var gamma = nonBadSmallComponents.stream().filter(c -> c.size() > 1).findFirst().get();
                 component.add(Cycle.create(gamma.get(0), gamma.get(1), gamma.get(2)));
 

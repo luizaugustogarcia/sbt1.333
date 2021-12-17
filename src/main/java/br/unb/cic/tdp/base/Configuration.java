@@ -58,7 +58,7 @@ public class Configuration {
         this(new MulticyclePermutation(spi));
     }
 
-    public static float[] signature(final List<Cycle> spi, final Cycle pi) {
+    public static float[] signature(final Collection<Cycle> spi, final Cycle pi) {
         final var labelByCycle = new HashMap<Cycle, Float>();
         final var cycleIndex = cycleIndex(spi, pi);
         final var orientedCycles = spi.stream().filter(c -> !areSymbolsInCyclicOrder(pi.getInverse(), c.getSymbols()))

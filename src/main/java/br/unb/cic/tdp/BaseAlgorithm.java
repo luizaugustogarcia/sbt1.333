@@ -55,7 +55,7 @@ public abstract class BaseAlgorithm {
         return false;
     }
 
-    public static List<Cycle> ehExtend(final List<Cycle> config, final List<Cycle> spi, final Cycle pi) {
+    public static Collection<Cycle> ehExtend(final Collection<Cycle> config, final Collection<Cycle> spi, final Cycle pi) {
         final var piInverse = pi.getInverse().startingBy(pi.getMinSymbol());
 
         final var configSymbols = new HashSet<Integer>();
@@ -197,11 +197,11 @@ public abstract class BaseAlgorithm {
         return _pi;
     }
 
-    protected Optional<List<Cycle>> searchFor11_8_Seq(final List<Cycle> mu, final Cycle pi) {
+    protected Optional<List<Cycle>> searchFor11_8_Seq(final Collection<Cycle> mu, final Cycle pi) {
         return searchForSeq(mu, pi, _11_8_sortings);
     }
 
-    public static Optional<List<Cycle>> searchForSeq(final List<Cycle> mu, final Cycle pi,
+    public static Optional<List<Cycle>> searchForSeq(final Collection<Cycle> mu, final Cycle pi,
                                                final Multimap<Integer, Pair<Configuration, List<Cycle>>> sortings) {
         final var allSymbols = mu.stream().flatMap(c -> Ints.asList(c.getSymbols()).stream()).collect(Collectors.toSet());
         final var _pi = new IntArrayList(allSymbols.size());
@@ -245,7 +245,7 @@ public abstract class BaseAlgorithm {
 
     protected Pair<List<Cycle>, Cycle> apply3_2_Unoriented(final MulticyclePermutation spi, final Cycle pi) {
         final var segment = spi.getNonTrivialCycles().stream().findFirst().get();
-        List<Cycle> mu = new ArrayList<>();
+        Collection<Cycle> mu = new ArrayList<>();
         mu.add(Cycle.create(segment.get(0), segment.get(1), segment.get(2)));
         for (var i = 0; i < 2; i++) {
             mu = ehExtend(mu, spi, pi);

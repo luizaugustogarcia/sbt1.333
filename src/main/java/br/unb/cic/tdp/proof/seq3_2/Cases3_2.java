@@ -8,6 +8,8 @@ import org.apache.commons.math3.util.Pair;
 import org.paukov.combinatorics.Factory;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static br.unb.cic.tdp.base.CommonOperations.*;
 
@@ -37,7 +39,7 @@ public class Cases3_2 {
 
         final var verifiedConfigurations = new HashSet<Configuration>();
 
-        for (final var permutation : Factory.createPermutationGenerator(Factory.createVector(spi.getSymbols()))) {
+        for (final var permutation : Factory.createPermutationGenerator(Factory.createVector(IntStream.of(spi.getSymbols().toArray()).boxed().collect(Collectors.toList())))) {
             final var pi = Cycle.create(Ints.toArray(permutation.getVector()));
             if (spi.stream().noneMatch(cycle -> isOriented(pi, cycle))) {
                 final var openGates = getOpenGates(spi, pi);

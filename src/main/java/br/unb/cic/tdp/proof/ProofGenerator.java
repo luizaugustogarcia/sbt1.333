@@ -13,6 +13,7 @@ import com.google.common.primitives.Ints;
 import lombok.Getter;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.Velocity;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
 
 import java.io.Serializable;
 import java.io.Writer;
@@ -147,35 +148,36 @@ public class ProofGenerator {
             {0,0,0,2,0,2,2,2,2,2,2,2,2,2,2,2},
             {0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2}};
 
-    public static final Move _4_3_SEQS = new Move(0, new LinkedList<>());
-    public static final Move _8_6_SEQS = new Move(0, new LinkedList<>());
-    public static final Move _12_9_SEQS = new Move(0, new LinkedList<>());
-    public static final Move _16_12_SEQS = new Move(0, new LinkedList<>());
-
-    // TODO Remove
-    static final int[][] _16_12_SPECIAL = new int[][]{{0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2}};
-    public static final Move _16_12_SPECIAL_SEQ = new Move(0, new LinkedList<>());
+    public static final Move _4_3_SEQS = new Move(0, new Move[0]);
+    public static final Move _8_6_SEQS = new Move(0, new Move[0]);
+    public static final Move _12_9_SEQS = new Move(0, new Move[0]);
+    public static final Move _16_12_SEQS = new Move(0, new Move[0]);
 
     static {
         toTrie(_4_3, _4_3_SEQS);
         toTrie(_8_6, _8_6_SEQS);
         toTrie(_12_9, _12_9_SEQS);
         toTrie(_16_12, _16_12_SEQS);
-
-        // TODO Remove
-        toTrie(_16_12_SPECIAL, _16_12_SPECIAL_SEQ);
     }
 
-    private static void toTrie(final int[][] seqs, Move root) {
+    public static void toTrie(final int[][] seqs, Move root) {
         final var root_ = root;
         for (int[] seq : seqs) {
             root = root_;
             for (int j = 1; j < seq.length; j++) {
                 final var move = seq[j];
-                if (root.getChildren().stream().noneMatch(m -> m.mu == move)) {
-                    root.getChildren().add(new Move(move, new LinkedList<>()));
+                if (Arrays.stream(root.children).noneMatch(m -> m.mu == move)) {
+                    if (root.children.length == 0) {
+                        root.children = new Move[1];
+                        root.children[0] = new Move(move, new Move[0]);
+                    } else {
+                        final var children = new Move[2];
+                        children[0] = root.children[0];
+                        children[1] = new Move(move, new Move[0]);
+                        root.children = children;
+                    }
                 }
-                root = root.getChildren().stream().filter(m -> m.getMu() == move).findFirst().get();
+                root = Arrays.stream(root.children).filter(m -> m.mu == move).findFirst().get();
             }
         }
     }
@@ -262,7 +264,7 @@ public class ProofGenerator {
         return Optional.empty();
     }
 
-    public static Cycle removeExtraSymbols(final Set<Integer> symbols, final Cycle pi) {
+    public static Cycle removeExtraSymbols(final MutableIntSet symbols, final Cycle pi) {
         final var newPi = new IntArrayList(symbols.size());
         for (final var symbol: pi.getSymbols()) {
             if (symbols.contains(symbol))
@@ -312,12 +314,11 @@ public class ProofGenerator {
         template.merge(context, writer);
     }
 
-    @Getter
     public static class Move implements Serializable {
-        private final int mu;
-        private final List<Move> children;
+        public final int mu;
+        public Move[] children;
 
-        public Move(int mu, List<Move> children) {
+        public Move(int mu, Move[] children) {
             this.mu = mu;
             this.children = children;
         }
