@@ -32,19 +32,16 @@ public class FinalPermutations {
         Velocity.setProperty("class.resource.loader.class", "org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader");
         Velocity.init();
 
-//        Stream.of(
-//                new Configuration("(0 4 2)(1 5 3)(6 10 8)(7 11 9)(12 16 14)(13 17 15)(24 34 26)(25 35 27)(28 32 30)(29 33 31)(18 22 20)(19 23 21)"), // bad-case
-//                new Configuration("(0 4 2)(1 35 3)(5 9 7)(6 10 8)(11 15 13)(12 16 14)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"),
-//                new Configuration("(0 4 2)(1 5 3)(6 16 14)(7 11 9)(8 12 10)(13 35 15)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"),
-//                new Configuration("(0 4 2)(1 5 3)(6 10 8)(7 11 9)(12 16 14)(13 17 15)(18 34 32)(19 35 33)(20 24 22)(21 25 23)(26 30 28)(27 31 29)"),
-//                new Configuration("(0 4 2)(1 5 3)(12 34 14)(13 35 33)(15 19 17)(16 20 18)(21 25 23)(22 26 24)(27 31 29)(28 32 30)(6 10 8)(7 11 9)"),
-//                new Configuration("(0 4 2)(1 5 3)(6 34 8)(7 35 33)(9 13 11)(10 14 12)(15 19 17)(16 20 18)(21 25 23)(22 26 24)(27 31 29)(28 32 30)"),
-//                new Configuration("(0 4 2)(1 5 3)(6 16 8)(7 35 9)(10 14 12)(11 15 13)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"),
-//                new Configuration("(0 4 2)(1 5 3)(6 10 8)(7 11 9)(12 22 20)(13 17 15)(14 18 16)(19 35 21)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"),
-//                new Configuration("(0 4 2)(1 5 3)(6 10 8)(7 11 9)(12 28 14)(13 35 15)(16 20 18)(17 21 19)(29 33 31)(30 34 32)(22 26 24)(23 27 25)")
-//        ).forEach(conf -> sort(conf, "/home/luiskowada/proof1.333", _16_12_SEQS));
-
         Stream.of(
+                new Configuration("(0 4 2)(1 5 3)(6 10 8)(7 11 9)(12 16 14)(13 17 15)(24 34 26)(25 35 27)(28 32 30)(29 33 31)(18 22 20)(19 23 21)"),
+                new Configuration("(0 4 2)(1 35 3)(5 9 7)(6 10 8)(11 15 13)(12 16 14)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"),
+                new Configuration("(0 4 2)(1 5 3)(6 16 14)(7 11 9)(8 12 10)(13 35 15)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"),
+                new Configuration("(0 4 2)(1 5 3)(6 10 8)(7 11 9)(12 16 14)(13 17 15)(18 34 32)(19 35 33)(20 24 22)(21 25 23)(26 30 28)(27 31 29)"),
+                new Configuration("(0 4 2)(1 5 3)(12 34 14)(13 35 33)(15 19 17)(16 20 18)(21 25 23)(22 26 24)(27 31 29)(28 32 30)(6 10 8)(7 11 9)"),
+                new Configuration("(0 4 2)(1 5 3)(6 34 8)(7 35 33)(9 13 11)(10 14 12)(15 19 17)(16 20 18)(21 25 23)(22 26 24)(27 31 29)(28 32 30)"),
+                new Configuration("(0 4 2)(1 5 3)(6 16 8)(7 35 9)(10 14 12)(11 15 13)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"),
+                new Configuration("(0 4 2)(1 5 3)(6 10 8)(7 11 9)(12 22 20)(13 17 15)(14 18 16)(19 35 21)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"),
+                new Configuration("(0 4 2)(1 5 3)(6 10 8)(7 11 9)(12 28 14)(13 35 15)(16 20 18)(17 21 19)(29 33 31)(30 34 32)(22 26 24)(23 27 25)"),
                 new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)")
         ).forEach(conf -> sort(conf, "/home/luiskowada/proof1.333", _16_12_SEQS));
     }
@@ -574,20 +571,20 @@ public class FinalPermutations {
             b = move[2];
             c = move[1];
             numberOfEvenCycles += spiIndex[move[0]].length & 1;
-            numberOfEvenCycles += spiIndex[move[1]].length % 2;
+            numberOfEvenCycles += spiIndex[move[1]].length & 1;
         } else if (spiIndex[move[0]] == spiIndex[move[1]]) {
             a = move[1];
             b = move[0];
             c = move[2];
-            numberOfEvenCycles += spiIndex[move[0]].length % 2;
-            numberOfEvenCycles += spiIndex[move[2]].length % 2;
+            numberOfEvenCycles += spiIndex[move[0]].length & 1;
+            numberOfEvenCycles += spiIndex[move[2]].length & 1;
         } else {
             // spi.getCycle(move[1]) == spi.getCycle(move[2])
             a = move[2];
             b = move[1];
             c = move[0];
-            numberOfEvenCycles += spiIndex[move[0]].length % 2;
-            numberOfEvenCycles += spiIndex[move[2]].length % 2;
+            numberOfEvenCycles += spiIndex[move[0]].length & 1;
+            numberOfEvenCycles += spiIndex[move[2]].length & 1;
         }
 
         final var index = cycleIndex(spiIndex[c]);
@@ -609,8 +606,8 @@ public class FinalPermutations {
         System.arraycopy(abCycle, 1, newbCycle, 1 + cCycle.length, ab_k - 1);
 
         var newNumberOfEvenCycles = 0;
-        newNumberOfEvenCycles += newaCycle.length % 2;
-        newNumberOfEvenCycles += newbCycle.length % 2;
+        newNumberOfEvenCycles += newaCycle.length & 1;
+        newNumberOfEvenCycles += newbCycle.length & 1;
 
         final var oldCycles = new ListOfCycles();
         oldCycles.add(spiIndex[move[0]]);
@@ -726,10 +723,14 @@ public class FinalPermutations {
             counter++;
         }
 
-        for (int i = 0; i < pi.length - indexes[2]; i++) {
-            if (spiIndex[pi[indexes[2] + i]].length == 1) continue;
-            result[counter] = pi[indexes[2] + i];
-            counter++;
+        try {
+            for (int i = 0; i < pi.length - indexes[2]; i++) {
+                if (spiIndex[pi[indexes[2] + i]].length == 1) continue;
+                result[counter] = pi[indexes[2] + i];
+                counter++;
+            }
+        } catch(ArrayIndexOutOfBoundsException e) {
+            e.printStackTrace();
         }
 
         return result;
@@ -781,7 +782,7 @@ public class FinalPermutations {
         public void remove(int[] data) {
             var current = head;
 
-            while (current != null && current.data != data) {
+            while (current != null && !isEquals(current.data, data)) {
                 current = current.next;
             }
 
@@ -804,9 +805,35 @@ public class FinalPermutations {
             size--;
         }
 
+        private static boolean isEquals(final int[] data, final int[] other) {
+            if (data.length != other.length)
+                return false;
+
+            if (data[0] == other[0]) {
+                for (int i = 0; i < data.length; i++) {
+                    if (data[i] != other[i])
+                        return false;
+                }
+                return true;
+            } else {
+                for (int i = 0; i < other.length; i++) {
+                    if (other[i] == data[0]) {
+                        for (int j = 0; j < data.length; j++) {
+                            if (other[(i + j) % other.length] != data[j]) {
+                                return false;
+                            }
+                        }
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
         public boolean contains(final int[] data) {
             for (var current = head; current != null; current = current.next) {
-                if (current.data == data) {
+                if (isEquals(current.data, data)) {
                     return true;
                 }
             }
@@ -825,7 +852,7 @@ public class FinalPermutations {
             str.append("[");
 
             for (var current = head; current != null; current = current.next) {
-                str.append(current.data);
+                str.append(Arrays.toString(current.data));
                 str.append(" ");
             }
 
