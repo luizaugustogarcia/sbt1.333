@@ -314,6 +314,7 @@ public class FinalPermutations {
                             after += ca_k & 1;
 
                             if (after - before == 2) {
+                                final var originalCycle = cycle;
                                 final int[] symbols = startingBy(cycle, a);
                                 final var aCycle = new int[ca_k];
                                 aCycle[0] = a;
@@ -331,7 +332,7 @@ public class FinalPermutations {
                                 moves.push(move);
 
                                 // ========== apply the move
-                                spi.remove(cycle);
+                                spi.remove(originalCycle);
                                 var numberOfTrivialCycles = 0;
                                 if (aCycle.length > 1) spi.add(aCycle); else numberOfTrivialCycles++;
                                 if (bCycle.length > 1) spi.add(bCycle); else numberOfTrivialCycles++;
@@ -355,7 +356,7 @@ public class FinalPermutations {
                                 if (aCycle.length > 1) spi.remove(aCycle);
                                 if (bCycle.length > 1) spi.remove(bCycle);
                                 if (cCycle.length > 1) spi.remove(cCycle);
-                                spi.add(cycle);
+                                spi.add(originalCycle);
                                 update(spiIndex, parity, cycle);
                                 // ====================
 
@@ -428,7 +429,7 @@ public class FinalPermutations {
                             }
 
                             after = 0;
-
+                            final var originalCycle = cycle;
                             final int[] symbols = startingBy(cycle, a);
                             final var aCycle = new int[ca_k];
                             aCycle[0] = a;
@@ -445,7 +446,7 @@ public class FinalPermutations {
                             System.arraycopy(symbols, ab_k + 1, cCycle, 1, bc_k - 1);
                             after += cCycle.length & 1;
 
-                            triplet = new Triplet<>(ListOfCycles.singleton(cycle), ListOfCycles.asList(aCycle, bCycle, cCycle), after - before);
+                            triplet = new Triplet<>(ListOfCycles.singleton(originalCycle), ListOfCycles.asList(aCycle, bCycle, cCycle), after - before);
                         } else {
                             triplet = simulate0MoveSameCycle(spiIndex, move);
                         }
@@ -782,7 +783,7 @@ public class FinalPermutations {
         public void remove(int[] data) {
             var current = head;
 
-            while (current != null && !isEquals(current.data, data)) {
+            while (current != null && current.data != data) {
                 current = current.next;
             }
 
@@ -805,35 +806,9 @@ public class FinalPermutations {
             size--;
         }
 
-        private static boolean isEquals(final int[] data, final int[] other) {
-            if (data.length != other.length)
-                return false;
-
-            if (data[0] == other[0]) {
-                for (int i = 0; i < data.length; i++) {
-                    if (data[i] != other[i])
-                        return false;
-                }
-                return true;
-            } else {
-                for (int i = 0; i < other.length; i++) {
-                    if (other[i] == data[0]) {
-                        for (int j = 0; j < data.length; j++) {
-                            if (other[(i + j) % other.length] != data[j]) {
-                                return false;
-                            }
-                        }
-                        return true;
-                    }
-                }
-            }
-
-            return false;
-        }
-
         public boolean contains(final int[] data) {
             for (var current = head; current != null; current = current.next) {
-                if (isEquals(current.data, data)) {
+                if (current.data == data) {
                     return true;
                 }
             }
