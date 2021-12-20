@@ -301,7 +301,6 @@ public class FinalPermutations {
                 for (var j = i + 1; j < cycle.length - 1; j++) {
                     for (var k = j + 1; k < cycle.length; k++) {
                         int a = cycle[i], b = cycle[j], c = cycle[k];
-
                         // check if it's applicable
                         if (areSymbolsInCyclicOrder(piInverseIndex, a, c, b)) {
                             final var ab_k = j - i;
@@ -314,7 +313,6 @@ public class FinalPermutations {
                             after += ca_k & 1;
 
                             if (after - before == 2) {
-                                final var originalCycle = cycle;
                                 final int[] symbols = startingBy(cycle, a);
                                 final var aCycle = new int[ca_k];
                                 aCycle[0] = a;
@@ -332,7 +330,7 @@ public class FinalPermutations {
                                 moves.push(move);
 
                                 // ========== apply the move
-                                spi.remove(originalCycle);
+                                spi.remove(cycle);
                                 var numberOfTrivialCycles = 0;
                                 if (aCycle.length > 1) spi.add(aCycle); else numberOfTrivialCycles++;
                                 if (bCycle.length > 1) spi.add(bCycle); else numberOfTrivialCycles++;
@@ -356,7 +354,7 @@ public class FinalPermutations {
                                 if (aCycle.length > 1) spi.remove(aCycle);
                                 if (bCycle.length > 1) spi.remove(bCycle);
                                 if (cCycle.length > 1) spi.remove(cCycle);
-                                spi.add(originalCycle);
+                                spi.add(cycle);
                                 update(spiIndex, parity, cycle);
                                 // ====================
 
@@ -429,7 +427,6 @@ public class FinalPermutations {
                             }
 
                             after = 0;
-                            final var originalCycle = cycle;
                             final int[] symbols = startingBy(cycle, a);
                             final var aCycle = new int[ca_k];
                             aCycle[0] = a;
@@ -446,7 +443,7 @@ public class FinalPermutations {
                             System.arraycopy(symbols, ab_k + 1, cCycle, 1, bc_k - 1);
                             after += cCycle.length & 1;
 
-                            triplet = new Triplet<>(ListOfCycles.singleton(originalCycle), ListOfCycles.asList(aCycle, bCycle, cCycle), after - before);
+                            triplet = new Triplet<>(ListOfCycles.singleton(cycle), ListOfCycles.asList(aCycle, bCycle, cCycle), after - before);
                         } else {
                             triplet = simulate0MoveSameCycle(spiIndex, move);
                         }
@@ -506,9 +503,10 @@ public class FinalPermutations {
 
     private static void update(final int[][] index, final boolean[] parity, final int[]... cycles) {
         for (int[] cycle : cycles) {
+            final var p = (cycle.length & 1) == 1;
             for (int k : cycle) {
                 index[k] = cycle;
-                parity[k] = (cycle.length & 1) == 1;
+                parity[k] = p;
             }
         }
     }
@@ -542,9 +540,10 @@ public class FinalPermutations {
 
     private static void updateIndex(final int[][] index, final boolean[] parity, final int[]... cycles) {
         for (int[] cycle : cycles) {
+            final var p = (cycle.length & 1) == 1;
             for (int k : cycle) {
                 index[k] = cycle;
-                parity[k] = (cycle.length & 1) == 1;
+                parity[k] = p;
             }
         }
     }
@@ -552,7 +551,10 @@ public class FinalPermutations {
     private static boolean areSymbolsInCyclicOrder(final int[] index, int... symbols) {
         boolean leap = false;
         for (int i = 0; i < symbols.length; i++) {
-            if (index[symbols[i]] > index[symbols[(i + 1) % symbols.length]]) {
+            int nextIndex = i + 1;
+            if (nextIndex >= symbols.length)
+                nextIndex = (i + 1) % symbols.length;
+            if (index[symbols[i]] > index[symbols[nextIndex]]) {
                 if (!leap) {
                     leap = true;
                 } else {
