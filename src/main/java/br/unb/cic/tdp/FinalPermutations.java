@@ -190,7 +190,7 @@ public class FinalPermutations {
         if (root.mu == 0) {
             final var configuration = new Configuration(new MulticyclePermutation(spi.toList().stream().map(Cycle::create).collect(toList())), Cycle.create(pi));
 
-            if (unsuccessfulConfigs.get(configuration, HashSet::new).contains(root.path())) {
+            if (unsuccessfulConfigs.getIfPresent(configuration) != null && unsuccessfulConfigs.getIfPresent(configuration).contains(root.path())) {
                 return ListOfCycles.emptyList;
             }
 
