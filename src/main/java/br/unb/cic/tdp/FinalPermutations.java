@@ -30,6 +30,7 @@ import static br.unb.cic.tdp.proof.ProofGenerator.*;
 
 public class FinalPermutations {
 
+    final static LRUMap<Configuration, Set<String>> unsuccessfullConfigs = new LRUMap<>(500_000);
     final static Lock LOCK = new Lock();
 
     public static void main(String[] args) {
@@ -177,8 +178,6 @@ public class FinalPermutations {
         return removed;
     }
 
-    static LRUMap<Configuration, Set<String>> unsuccessfullConfigs = new LRUMap<>(100_000_000);
-
     public static ListOfCycles search(final ListOfCycles spi,
                                      final boolean[] parity, final int[][] spiIndex,
                                      final int maxSymbol, final int[] pi,
@@ -192,7 +191,7 @@ public class FinalPermutations {
             final var configuration = new Configuration(new MulticyclePermutation(spi.toList().stream().map(Cycle::create).collect(Collectors.toList())), Cycle.create(pi));
             try {
                 LOCK.lock();
-                if (unsuccessfullConfigs.containsKey(configuration) && unsuccessfullConfigs.get(configuration).contains(root.toStack())) {
+                if (unsuccessfullConfigs.containsKey(configuration) && unsuccessfullConfigs.get(configuration).contains(root.path())) {
                     return ListOfCycles.emptyList;
                 }
             } finally {
@@ -207,7 +206,7 @@ public class FinalPermutations {
             try {
                 LOCK.lock();
                 var set = unsuccessfullConfigs.computeIfAbsent(configuration, k -> new HashSet<>());
-                set.add(root.toStack());
+                set.add(root.path());
             } finally {
                 LOCK.unlock();
             }

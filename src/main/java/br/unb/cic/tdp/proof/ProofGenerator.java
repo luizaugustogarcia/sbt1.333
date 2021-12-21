@@ -334,7 +334,7 @@ public class ProofGenerator {
             return mu == m.mu;
         }
 
-        public String toStack() {
+        public String path() {
             if (stack == null) {
                 final var list = new ArrayList<String>();
                 var current = this;

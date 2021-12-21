@@ -37,9 +37,6 @@ public class Configuration {
     @ToString.Exclude
     private Configuration canonical;
 
-    @ToString.Exclude
-    private Collection<Signature> equivalentSignatures;
-
     @ToString.Include
     private Set<Integer> openGates;
 
