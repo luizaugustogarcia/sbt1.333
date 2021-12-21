@@ -148,10 +148,10 @@ public class ProofGenerator {
             {0,0,0,2,0,2,2,2,2,2,2,2,2,2,2,2},
             {0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2}};
 
-    public static final Move _4_3_SEQS = new Move(0, new Move[0]);
-    public static final Move _8_6_SEQS = new Move(0, new Move[0]);
-    public static final Move _12_9_SEQS = new Move(0, new Move[0]);
-    public static final Move _16_12_SEQS = new Move(0, new Move[0]);
+    public static final Move _4_3_SEQS = new Move(0, new Move[0], null);
+    public static final Move _8_6_SEQS = new Move(0, new Move[0], null);
+    public static final Move _12_9_SEQS = new Move(0, new Move[0], null);
+    public static final Move _16_12_SEQS = new Move(0, new Move[0], null);
 
     static {
         toTrie(_4_3, _4_3_SEQS);
@@ -169,11 +169,11 @@ public class ProofGenerator {
                 if (Arrays.stream(root.children).noneMatch(m -> m.mu == move)) {
                     if (root.children.length == 0) {
                         root.children = new Move[1];
-                        root.children[0] = new Move(move, new Move[0]);
+                        root.children[0] = new Move(move, new Move[0], root);
                     } else {
                         final var children = new Move[2];
                         children[0] = root.children[0];
-                        children[1] = new Move(move, new Move[0]);
+                        children[1] = new Move(move, new Move[0], root);
                         root.children = children;
                     }
                 }
@@ -315,12 +315,15 @@ public class ProofGenerator {
     }
 
     public static class Move implements Serializable {
+        public Move parent;
         public final int mu;
         public Move[] children;
+        private String stack;
 
-        public Move(int mu, Move[] children) {
+        public Move(int mu, Move[] children, Move parent) {
             this.mu = mu;
             this.children = children;
+            this.parent = parent;
         }
 
         @Override
@@ -329,6 +332,20 @@ public class ProofGenerator {
             if (o == null || getClass() != o.getClass()) return false;
             Move m = (Move) o;
             return mu == m.mu;
+        }
+
+        public String toStack() {
+            if (stack == null) {
+                final var list = new ArrayList<String>();
+                var current = this;
+                while (current != null) {
+                    list.add(Integer.toString(current.mu));
+                    current = current.parent;
+                }
+
+                stack = list.stream().sorted().collect(Collectors.joining());
+            }
+            return stack;
         }
 
         @Override

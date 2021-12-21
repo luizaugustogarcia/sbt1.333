@@ -135,11 +135,7 @@ public class Configuration {
     }
 
     public Collection<Signature> getEquivalentSignatures() {
-        if (equivalentSignatures != null) {
-            return equivalentSignatures;
-        }
-
-        equivalentSignatures = new HashSet<>();
+        final Set<Signature> equivalentSignatures = new HashSet<>();
 
         for (var i = 0; i < pi.size(); i++) {
             final var shifting = pi.startingBy(pi.get(i));
