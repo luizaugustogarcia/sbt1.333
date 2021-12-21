@@ -7,10 +7,12 @@ import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.proof.ProofGenerator;
 import br.unb.cic.tdp.util.Pair;
 import br.unb.cic.tdp.util.Triplet;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.primitives.Ints;
 import lombok.SneakyThrows;
-import org.apache.commons.collections4.map.LRUMap;
 import org.apache.velocity.app.Velocity;
+import org.checkerframework.checker.units.qual.A;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -20,18 +22,18 @@ import java.util.*;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.locks.StampedLock;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static br.unb.cic.tdp.base.CommonOperations.*;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 import static br.unb.cic.tdp.proof.ProofGenerator.*;
+import static java.util.stream.Collectors.*;
 
 public class FinalPermutations {
 
-    final static LRUMap<Configuration, Set<String>> unsuccessfullConfigs = new LRUMap<>(500_000);
-    final static StampedLock lock = new StampedLock();
+    final static Cache<Configuration, Set<String>> unsuccessfullConfigs = CacheBuilder.newBuilder().maximumSize(500_000).build();
 
     public static void main(String[] args) {
         Velocity.setProperty("resource.loader", "class");
@@ -67,7 +69,7 @@ public class FinalPermutations {
         System.out.println("Sorting " + configuration.getSpi());
 
         var list = CommonOperations.generateAll0And2Moves(configuration.getSpi(), configuration.getPi())
-                .filter(p -> p.getSecond() == 0).map(Pair::getFirst).collect(Collectors.toList());
+                .filter(p -> p.getSecond() == 0).map(Pair::getFirst).collect(toList());
 
         System.out.println(list.size() + " 0-moves");
 
@@ -130,12 +132,12 @@ public class FinalPermutations {
         for (int i = 0; i < submittedTasks.size(); i++) {
             final var sorting = completionService.take();
             if (sorting.get().size() > 0) {
-                final var s = sorting.get().stream().map(Cycle::create).collect(Collectors.toList());
+                final var s = sorting.get().stream().map(Cycle::create).collect(toList());
                 boolean is16_12 = is16_12(configuration.getSpi(), configuration.getPi(), s);
                 if (is16_12) {
                     hasSorting = true;
                     executorService.shutdownNow();
-                    System.out.println("Sorted: " + configuration.getSpi() + ", sorting: " + sorting.get().stream().map(Arrays::toString).collect(Collectors.joining(",")) + ", is 16/12: " + is16_12);
+                    System.out.println("Sorted: " + configuration.getSpi() + ", sorting: " + sorting.get().stream().map(Arrays::toString).collect(joining(",")) + ", is 16/12: " + is16_12);
                     System.out.println();
                     try (final var out = new FileWriter(outputDir + "/comb/" + canonical.getSpi() + ".html")) {
                         renderSorting(canonical, canonical.translatedSorting(configuration, s), out);
@@ -178,24 +180,21 @@ public class FinalPermutations {
         return removed;
     }
 
+    @SneakyThrows
     public static ListOfCycles search(final ListOfCycles spi,
-                                     final boolean[] parity, final int[][] spiIndex,
-                                     final int maxSymbol, final int[] pi,
-                                     final Stack<int[]> moves,
-                                     final Move root) {
+                                      final boolean[] parity, final int[][] spiIndex,
+                                      final int maxSymbol, final int[] pi,
+                                      final Stack<int[]> moves,
+                                      final Move root) {
         if (Thread.currentThread().isInterrupted()) {
             return ListOfCycles.emptyList;
         }
 
         if (root.mu == 0) {
-            final var configuration = new Configuration(new MulticyclePermutation(spi.toList().stream().map(Cycle::create).collect(Collectors.toList())), Cycle.create(pi));
-            try {
-                lock.asReadLock().lock();
-                if (unsuccessfullConfigs.containsKey(configuration) && unsuccessfullConfigs.get(configuration).contains(root.path())) {
-                    return ListOfCycles.emptyList;
-                }
-            } finally {
-                lock.asReadLock().unlock();
+            final var configuration = new Configuration(new MulticyclePermutation(spi.toList().stream().map(Cycle::create).collect(toList())), Cycle.create(pi));
+
+            if (unsuccessfullConfigs.get(configuration, HashSet::new).contains(root.path())) {
+                return ListOfCycles.emptyList;
             }
 
             final var sorting = analyze0Moves(spi, parity, spiIndex, maxSymbol, pi, moves, root);
@@ -203,13 +202,8 @@ public class FinalPermutations {
                 return sorting;
             }
 
-            try {
-                lock.asWriteLock().lock();
-                var set = unsuccessfullConfigs.computeIfAbsent(configuration, k -> new HashSet<>());
-                set.add(root.path());
-            } finally {
-                lock.asWriteLock().unlock();
-            }
+            var set = unsuccessfullConfigs.get(configuration, HashSet::new);
+            set.add(root.path());
         } else {
             var sorting = analyzeOrientedCycles(spi, parity, spiIndex, maxSymbol, pi, moves, root);
             if (!sorting.isEmpty()) {
