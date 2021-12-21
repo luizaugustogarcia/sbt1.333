@@ -20,7 +20,7 @@ import java.util.*;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.StampedLock;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -31,7 +31,7 @@ import static br.unb.cic.tdp.proof.ProofGenerator.*;
 public class FinalPermutations {
 
     final static LRUMap<Configuration, Set<String>> unsuccessfullConfigs = new LRUMap<>(500_000);
-    final static Lock LOCK = new Lock();
+    final static StampedLock lock = new StampedLock();
 
     public static void main(String[] args) {
         Velocity.setProperty("resource.loader", "class");
@@ -190,12 +190,12 @@ public class FinalPermutations {
         if (root.mu == 0) {
             final var configuration = new Configuration(new MulticyclePermutation(spi.toList().stream().map(Cycle::create).collect(Collectors.toList())), Cycle.create(pi));
             try {
-                LOCK.lock();
+                lock.asReadLock().lock();
                 if (unsuccessfullConfigs.containsKey(configuration) && unsuccessfullConfigs.get(configuration).contains(root.path())) {
                     return ListOfCycles.emptyList;
                 }
             } finally {
-                LOCK.unlock();
+                lock.asReadLock().unlock();
             }
 
             final var sorting = analyze0Moves(spi, parity, spiIndex, maxSymbol, pi, moves, root);
@@ -204,11 +204,11 @@ public class FinalPermutations {
             }
 
             try {
-                LOCK.lock();
+                lock.asWriteLock().lock();
                 var set = unsuccessfullConfigs.computeIfAbsent(configuration, k -> new HashSet<>());
                 set.add(root.path());
             } finally {
-                LOCK.unlock();
+                lock.asWriteLock().unlock();
             }
         } else {
             var sorting = analyzeOrientedCycles(spi, parity, spiIndex, maxSymbol, pi, moves, root);
@@ -892,18 +892,6 @@ public class FinalPermutations {
         @Override
         public String toString() {
             return Arrays.toString(data);
-        }
-    }
-
-    static class Lock {
-        private AtomicBoolean locked = new AtomicBoolean(false);
-
-        public void lock() {
-            while (!locked.compareAndSet(false, true));
-        }
-
-        public void unlock() {
-            locked.set(false);
         }
     }
 }
