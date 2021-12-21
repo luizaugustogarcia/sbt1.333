@@ -12,7 +12,6 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.primitives.Ints;
 import lombok.SneakyThrows;
 import org.apache.velocity.app.Velocity;
-import org.checkerframework.checker.units.qual.A;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -22,8 +21,6 @@ import java.util.*;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static br.unb.cic.tdp.base.CommonOperations.*;
@@ -33,7 +30,7 @@ import static java.util.stream.Collectors.*;
 
 public class FinalPermutations {
 
-    final static Cache<Configuration, Set<String>> unsuccessfullConfigs = CacheBuilder.newBuilder().maximumSize(500_000).build();
+    final static Cache<Configuration, Set<String>> unsuccessfulConfigs = CacheBuilder.newBuilder().maximumSize(3_000_000).build();
 
     public static void main(String[] args) {
         Velocity.setProperty("resource.loader", "class");
@@ -193,7 +190,7 @@ public class FinalPermutations {
         if (root.mu == 0) {
             final var configuration = new Configuration(new MulticyclePermutation(spi.toList().stream().map(Cycle::create).collect(toList())), Cycle.create(pi));
 
-            if (unsuccessfullConfigs.get(configuration, HashSet::new).contains(root.path())) {
+            if (unsuccessfulConfigs.get(configuration, HashSet::new).contains(root.path())) {
                 return ListOfCycles.emptyList;
             }
 
@@ -202,7 +199,7 @@ public class FinalPermutations {
                 return sorting;
             }
 
-            var set = unsuccessfullConfigs.get(configuration, HashSet::new);
+            var set = unsuccessfulConfigs.get(configuration, HashSet::new);
             set.add(root.path());
         } else {
             var sorting = analyzeOrientedCycles(spi, parity, spiIndex, maxSymbol, pi, moves, root);
