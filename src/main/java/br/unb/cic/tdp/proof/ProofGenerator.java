@@ -5,6 +5,7 @@ import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.proof.seq12_9.Combinations;
 import br.unb.cic.tdp.proof.seq12_9.SearchForSortingStrategy;
+import br.unb.cic.tdp.proof.seq12_9._19_14Seq;
 import br.unb.cic.tdp.util.Pair;
 import cern.colt.list.IntArrayList;
 import com.google.common.collect.HashMultimap;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 import static br.unb.cic.tdp.BaseAlgorithm.*;
 import static br.unb.cic.tdp.base.CommonOperations.*;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
+import static br.unb.cic.tdp.proof.seq12_9._19_14Seq._19_14;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 public class ProofGenerator {
@@ -152,12 +154,14 @@ public class ProofGenerator {
     public static final Move _8_6_SEQS = new Move(0, new Move[0], null);
     public static final Move _12_9_SEQS = new Move(0, new Move[0], null);
     public static final Move _16_12_SEQS = new Move(0, new Move[0], null);
+    public static final Move _19_14_SEQS = new Move(0, new Move[0], null);
 
     static {
         toTrie(_4_3, _4_3_SEQS);
         toTrie(_8_6, _8_6_SEQS);
         toTrie(_12_9, _12_9_SEQS);
         toTrie(_16_12, _16_12_SEQS);
+        toTrie(_19_14, _19_14_SEQS);
     }
 
     public static void toTrie(final int[][] seqs, Move root) {
