@@ -16,10 +16,10 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class MulticyclePermutation implements Collection<Cycle>, Permutation {
-    private HashSet<Cycle> cycles = new HashSet<>();
+    private List<Cycle> cycles = new LinkedList<>();
 
-    @Getter
-    private MutableIntObjectMap index = IntObjectMaps.mutable.empty();
+//    @Getter
+//    private MutableIntObjectMap index = IntObjectMaps.mutable.empty();
     private int numberOfEvenCycles;
 
     public MulticyclePermutation() {
@@ -41,7 +41,7 @@ public class MulticyclePermutation implements Collection<Cycle>, Permutation {
     }
 
     private void of(String permutation) {
-        var symbols = new IntArrayList();
+        var symbols = new IntArrayList(3);
         var cycle = new Cycle();
         int symbol = 0;
         for (var i = 0; i < permutation.length(); i++) {
@@ -49,7 +49,7 @@ public class MulticyclePermutation implements Collection<Cycle>, Permutation {
             if (current != '(') {
                 if (current == ')') {
                     symbols.add(symbol);
-                    index.put(symbol, cycle);
+                    //index.put(symbol, cycle);
                     symbol = 0;
                     symbols.trimToSize();
                     cycle.update(symbols.elements());
@@ -61,7 +61,7 @@ public class MulticyclePermutation implements Collection<Cycle>, Permutation {
                     symbol = 0;
                 } else {
                     symbol = symbol * 10 + Character.getNumericValue(current);
-                    index.put(symbol, cycle);
+                    //index.put(symbol, cycle);
                 }
             }
         }
@@ -114,7 +114,8 @@ public class MulticyclePermutation implements Collection<Cycle>, Permutation {
 
     @Override
     public int image(int a) {
-        return ((Cycle) index.get(a)).image(a);
+        throw new NotImplementedException();
+        //return ((Cycle) index.get(a)).image(a);
     }
 
     public boolean isIdentity() {
@@ -127,11 +128,11 @@ public class MulticyclePermutation implements Collection<Cycle>, Permutation {
     }
 
     public int getNumberOfSymbols() {
-        return index.size();
+        return this.cycles.stream().mapToInt(Cycle::size).sum();
     }
 
     public MutableIntSet getSymbols() {
-        return index.keySet();
+        throw new NotImplementedException();
     }
 
     public int get3Norm() {
@@ -178,20 +179,20 @@ public class MulticyclePermutation implements Collection<Cycle>, Permutation {
 
     @Override
     public boolean add(Cycle cycle) {
-        numberOfEvenCycles += cycle.size() % 2;
-        Arrays.stream(cycle.getSymbols()).forEach(s -> {
-            index.put(s, cycle);
-        });
+        numberOfEvenCycles += cycle.size() & 1;
+//        Arrays.stream(cycle.getSymbols()).forEach(s -> {
+//            index.put(s, cycle);
+//        });
         return cycles.add(cycle);
     }
 
     @Override
     public boolean addAll(Collection<? extends Cycle> c) {
         c.forEach(cycle -> {
-            numberOfEvenCycles += cycle.size() % 2;
-            Arrays.stream(cycle.getSymbols()).forEach(s -> {
-                index.put(s, cycle);
-            });
+            numberOfEvenCycles += cycle.size() & 1;
+//            Arrays.stream(cycle.getSymbols()).forEach(s -> {
+//                index.put(s, cycle);
+//            });
         });
         return cycles.addAll(c);
     }
@@ -200,7 +201,7 @@ public class MulticyclePermutation implements Collection<Cycle>, Permutation {
     public boolean remove(Object o) {
         final var cycle = (Cycle) o;
         if (cycle.isEven()) numberOfEvenCycles--;
-        Arrays.stream(cycle.getSymbols()).forEach(index::remove);
+        //Arrays.stream(cycle.getSymbols()).forEach(index::remove);
         return cycles.remove(o);
     }
 
@@ -209,7 +210,7 @@ public class MulticyclePermutation implements Collection<Cycle>, Permutation {
         c.forEach(o -> {
             final var cycle = (Cycle) o;
             if (cycle.isEven()) numberOfEvenCycles--;
-            Arrays.stream(cycle.getSymbols()).forEach(index::remove);
+            //Arrays.stream(cycle.getSymbols()).forEach(index::remove);
         });
         return cycles.removeAll(c);
     }
@@ -230,6 +231,6 @@ public class MulticyclePermutation implements Collection<Cycle>, Permutation {
     }
 
     public Cycle getCycle(int symbol) {
-        return (Cycle) index.get(symbol);
+        throw new NotImplementedException();
     }
 }

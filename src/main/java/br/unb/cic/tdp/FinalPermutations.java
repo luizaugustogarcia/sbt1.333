@@ -30,7 +30,7 @@ import static java.util.stream.Collectors.*;
 
 public class FinalPermutations {
 
-    final static Cache<Configuration, Set<String>> unsuccessfulConfigs = CacheBuilder.newBuilder().maximumSize(3_000_000).build();
+    final static Cache<Configuration, Set<String>> unsuccessfulConfigs = CacheBuilder.newBuilder().maximumSize(1_300_000).build();
 
     public static void main(String[] args) {
         Velocity.setProperty("resource.loader", "class");
@@ -190,7 +190,7 @@ public class FinalPermutations {
         if (root.mu == 0) {
             final var configuration = new Configuration(new MulticyclePermutation(spi.toList().stream().map(Cycle::create).collect(toList())), Cycle.create(pi));
 
-            if (moves.size() <= 7 && unsuccessfulConfigs.getIfPresent(configuration) != null && unsuccessfulConfigs.getIfPresent(configuration).contains(root.path())) {
+            if (unsuccessfulConfigs.getIfPresent(configuration) != null && unsuccessfulConfigs.getIfPresent(configuration).contains(root.path())) {
                 return ListOfCycles.emptyList;
             }
 
@@ -199,10 +199,8 @@ public class FinalPermutations {
                 return sorting;
             }
 
-            if (moves.size() <= 7) {
-                var set = unsuccessfulConfigs.get(configuration, HashSet::new);
-                set.add(root.path());
-            }
+            var set = unsuccessfulConfigs.get(configuration, HashSet::new);
+            set.add(root.path());
         } else {
             var sorting = analyzeOrientedCycles(spi, parity, spiIndex, maxSymbol, pi, moves, root);
             if (!sorting.isEmpty()) {

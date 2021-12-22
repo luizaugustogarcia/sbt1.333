@@ -35,10 +35,10 @@ public class Configuration {
     private final Signature signature;
 
     @ToString.Exclude
-    private Configuration canonical;
+    private Collection<Signature> equivalentSignatures;
 
-    @ToString.Include
-    private Set<Integer> openGates;
+    @ToString.Exclude
+    private Configuration canonical;
 
     public Configuration(final MulticyclePermutation spi, final Cycle pi) {
         this.spi = spi;
@@ -67,25 +67,30 @@ public class Configuration {
         for (var i = 0; i < signature.length; i++) {
             final int symbol = pi.get(i);
             final var cycle = cycleIndex[symbol];
-            if (cycle != null) {
-                if (orientedCycles.contains(cycle)) {
-                    symbolIndexByOrientedCycle.computeIfAbsent(cycle, c -> {
-                        final var symbolIndex = new int[pi.getMaxSymbol() + 1];
-                        final var symbolMinIndex = Ints.asList(c.getSymbols()).stream().min(comparing(pi::indexOf)).get();
-                        c = c.startingBy(symbolMinIndex);
-                        for (int j = 0; j < c.size(); j++) {
-                            symbolIndex[c.get(j)] = j + 1;
-                        }
-                        return symbolIndex;
-                    });
-                }
-                labelByCycle.computeIfAbsent(cycle, c -> (float) (labelByCycle.size() + 1));
-                signature[i] = orientedCycles.contains(cycle) ?
-                        labelByCycle.get(cycle) + (float) symbolIndexByOrientedCycle.get(cycle)[symbol] / 10 : labelByCycle.get(cycle);
+            if (orientedCycles.contains(cycle)) {
+                symbolIndexByOrientedCycle.computeIfAbsent(cycle, c -> {
+                    final var symbolIndex = new int[pi.getMaxSymbol() + 1];
+                    final var symbolMinIndex = Ints.asList(c.getSymbols()).stream().sorted(comparing(s -> pi.indexOf(s))).findFirst().get();
+                    c = c.startingBy(symbolMinIndex);
+                    for (int j = 0; j < c.size(); j++) {
+                        symbolIndex[c.get(j)] = (int) (j + 1);
+                    }
+                    return symbolIndex;
+                });
             }
+            labelByCycle.computeIfAbsent(cycle, c -> (float) (labelByCycle.size() + 1));
+            signature[i] = orientedCycles.contains(cycle) ?
+                    labelByCycle.get(cycle) + (float) symbolIndexByOrientedCycle.get(cycle)[symbol] / 10 : labelByCycle.get(cycle);
         }
 
         return signature;
+    }
+
+    public static boolean isOpenGate(final int i, final float[] signature) {
+        final var n = signature.length;
+        float a = signature[mod(i, n)], b = signature[mod(i - 1, n)], c = signature[mod(i - 2, n)];
+        return (a % 1 == 0 && a == b) || (a % 1 > 0 && b % 1 > 0 && c % 1 > 0 &&
+                Math.floor(a) == Math.floor(b) && Math.floor(a) == Math.floor(c) && c < a && a < b && c < b);
     }
 
     public static Configuration ofSignature(float[] signature) {
@@ -105,17 +110,17 @@ public class Configuration {
             }
         }
 
-        orientedCyclesByLabel.forEach((key, value) -> {
+        orientedCyclesByLabel.entrySet().stream().forEach(e -> {
             final var sortedSignature = signature.clone();
             Arrays.sort(sortedSignature);
             final var orientedCycle = new ArrayList<Integer>();
             for (int i = 0; i < signature.length; i++) {
-                if (Math.floor(sortedSignature[i]) == key) {
+                if (Math.floor(sortedSignature[i]) == e.getKey()) {
                     orientedCycle.add(piSymbolsByOrientedCycleSymbols.get(sortedSignature[i]));
                 }
             }
-            value.clear();
-            value.addAll(orientedCycle);
+            e.getValue().clear();
+            e.getValue().addAll(orientedCycle);
         });
 
         final var spi = cyclesByLabel.values().stream().map(c -> Cycle.create(Ints.toArray(c)))
@@ -126,13 +131,18 @@ public class Configuration {
 
     public Configuration getCanonical() {
         if (canonical == null) {
-            canonical = ofSignature(getEquivalentSignatures().stream().min(comparing(Signature::hashCode)).get().getContent());
+            canonical = ofSignature(getEquivalentSignatures().stream()
+                    .sorted(comparing(Signature::hashCode)).findFirst().get().getContent());
         }
         return canonical;
     }
 
     public Collection<Signature> getEquivalentSignatures() {
-        final Set<Signature> equivalentSignatures = new HashSet<>();
+        if (equivalentSignatures != null) {
+            return equivalentSignatures;
+        }
+
+        equivalentSignatures = new HashSet<>();
 
         for (var i = 0; i < pi.size(); i++) {
             final var shifting = pi.startingBy(pi.get(i));
@@ -160,7 +170,7 @@ public class Configuration {
             final var spis = Lists.newArrayList(new MulticyclePermutation[]{config.getSpi()});
             var mirroredMoves = new ArrayList<Cycle>();
             for (final var move : sorting) {
-                pis.add(computeProduct(false, move, pis.get(pis.size() - 1)).asNCycle());
+                pis.add(computeProduct(move, pis.get(pis.size() - 1)).asNCycle());
                 spis.add(computeProduct(spis.get(spis.size() - 1), move.getInverse()));
                 mirroredMoves.add(move.getInverse().conjugateBy(spis.get(spis.size() - 1)).asNCycle());
             }
@@ -202,12 +212,17 @@ public class Configuration {
 
     @ToString.Include
     public boolean isFull() {
-        return getOpenGates().isEmpty();
+        return getNumberOfOpenGates() == 0;
     }
 
     @ToString.Include
     public int get3Norm() {
         return this.spi.get3Norm();
+    }
+
+    @ToString.Include
+    public int getNumberOfOpenGates() {
+        return getOpenGates().size();
     }
 
     @Override
@@ -222,10 +237,6 @@ public class Configuration {
             return false;
         }
 
-        if (this.hashCode() != obj.hashCode()) {
-            return false;
-        }
-
         final var other = (Configuration) obj;
 
         if (this.signature.content.length != other.signature.content.length ||
@@ -236,14 +247,18 @@ public class Configuration {
         return getEquivalentSignatures().contains(((Configuration) obj).signature);
     }
 
-    public Set<Integer> getOpenGates() {
-        if (openGates != null)
-            return openGates;
-
-        return openGates = CommonOperations.getOpenGates(spi, pi, signature.content);
+    public List<Integer> getOpenGates() {
+        final var result = new ArrayList<Integer>();
+        final var n = signature.content.length;
+        for (int i = 0; i < n; i++) {
+            if (isOpenGate(i, signature.content)) {
+                result.add(i);
+            }
+        }
+        return result;
     }
 
-    public static class Signature {
+    public class Signature {
 
         @Getter
         private final Cycle pi;
