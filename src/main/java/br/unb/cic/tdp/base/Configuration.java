@@ -35,9 +35,6 @@ public class Configuration {
     private final Signature signature;
 
     @ToString.Exclude
-    private Collection<Signature> equivalentSignatures;
-
-    @ToString.Exclude
     private Configuration canonical;
 
     public Configuration(final MulticyclePermutation spi, final Cycle pi) {
@@ -70,10 +67,14 @@ public class Configuration {
             if (orientedCycles.contains(cycle)) {
                 symbolIndexByOrientedCycle.computeIfAbsent(cycle, c -> {
                     final var symbolIndex = new int[pi.getMaxSymbol() + 1];
-                    final var symbolMinIndex = Ints.asList(c.getSymbols()).stream().sorted(comparing(s -> pi.indexOf(s))).findFirst().get();
-                    c = c.startingBy(symbolMinIndex);
-                    for (int j = 0; j < c.size(); j++) {
-                        symbolIndex[c.get(j)] = (int) (j + 1);
+                    final int symbolMinIndex = Ints.asList(c.getSymbols()).stream().min(comparing(pi::indexOf)).get();
+                    for (int j = 0; j < c.getSymbols().length; j++) {
+                        if (c.getSymbols()[j] == symbolMinIndex) {
+                            for (int k = 0; k < c.getSymbols().length; k++) {
+                                symbolIndex[c.getSymbols()[(j + k) % c.getSymbols().length]] = k + 1;
+                            }
+                            break;
+                        }
                     }
                     return symbolIndex;
                 });
@@ -138,11 +139,7 @@ public class Configuration {
     }
 
     public Collection<Signature> getEquivalentSignatures() {
-        if (equivalentSignatures != null) {
-            return equivalentSignatures;
-        }
-
-        equivalentSignatures = new HashSet<>();
+        Set<Signature> equivalentSignatures = new HashSet<>();
 
         for (var i = 0; i < pi.size(); i++) {
             final var shifting = pi.startingBy(pi.get(i));
@@ -244,7 +241,7 @@ public class Configuration {
             return false;
         }
 
-        return getEquivalentSignatures().contains(((Configuration) obj).signature);
+        return getCanonical().signature.equals(other.getCanonical().signature);
     }
 
     public List<Integer> getOpenGates() {

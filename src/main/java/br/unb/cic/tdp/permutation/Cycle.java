@@ -9,10 +9,12 @@ import static br.unb.cic.tdp.base.CommonOperations.mod;
 
 public class Cycle implements Permutation, Comparable<Cycle> {
     private int[] symbols;
-    private int[] symbolIndexes;
+    private byte[] symbolIndexes;
     private int minSymbol = -1;
     private int maxSymbol = -1;
     private Cycle inverse;
+    private int hashCode;
+    private boolean hashCodeCalculated = false;
 
     public Cycle() {
     }
@@ -61,10 +63,10 @@ public class Cycle implements Permutation, Comparable<Cycle> {
             }
         }
 
-        symbolIndexes = new int[maxSymbol + 1];
+        symbolIndexes = new byte[maxSymbol + 1];
 
         for (var i = 0; i < symbols.length; i++) {
-            symbolIndexes[symbols[i]] = i;
+            symbolIndexes[symbols[i]] = (byte) i;
         }
     }
 
@@ -114,7 +116,20 @@ public class Cycle implements Permutation, Comparable<Cycle> {
 
     @Override
     public int hashCode() {
-        return Arrays.hashCode(startingBy(getMinSymbol()).getSymbols());
+        if (!hashCodeCalculated) {
+            hashCode = 1;
+            for (int i = 0; i < symbols.length; i++) {
+                if (symbols[i] == minSymbol) {
+                    for (int j = 0; j < symbols.length; j++) {
+                        int element = symbols[(i + j) % symbols.length];
+                        hashCode = 31 * hashCode + element;
+                    }
+                    break;
+                }
+            }
+            hashCodeCalculated = true;
+        }
+        return hashCode;
     }
 
     @Override
@@ -206,7 +221,7 @@ public class Cycle implements Permutation, Comparable<Cycle> {
         return this.size() > 3;
     }
 
-    public int[] getSymbolIndexes() {
+    public byte[] getSymbolIndexes() {
         return symbolIndexes;
     }
 }
