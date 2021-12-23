@@ -81,7 +81,7 @@ public class Configuration {
             }
             labelByCycle.computeIfAbsent(cycle, c -> (float) (labelByCycle.size() + 1));
             signature[i] = orientedCycles.contains(cycle) ?
-                    labelByCycle.get(cycle) + (float) symbolIndexByOrientedCycle.get(cycle)[symbol] / 10 : labelByCycle.get(cycle);
+                    labelByCycle.get(cycle) + (float) symbolIndexByOrientedCycle.get(cycle)[symbol] / 100 : labelByCycle.get(cycle);
         }
 
         return signature;
@@ -104,36 +104,34 @@ public class Configuration {
         for (int i = signature.length - 1; i >= 0; i--) {
             int label = (int) Math.floor(signature[i]);
             cyclesByLabel.computeIfAbsent(label, key -> new ArrayList<>());
-            cyclesByLabel.get(label).add((int) i);
+            cyclesByLabel.get(label).add(i);
             if (signature[i] % 1 > 0) {
                 piSymbolsByOrientedCycleSymbols.put(signature[i], pi.get(i));
                 orientedCyclesByLabel.computeIfAbsent(label, key -> cyclesByLabel.get(label));
             }
         }
 
-        orientedCyclesByLabel.entrySet().stream().forEach(e -> {
+        orientedCyclesByLabel.forEach((key, value) -> {
             final var sortedSignature = signature.clone();
             Arrays.sort(sortedSignature);
             final var orientedCycle = new ArrayList<Integer>();
             for (int i = 0; i < signature.length; i++) {
-                if (Math.floor(sortedSignature[i]) == e.getKey()) {
+                if (Math.floor(sortedSignature[i]) == key) {
                     orientedCycle.add(piSymbolsByOrientedCycleSymbols.get(sortedSignature[i]));
                 }
             }
-            e.getValue().clear();
-            e.getValue().addAll(orientedCycle);
+            value.clear();
+            value.addAll(orientedCycle);
         });
 
         final var spi = cyclesByLabel.values().stream().map(c -> Cycle.create(Ints.toArray(c)))
                 .collect(Collectors.toCollection(MulticyclePermutation::new));
-
         return new Configuration(spi, pi);
     }
 
     public Configuration getCanonical() {
         if (canonical == null) {
-            canonical = ofSignature(getEquivalentSignatures().stream()
-                    .sorted(comparing(Signature::hashCode)).findFirst().get().getContent());
+            canonical = ofSignature(getEquivalentSignatures().stream().min(comparing(Signature::hashCode)).get().getContent());
         }
         return canonical;
     }

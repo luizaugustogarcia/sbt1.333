@@ -64,6 +64,7 @@ public class Cycle implements Permutation, Comparable<Cycle> {
         }
 
         symbolIndexes = new byte[maxSymbol + 1];
+        Arrays.fill(symbolIndexes, 0, maxSymbol, (byte)-1);
 
         for (var i = 0; i < symbols.length; i++) {
             symbolIndexes[symbols[i]] = (byte) i;
