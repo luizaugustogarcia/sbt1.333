@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class MulticyclePermutation implements Collection<Cycle>, Permutation {
-    private List<Cycle> cycles = new LinkedList<>();
+    private List<Cycle> cycles = new ArrayList<>();
 
 //    @Getter
 //    private MutableIntObjectMap index = IntObjectMaps.mutable.empty();

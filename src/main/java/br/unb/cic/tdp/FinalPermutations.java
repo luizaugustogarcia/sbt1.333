@@ -24,14 +24,13 @@ import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
 import static br.unb.cic.tdp.base.CommonOperations.*;
-import static br.unb.cic.tdp.permutation.Cycle.cyclesCache;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 import static br.unb.cic.tdp.proof.ProofGenerator.*;
 import static java.util.stream.Collectors.*;
 
 public class FinalPermutations {
 
-    final static Cache<Configuration, Set<String>> unsuccessfulConfigs = CacheBuilder.newBuilder().maximumSize(25_000_000).build();
+    final static Cache<Configuration, Set<String>> unsuccessfulConfigs = CacheBuilder.newBuilder().maximumSize(10_000_000).build();
 
     public static void main(String[] args) {
         Velocity.setProperty("resource.loader", "class");
@@ -42,13 +41,12 @@ public class FinalPermutations {
         timer.scheduleAtFixedRate(new TimerTask() {
             public void run() {
                 System.out.println("Config cache size: " + unsuccessfulConfigs.size());
-            }
-        }, 0, 60 * 60 * 1000);
 
-        final var cycleTimer = new Timer();
-        cycleTimer.scheduleAtFixedRate(new TimerTask() {
-            public void run() {
-                System.out.println("Cycle cache size: " + cyclesCache.size());
+                long heapSize = Runtime.getRuntime().totalMemory();
+                System.out.println("Heap size: " + heapSize);
+
+                long heapFreeSize = Runtime.getRuntime().freeMemory();
+                System.out.println("Heap free size: " + heapFreeSize);
             }
         }, 0, 60 * 60 * 1000);
 

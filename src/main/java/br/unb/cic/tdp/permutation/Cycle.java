@@ -1,8 +1,6 @@
 package br.unb.cic.tdp.permutation;
 
 import cern.colt.list.IntArrayList;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import com.google.common.hash.Hashing;
 import lombok.SneakyThrows;
 import org.apache.commons.lang.ArrayUtils;
@@ -12,14 +10,12 @@ import java.util.*;
 import static br.unb.cic.tdp.base.CommonOperations.mod;
 
 public class Cycle implements Permutation, Comparable<Cycle> {
-    public final static Cache<Integer, Set<Cycle>> cyclesCache = CacheBuilder.newBuilder().maximumSize(5_000_000).build();
 
     private final int[] symbols;
     private byte[] symbolIndexes;
     private int minSymbol = -1;
     private int minSymbolIndex = -1;
     private int maxSymbol = -1;
-    private Cycle inverse;
     private int hashCode;
     private boolean hashCodeCalculated = false;
 
@@ -46,16 +42,6 @@ public class Cycle implements Permutation, Comparable<Cycle> {
 
     @SneakyThrows
     public static Cycle create(final int... symbols) {
-        if (symbols.length < 10) {
-            final var cycle = new Cycle(symbols);
-            final var candidates = cyclesCache.get(cycle.hashCode(), HashSet::new);
-            final var existing = candidates.stream().filter(c -> c.equals(cycle)).findFirst();
-            if (existing.isPresent()) {
-                return existing.get();
-            }
-            candidates.add(cycle);
-            return cycle;
-        }
         return new Cycle(symbols);
     }
 
@@ -98,13 +84,10 @@ public class Cycle implements Permutation, Comparable<Cycle> {
 
     @Override
     public Cycle getInverse() {
-        if (inverse == null) {
-            final var symbolsCopy = new int[this.symbols.length];
-            System.arraycopy(this.symbols, 0, symbolsCopy, 0, this.symbols.length);
-            ArrayUtils.reverse(symbolsCopy);
-            inverse = Cycle.create(symbolsCopy);
-        }
-        return inverse;
+        final var symbolsCopy = new int[this.symbols.length];
+        System.arraycopy(this.symbols, 0, symbolsCopy, 0, this.symbols.length);
+        ArrayUtils.reverse(symbolsCopy);
+        return Cycle.create(symbolsCopy);
     }
 
     public int getNorm() {
