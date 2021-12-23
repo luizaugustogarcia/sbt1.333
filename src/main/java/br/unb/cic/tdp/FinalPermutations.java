@@ -24,23 +24,31 @@ import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
 import static br.unb.cic.tdp.base.CommonOperations.*;
+import static br.unb.cic.tdp.permutation.Cycle.cyclesCache;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 import static br.unb.cic.tdp.proof.ProofGenerator.*;
 import static java.util.stream.Collectors.*;
 
 public class FinalPermutations {
 
-    final static Cache<Configuration, Set<String>> unsuccessfulConfigs = CacheBuilder.newBuilder().maximumSize(12_350_000).build();
+    final static Cache<Configuration, Set<String>> unsuccessfulConfigs = CacheBuilder.newBuilder().maximumSize(25_000_000).build();
 
     public static void main(String[] args) {
         Velocity.setProperty("resource.loader", "class");
         Velocity.setProperty("class.resource.loader.class", "org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader");
         Velocity.init();
 
-        Timer timer = new Timer();
+        final var timer = new Timer();
         timer.scheduleAtFixedRate(new TimerTask() {
             public void run() {
-                System.out.println("Cache size: " + unsuccessfulConfigs.size());
+                System.out.println("Config cache size: " + unsuccessfulConfigs.size());
+            }
+        }, 0, 60 * 60 * 1000);
+
+        final var cycleTimer = new Timer();
+        cycleTimer.scheduleAtFixedRate(new TimerTask() {
+            public void run() {
+                System.out.println("Cycle cache size: " + cyclesCache.size());
             }
         }, 0, 60 * 60 * 1000);
 
@@ -72,10 +80,12 @@ public class FinalPermutations {
 //        ).forEach(conf -> sort(conf, "/home/luiskowada/proof1.333", _19_14_SEQS));
 //
 //        unsuccessfulConfigs.cleanUp();
-//
-//        Stream.of(
-//                new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)")
-//        ).forEach(conf -> sort(conf, "/home/luiskowada/proof1.333", _20_15_SEQS));
+
+        Stream.of(
+                new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)")
+        ).forEach(conf -> sort(conf, "/home/luiskowada/proof1.333", _20_15_SEQS));
+
+        unsuccessfulConfigs.cleanUp();
 
         Stream.of(
                 new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)(48,52,50)(49,53,51)")

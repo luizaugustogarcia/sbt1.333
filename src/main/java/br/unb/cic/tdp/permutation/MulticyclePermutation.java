@@ -42,7 +42,6 @@ public class MulticyclePermutation implements Collection<Cycle>, Permutation {
 
     private void of(String permutation) {
         var symbols = new IntArrayList(3);
-        var cycle = new Cycle();
         int symbol = 0;
         for (var i = 0; i < permutation.length(); i++) {
             final var current = permutation.charAt(i);
@@ -52,10 +51,9 @@ public class MulticyclePermutation implements Collection<Cycle>, Permutation {
                     //index.put(symbol, cycle);
                     symbol = 0;
                     symbols.trimToSize();
-                    cycle.update(symbols.elements());
+                    final var cycle = Cycle.create(symbols.elements());
                     this.add(cycle);
                     symbols = new IntArrayList();
-                    cycle = new Cycle();
                 } else if (current == ',' || current == ' ') {
                     symbols.add(symbol);
                     symbol = 0;

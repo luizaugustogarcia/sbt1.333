@@ -1,6 +1,10 @@
 package br.unb.cic.tdp.permutation;
 
 import cern.colt.list.IntArrayList;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.hash.Hashing;
+import lombok.SneakyThrows;
 import org.apache.commons.lang.ArrayUtils;
 
 import java.util.*;
@@ -8,21 +12,16 @@ import java.util.*;
 import static br.unb.cic.tdp.base.CommonOperations.mod;
 
 public class Cycle implements Permutation, Comparable<Cycle> {
-    private int[] symbols;
+    public final static Cache<Integer, Set<Cycle>> cyclesCache = CacheBuilder.newBuilder().maximumSize(5_000_000).build();
+
+    private final int[] symbols;
     private byte[] symbolIndexes;
     private int minSymbol = -1;
+    private int minSymbolIndex = -1;
     private int maxSymbol = -1;
     private Cycle inverse;
     private int hashCode;
     private boolean hashCodeCalculated = false;
-
-    public Cycle() {
-    }
-
-    public void update(final int... symbols) {
-        this.symbols = symbols;
-        updateInternalState();
-    }
 
     private Cycle(final int... symbols) {
         this.symbols = symbols;
@@ -45,7 +44,18 @@ public class Cycle implements Permutation, Comparable<Cycle> {
         return create(symbols);
     }
 
+    @SneakyThrows
     public static Cycle create(final int... symbols) {
+        if (symbols.length < 10) {
+            final var cycle = new Cycle(symbols);
+            final var candidates = cyclesCache.get(cycle.hashCode(), HashSet::new);
+            final var existing = candidates.stream().filter(c -> c.equals(cycle)).findFirst();
+            if (existing.isPresent()) {
+                return existing.get();
+            }
+            candidates.add(cycle);
+            return cycle;
+        }
         return new Cycle(symbols);
     }
 
@@ -54,9 +64,11 @@ public class Cycle implements Permutation, Comparable<Cycle> {
     }
 
     private void updateInternalState() {
-        for (int symbol : symbols) {
+        for (int j = 0; j < symbols.length; j++) {
+            final var symbol = symbols[j];
             if (minSymbol == -1 || symbol < minSymbol) {
                 minSymbol = symbol;
+                minSymbolIndex = j;
             }
             if (symbol > maxSymbol) {
                 maxSymbol = symbol;
@@ -115,19 +127,32 @@ public class Cycle implements Permutation, Comparable<Cycle> {
         return representation.toString();
     }
 
+    private static int hash(int minSymbol, final int[] symbols) {
+        if (minSymbol == -1) {
+            for (int symbol : symbols) {
+                if (minSymbol == -1 || symbol < minSymbol) {
+                    minSymbol = symbol;
+                }
+            }
+        }
+
+        for (int i = 0; i < symbols.length; i++) {
+            if (symbols[i] == minSymbol) {
+                final var hasher = Hashing.crc32().newHasher();
+                for (int j = 0; j < symbols.length; j++) {
+                    hasher.putInt(symbols[(i + j) % symbols.length]);
+                }
+                return hasher.hash().asInt();
+            }
+        }
+
+        return 0;
+    }
+
     @Override
     public int hashCode() {
         if (!hashCodeCalculated) {
-            hashCode = 1;
-            for (int i = 0; i < symbols.length; i++) {
-                if (symbols[i] == minSymbol) {
-                    for (int j = 0; j < symbols.length; j++) {
-                        int element = symbols[(i + j) % symbols.length];
-                        hashCode = 31 * hashCode + element;
-                    }
-                    break;
-                }
-            }
+            hashCode = hash(minSymbol, symbols);
             hashCodeCalculated = true;
         }
         return hashCode;
@@ -147,8 +172,14 @@ public class Cycle implements Permutation, Comparable<Cycle> {
             return false;
         }
 
-        return Arrays.equals(startingBy(getMinSymbol()).getSymbols(),
-                ((Cycle) obj).startingBy(((Cycle) obj).getMinSymbol()).getSymbols());
+        for (int i = 0; i < symbols.length; i++) {
+            if (symbols[(i + minSymbolIndex) % symbols.length] !=
+                    other.symbols[(i + other.minSymbolIndex) % other.symbols.length]) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     public boolean isEven() {
