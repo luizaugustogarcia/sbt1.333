@@ -26,7 +26,6 @@ import java.util.stream.Stream;
 import static br.unb.cic.tdp.base.CommonOperations.*;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 import static br.unb.cic.tdp.proof.ProofGenerator.*;
-import static br.unb.cic.tdp.proof.seq12_9._20_15Seq._20_15;
 import static java.util.stream.Collectors.*;
 
 public class FinalPermutations {
@@ -62,21 +61,25 @@ public class FinalPermutations {
 //                new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)") // bad
 //        ).forEach(conf -> sort(conf, "/home/luiskowada/proof1.333", _19_14_SEQS));
 
+//        Stream.of(
+//                new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)")
+//        ).forEach(conf -> sort(conf, "/home/luiskowada/proof1.333", _16_12_SEQS));
+//
+//        unsuccessfulConfigs.cleanUp();
+//
+//        Stream.of(
+//                new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)")
+//        ).forEach(conf -> sort(conf, "/home/luiskowada/proof1.333", _19_14_SEQS));
+//
+//        unsuccessfulConfigs.cleanUp();
+//
+//        Stream.of(
+//                new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)")
+//        ).forEach(conf -> sort(conf, "/home/luiskowada/proof1.333", _20_15_SEQS));
+
         Stream.of(
-                new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)")
-        ).forEach(conf -> sort(conf, "/home/luiskowada/proof1.333", _16_12_SEQS));
-
-        unsuccessfulConfigs.cleanUp();
-
-        Stream.of(
-                new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)")
-        ).forEach(conf -> sort(conf, "/home/luiskowada/proof1.333", _19_14_SEQS));
-
-        unsuccessfulConfigs.cleanUp();
-
-        Stream.of(
-                new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)")
-        ).forEach(conf -> sort(conf, "/home/luiskowada/proof1.333", _20_15_SEQS));
+                new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)(48,52,50)(49,53,51)")
+        ).forEach(conf -> sort(conf, "/home/luiskowada/proof1.333", _24_18_SEQS));
     }
 
     @SneakyThrows

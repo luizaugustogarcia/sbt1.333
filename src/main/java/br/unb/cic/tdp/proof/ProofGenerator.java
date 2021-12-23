@@ -5,28 +5,29 @@ import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.proof.seq12_9.Combinations;
 import br.unb.cic.tdp.proof.seq12_9.SearchForSortingStrategy;
-import br.unb.cic.tdp.proof.seq12_9._19_14Seq;
 import br.unb.cic.tdp.util.Pair;
 import cern.colt.list.IntArrayList;
+import com.google.common.base.Throwables;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.primitives.Ints;
-import lombok.Getter;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.Velocity;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 
 import java.io.Serializable;
 import java.io.Writer;
+import java.net.URISyntaxException;
 import java.nio.file.*;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static br.unb.cic.tdp.BaseAlgorithm.*;
 import static br.unb.cic.tdp.base.CommonOperations.*;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
-import static br.unb.cic.tdp.proof.seq12_9._19_14Seq._19_14;
-import static br.unb.cic.tdp.proof.seq12_9._20_15Seq._20_15;
+import static br.unb.cic.tdp.proof.seq12_9._20_15._20_15;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 public class ProofGenerator {
@@ -155,16 +156,33 @@ public class ProofGenerator {
     public static final Move _8_6_SEQS = new Move(0, new Move[0], null);
     public static final Move _12_9_SEQS = new Move(0, new Move[0], null);
     public static final Move _16_12_SEQS = new Move(0, new Move[0], null);
-    public static final Move _19_14_SEQS = new Move(0, new Move[0], null);
     public static final Move _20_15_SEQS = new Move(0, new Move[0], null);
+    public static final Move _24_18_SEQS = new Move(0, new Move[0], null);
 
     static {
-        toTrie(_4_3, _4_3_SEQS);
-        toTrie(_8_6, _8_6_SEQS);
-        toTrie(_12_9, _12_9_SEQS);
-        toTrie(_16_12, _16_12_SEQS);
-        toTrie(_19_14, _19_14_SEQS);
-        toTrie(_20_15, _20_15_SEQS);
+        final var _24_18 = new int[4389][];
+        try {
+            final int[] j = {0};
+            final Path path = Paths.get(ProofGenerator.class.getClassLoader().getResource("24_18-seqs.txt").toURI());
+            Files.lines(path).forEach(s -> {
+                final var seq = new int[s.split(",").length];
+
+                for (int i = 0; i < s.split(",").length; i++) {
+                    seq[i] = Integer.parseInt(s.split(",")[i]);
+                }
+
+                _24_18[j[0]++] = seq;
+            });
+
+            toTrie(_4_3, _4_3_SEQS);
+            toTrie(_8_6, _8_6_SEQS);
+            toTrie(_12_9, _12_9_SEQS);
+            toTrie(_16_12, _16_12_SEQS);
+            toTrie(_20_15, _20_15_SEQS);
+            toTrie(_24_18, _24_18_SEQS);
+        } catch (Exception e) {
+            Throwables.propagate(e);
+        }
     }
 
     public static void toTrie(final int[][] seqs, Move root) {

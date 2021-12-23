@@ -19,6 +19,9 @@ import static br.unb.cic.tdp.base.CommonOperations.*;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 import static java.util.Comparator.comparing;
 
+/**
+ * Only supports oriented cycles whose length is at most 100.
+ */
 @ToString
 public class Configuration {
 
