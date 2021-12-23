@@ -229,10 +229,21 @@ public class FinalPermutations {
         if (root.mu == 0) {
             final var spi_ = new MulticyclePermutation(spi.toList().stream().map(Cycle::create).collect(toList()));
             final var configuration = new Configuration(spi_, Cycle.create(pi));
-            final var signature = Arrays.toString(configuration.getCanonical().getSignature().getContent())
-                    .replace(" ", "").replace(".0", "");
+            final var signature = configuration.getCanonical().getSignature().getContent();
 
-            if (unsuccessfulConfigs.getIfPresent(signature) != null && unsuccessfulConfigs.getIfPresent(signature).contains(root.path())) {
+            final var builder = new StringBuilder();
+            for (float v : signature) {
+                if (v % 1 == 0) {
+                    builder.append((int) v);
+                } else {
+                    builder.append(v);
+                }
+                builder.append(',');
+            }
+
+            final var key = builder.toString();
+
+            if (unsuccessfulConfigs.getIfPresent(key) != null && unsuccessfulConfigs.getIfPresent(key).contains(root.path())) {
 //                System.out.println("Hit " + configuration.hashCode() + "-" + root.path() + "-" + unsuccessfulConfigs.size());
                 return ListOfCycles.emptyList;
             }
@@ -242,7 +253,7 @@ public class FinalPermutations {
                 return sorting;
             }
 
-            var set = unsuccessfulConfigs.get(signature, HashSet::new);
+            var set = unsuccessfulConfigs.get(key, HashSet::new);
             set.add(root.path());
         } else {
             var sorting = analyzeOrientedCycles(spi, parity, spiIndex, maxSymbol, pi, moves, root);
