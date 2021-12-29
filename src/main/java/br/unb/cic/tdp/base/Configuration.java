@@ -142,12 +142,14 @@ public class Configuration {
     public Collection<Signature> getEquivalentSignatures() {
         Set<Signature> equivalentSignatures = new HashSet<>();
 
+        final var spiInverse = spi.getInverse();
+
         for (var i = 0; i < pi.size(); i++) {
             final var shifting = pi.startingBy(pi.get(i));
             equivalentSignatures.add(new Signature(shifting, signature(spi, shifting), false));
 
             final var mirroredShifting = mirroredPi.startingBy(mirroredPi.get(i));
-            equivalentSignatures.add(new Signature(mirroredShifting, signature(spi.getInverse(), mirroredShifting), true));
+            equivalentSignatures.add(new Signature(mirroredShifting, signature(spiInverse, mirroredShifting), true));
         }
 
         return equivalentSignatures;
@@ -256,7 +258,7 @@ public class Configuration {
         return result;
     }
 
-    public class Signature {
+    public static class Signature {
 
         @Getter
         private final Cycle pi;

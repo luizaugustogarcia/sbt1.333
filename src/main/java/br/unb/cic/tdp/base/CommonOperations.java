@@ -134,7 +134,7 @@ public class CommonOperations implements Serializable {
      * (being the indexes of the resulting array).
      */
     public static Cycle[] cycleIndex(final Collection<Cycle> cycle, final Cycle pi) {
-        return cyclesIndex(Arrays.asList(cycle), pi);
+        return cyclesIndex(Collections.singletonList(cycle), pi);
     }
 
     public static Cycle[] cyclesIndex(final List<Collection<Cycle>> components, final Cycle pi) {
