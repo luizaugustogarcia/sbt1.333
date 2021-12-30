@@ -12,7 +12,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class ShortPermutations {
 
@@ -32,7 +32,7 @@ public class ShortPermutations {
 
             try (final var br = new BufferedReader(new FileReader(exactDistancesRoot + "/exact" + i + ".txt"), 1024 * 1024 * 10)) {
                 final float[] maxRatio = {0};
-                final var lock = new Lock();
+                final var lock = new ReentrantLock(true);
                 final BigDecimal[] sumRatios = {BigDecimal.ZERO};
                 final long[] wrongAnswers = {0};
                 final int[] total1_5 = {0};
@@ -112,19 +112,6 @@ public class ShortPermutations {
         @SneakyThrows
         public void rejectedExecution(final Runnable r, final ThreadPoolExecutor executor) {
             executor.getQueue().put(r);
-        }
-    }
-
-    static class Lock {
-
-        private AtomicBoolean locked = new AtomicBoolean(false);
-
-        public void lock() {
-            while (!locked.compareAndSet(false, true));
-        }
-
-        public void unlock() {
-            locked.set(false);
         }
     }
 }

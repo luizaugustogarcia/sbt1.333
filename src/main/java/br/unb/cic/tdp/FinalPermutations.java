@@ -3,7 +3,6 @@ package br.unb.cic.tdp;
 import br.unb.cic.tdp.base.CommonOperations;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
-import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.proof.ProofGenerator;
 import br.unb.cic.tdp.util.Pair;
 import br.unb.cic.tdp.util.Triplet;
@@ -11,6 +10,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.primitives.Ints;
 import lombok.SneakyThrows;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.velocity.app.Velocity;
 
 import java.io.*;
@@ -18,7 +18,8 @@ import java.util.*;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.stream.Collectors;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 import java.util.zip.CRC32;
 
@@ -177,9 +178,9 @@ public class FinalPermutations {
                     executorService.shutdownNow();
                     System.out.println("Sorted: " + configuration.getSpi() + ", sorting: " + sorting.get().stream().map(Arrays::toString).collect(joining(",")) + ", is 16/12: " + is16_12);
                     System.out.println();
-                    try (final var out = new FileWriter(outputDir + "/comb/" + canonical.getSpi() + ".html")) {
-                        renderSorting(canonical, canonical.translatedSorting(configuration, s), out);
-                    }
+//                    try (final var out = new FileWriter(outputDir + "/comb/" + canonical.getSpi() + ".html")) {
+//                        renderSorting(canonical, canonical.translatedSorting(configuration, s), out);
+//                    }
                     break;
                 }
             }
@@ -218,6 +219,9 @@ public class FinalPermutations {
         return removed;
     }
 
+    static AtomicLong times = new AtomicLong();
+    static AtomicLong totalTime = new AtomicLong();
+
     @SneakyThrows
     public static ListOfCycles search(final ListOfCycles spi,
                                       final boolean[] parity, final int[][] spiIndex,
@@ -229,10 +233,12 @@ public class FinalPermutations {
         }
 
         if (root.mu == 0) {
-            // TODO gerar a canonica usando apenas os dados que eu já tenho como parâmetro
-            final var key = getKey(
-                    getCanonicalSignature(new MulticyclePermutation(spi.toList().stream().map(Cycle::create).collect(toList())), Cycle.create(pi))
-            );
+            //long inital = System.currentTimeMillis();
+            final var key = getCanonicalSignature(spi, pi, spiIndex, maxSymbol);
+//            long elapsed = System.currentTimeMillis() - inital;
+//            totalTime.addAndGet(elapsed);
+//            times.incrementAndGet();
+//            System.out.println("Avg: " + totalTime.get() / (float)times.get());
 
             if (UNSUCCESSFUL_CONFIGS.getIfPresent(key) != null && UNSUCCESSFUL_CONFIGS.getIfPresent(key).contains(root.path())) {
                 return ListOfCycles.EMPTY_LIST;
@@ -260,56 +266,101 @@ public class FinalPermutations {
         return ListOfCycles.EMPTY_LIST;
     }
 
-    private static float[] getCanonicalSignature(final MulticyclePermutation spi, final Cycle pi) throws IOException {
+    private static String getCanonicalSignature(final ListOfCycles spi,
+                                                final int[] pi,
+                                                final int[][] spiIndex,
+                                                final int maxSymbol) throws IOException {
         var leastHashCode = Integer.MAX_VALUE;
-        float[] canonical = null;
+        String canonical = null;
 
-        Cycle mirroredPi = pi.getInverse().conjugateBy(spi).asNCycle();;
+        for (int symbol : pi) {
+            final var shifting = startingBy(pi, symbol);
 
-        final var spiInverse = spi.getInverse();
-
-        for (var i = 0; i < pi.size(); i++) {
-            final var shifting = pi.startingBy(pi.get(i));
-
-            var signature = signature(spi, shifting);
+            var signature = signature(spi, shifting, spiIndex, maxSymbol);
             var hashCode = hashCode(signature);
             if (hashCode < leastHashCode) {
                 leastHashCode = hashCode;
-                canonical = signature;
+                canonical = toString(signature);
+            } else if (hashCode == leastHashCode) {
+                // Hash collisions can occur when computing the canonical signature
+                final var candidate = toString(signature);
+                if (candidate.compareTo(canonical) < 0)
+                    canonical = candidate;
             }
 
-            final var mirroredShifting = mirroredPi.startingBy(mirroredPi.get(i));
-            signature = signature(spiInverse, mirroredShifting);
-            hashCode = hashCode(signature);
+            final var mirroredSignature = signature.clone();
+            ArrayUtils.reverse(mirroredSignature);
+
+            final var labelLabelMapping = new int[spi.size + 1];
+            final var orientedIndexMapping = new int[spi.size + 1][];
+
+            var nextLabel = 1;
+            for (int j = 0; j < mirroredSignature.length; j++) {
+                final var label = mirroredSignature[j];
+
+                if (labelLabelMapping[(int) label] == 0) {
+                    labelLabelMapping[(int) label] = nextLabel++;
+                }
+
+                final var newLabel = labelLabelMapping[(int) label];
+
+                if (label % 1 > 0) {
+                    if (orientedIndexMapping[newLabel] == null) {
+                        final var index = Math.abs(j - shifting.length) - 1;
+                        final int[] cycle = startingBy(spiIndex[shifting[index]], shifting[index]);
+                        orientedIndexMapping[newLabel] = cycleIndex(cycle);
+                    }
+
+                    final var index = Math.abs(j - shifting.length) - 1;
+                    final var orientationIndex = orientedIndexMapping[newLabel][shifting[index]] + 1;
+                    mirroredSignature[j] = newLabel + ((float) orientationIndex / 100);
+                } else {
+                    mirroredSignature[j] = newLabel;
+                }
+            }
+
+            hashCode = hashCode(mirroredSignature);
             if (hashCode < leastHashCode) {
                 leastHashCode = hashCode;
-                canonical = signature;
+                canonical = toString(signature);
+            } else if (hashCode == leastHashCode) {
+                // Hash collisions can occur when computing the canonical signature
+                final var candidate = toString(signature);
+                if (candidate.compareTo(canonical) < 0)
+                    canonical = candidate;
             }
         }
 
         return canonical;
     }
 
-    public static float[] signature(final MulticyclePermutation spi, final Cycle pi) {
-        final var labelByCycle = new HashMap<Cycle, Float>();
-        final var cycleIndex = CommonOperations.cycleIndex(spi, pi);
-        final var orientedCycles = spi.stream().filter(c -> !CommonOperations.areSymbolsInCyclicOrder(pi.getInverse(), c.getSymbols()))
-                .collect(Collectors.toList());
-        final var symbolIndexByOrientedCycle = new HashMap<Cycle, int[]>();
+    public static float[] signature(final ListOfCycles spi, final int[] pi, final int[][] spiIndex, final int maxSymbol) {
+        final var piInverseIndex = getPiInverseIndex(pi, maxSymbol);
+        final var orientedCycles = getOrientedCycles(spi, piInverseIndex);
 
-        final var signature = new float[pi.size()];
+        final var labelByCycle = new HashMap<int[], Float>();
+        final var symbolIndexByOrientedCycle = new HashMap<int[], int[]>();
+
+        final var signature = new float[pi.length];
+
+        // Pi index
+        final var piIndex = new int[maxSymbol + 1];
+        for (var i = 0; i < pi.length; i++) {
+            piIndex[pi[i]] = i;
+        }
 
         for (var i = 0; i < signature.length; i++) {
-            final int symbol = pi.get(i);
-            final var cycle = cycleIndex[symbol];
+            final int symbol = pi[i];
+            final var cycle = spiIndex[symbol];
+
             if (orientedCycles.contains(cycle)) {
                 symbolIndexByOrientedCycle.computeIfAbsent(cycle, c -> {
-                    final var symbolIndex = new int[pi.getMaxSymbol() + 1];
-                    final int symbolMinIndex = Ints.asList(c.getSymbols()).stream().min(comparing(pi::indexOf)).get();
-                    for (int j = 0; j < c.getSymbols().length; j++) {
-                        if (c.getSymbols()[j] == symbolMinIndex) {
-                            for (int k = 0; k < c.getSymbols().length; k++) {
-                                symbolIndex[c.getSymbols()[(j + k) % c.getSymbols().length]] = k + 1;
+                    final var symbolIndex = new int[maxSymbol + 1];
+                    final int symbolMinIndex = Ints.asList(c).stream().min(comparing(integer -> piIndex[integer])).get();
+                    for (int j = 0; j < c.length; j++) {
+                        if (c[j] == symbolMinIndex) {
+                            for (int k = 0; k < c.length; k++) {
+                                symbolIndex[c[(j + k) % c.length]] = k + 1;
                             }
                             break;
                         }
@@ -326,7 +377,7 @@ public class FinalPermutations {
         return signature;
     }
 
-    private static String getKey(final float[] signature) {
+    private static String toString(final float[] signature) {
         final var builder = new StringBuilder();
         for (float v : signature) {
             if (v % 1 == 0) {
