@@ -30,7 +30,7 @@ import static java.util.stream.Collectors.*;
 
 public class FinalPermutations {
 
-    final static Cache<String, Set<String>> UNSUCCESSFUL_CONFIGS = CacheBuilder.newBuilder().maximumSize(300_000_000).build();
+    final static Cache<String, Set<String>> UNSUCCESSFUL_CONFIGS = CacheBuilder.newBuilder().maximumSize(60_000_000).build();
 
     public static void main(String[] args) {
         Velocity.setProperty("resource.loader", "class");
@@ -48,7 +48,7 @@ public class FinalPermutations {
                 long heapFreeSize = Runtime.getRuntime().freeMemory();
                 System.out.println("Heap free size GB: " + (((heapFreeSize / 1024) / 1024) / 1024));
             }
-        }, 0, 5 * 1000);
+        }, 0, 60 * 60 * 1000);
 
 //        Stream.of(
 //                new Configuration("(0 4 2)(1 5 3)(6 10 8)(7 11 9)(12 16 14)(13 17 15)(24 34 26)(25 35 27)(28 32 30)(29 33 31)(18 22 20)(19 23 21)"), // bad
@@ -718,9 +718,8 @@ public class FinalPermutations {
         final var orientedCycles = new ListOfCycles();
         var current = spi.head;
         for (int i = 0; i < spi.size; i++) {
-            final int[] cycle = current.data;
-            if (!areSymbolsInCyclicOrder(piInverseIndex, cycle))
-                orientedCycles.add(cycle);
+            if (!areSymbolsInCyclicOrder(piInverseIndex, current.data))
+                orientedCycles.add(current.data);
             current = current.next;
         }
         return orientedCycles;
@@ -898,7 +897,24 @@ public class FinalPermutations {
                 indexes[2] = i;
         }
 
-        Arrays.sort(indexes);
+        // sort indexes - this is CPU efficient
+        if (indexes[0] > indexes[2]) {
+            final var temp = indexes[0];
+            indexes[0] = indexes[2];
+            indexes[2] = temp;
+        }
+
+        if (indexes[0] > indexes[1]) {
+            final var temp = indexes[0];
+            indexes[0] = indexes[1];
+            indexes[1] = temp;
+        }
+
+        if (indexes[1] > indexes[2]) {
+            final var temp = indexes[1];
+            indexes[1] = indexes[2];
+            indexes[2] = temp;
+        }
 
         final var result = new int[numberOfSymbols];
 
@@ -987,10 +1003,11 @@ public class FinalPermutations {
         }
 
         public void remove(int[] data) {
-            var current = head;
+            var current = tail;
 
+            // do the search walking backwards
             while (current != null && current.data != data) {
-                current = current.next;
+                current = current.previous;
             }
 
             if (current == null) {
@@ -1055,7 +1072,7 @@ public class FinalPermutations {
         }
 
         public boolean isEmpty() {
-            return head == null;
+            return size == 0;
         }
 
         public List<int[]> toList() {
