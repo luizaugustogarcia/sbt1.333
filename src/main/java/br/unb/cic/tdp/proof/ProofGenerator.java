@@ -27,6 +27,7 @@ import java.util.stream.Stream;
 import static br.unb.cic.tdp.BaseAlgorithm.*;
 import static br.unb.cic.tdp.base.CommonOperations.*;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
+import static br.unb.cic.tdp.proof.seq12_9._19_14Seq._19_14;
 import static br.unb.cic.tdp.proof.seq12_9._20_15._20_15;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
@@ -158,6 +159,7 @@ public class ProofGenerator {
     public static final Move _16_12_SEQS = new Move(0, new Move[0], null);
     public static final Move _20_15_SEQS = new Move(0, new Move[0], null);
     public static final Move _24_18_SEQS = new Move(0, new Move[0], null);
+    public static final Move _19_14_SEQS = new Move(0, new Move[0], null);
 
     static {
         final var _24_18 = new int[4389][];
@@ -179,6 +181,7 @@ public class ProofGenerator {
             toTrie(_12_9, _12_9_SEQS);
             toTrie(_16_12, _16_12_SEQS);
             toTrie(_20_15, _20_15_SEQS);
+            toTrie(_19_14, _19_14_SEQS);
             toTrie(_24_18, _24_18_SEQS);
         } catch (Exception e) {
             Throwables.propagate(e);

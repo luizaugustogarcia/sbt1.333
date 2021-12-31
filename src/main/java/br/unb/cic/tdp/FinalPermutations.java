@@ -64,30 +64,33 @@ public class FinalPermutations {
 //        ).forEach(conf -> sort(conf, "/home/luiskowada/proof1.333", _16_12_SEQS));
 
 //        Stream.of(
-//                new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)") // bad
-//        ).forEach(conf -> sort(conf, "/home/luiskowada/proof1.333", _19_14_SEQS));
-
-//        Stream.of(
-//                new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)")
+//                new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)") // bad
 //        ).forEach(conf -> sort(conf, "/home/luiskowada/proof1.333", _16_12_SEQS));
 //
 //        unsuccessfulConfigs.cleanUp();
 //
-//        Stream.of(
-//                new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)")
-//        ).forEach(conf -> sort(conf, "/home/luiskowada/proof1.333", _19_14_SEQS));
-//
-//        unsuccessfulConfigs.cleanUp();
+
+        Stream.of(
+                new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)")
+        ).forEach(conf -> sort(conf, "/home/ubuntu/sbt", _19_14_SEQS));
+
+        UNSUCCESSFUL_CONFIGS.cleanUp();
 
         Stream.of(
                 new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)")
-        ).forEach(conf -> sort(conf, "/home/luiskowada/proof1.333", _20_15_SEQS));
+        ).forEach(conf -> sort(conf, "/home/ubuntu/sbt", _19_14_SEQS));
+
+        UNSUCCESSFUL_CONFIGS.cleanUp();
+
+        Stream.of(
+                new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)")
+        ).forEach(conf -> sort(conf, "/home/ubuntu/sbt", _20_15_SEQS));
 
         UNSUCCESSFUL_CONFIGS.cleanUp();
 
         Stream.of(
                 new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)(48,52,50)(49,53,51)")
-        ).forEach(conf -> sort(conf, "/home/luiskowada/proof1.333", _24_18_SEQS));
+        ).forEach(conf -> sort(conf, "/home/ubuntu/sbt", _24_18_SEQS));
 
         timer.cancel();
     }
