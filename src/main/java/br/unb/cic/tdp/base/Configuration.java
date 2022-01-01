@@ -8,6 +8,7 @@ import com.google.common.primitives.Ints;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.ToString;
+import org.apache.commons.lang.ArrayUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -32,9 +33,6 @@ public class Configuration {
     private final Cycle pi;
 
     @Getter
-    private final Cycle mirroredPi;
-
-    @Getter
     private final Signature signature;
 
     @ToString.Exclude
@@ -43,7 +41,6 @@ public class Configuration {
     public Configuration(final MulticyclePermutation spi, final Cycle pi) {
         this.spi = spi;
         this.pi = pi;
-        this.mirroredPi = pi.getInverse().conjugateBy(spi).asNCycle();
         this.signature = new Signature(pi, signature(spi, pi), false);
     }
 
@@ -142,14 +139,45 @@ public class Configuration {
     public Collection<Signature> getEquivalentSignatures() {
         Set<Signature> equivalentSignatures = new HashSet<>();
 
-        final var spiInverse = spi.getInverse();
+        final var cycleIndex = cycleIndex(spi, pi);
 
         for (var i = 0; i < pi.size(); i++) {
             final var shifting = pi.startingBy(pi.get(i));
-            equivalentSignatures.add(new Signature(shifting, signature(spi, shifting), false));
+            final var signature = signature(spi, shifting);
+            equivalentSignatures.add(new Signature(shifting, signature, false));
 
-            final var mirroredShifting = mirroredPi.startingBy(mirroredPi.get(i));
-            equivalentSignatures.add(new Signature(mirroredShifting, signature(spiInverse, mirroredShifting), true));
+            final var mirroredSignature = signature.clone();
+            ArrayUtils.reverse(mirroredSignature);
+
+            final var labelLabelMapping = new int[spi.size() + 1];
+            final var orientedIndexMapping = new int[spi.size() + 1][];
+
+            var nextLabel = 1;
+            for (int j = 0; j < mirroredSignature.length; j++) {
+                final var label = mirroredSignature[j];
+
+                if (labelLabelMapping[(int) label] == 0) {
+                    labelLabelMapping[(int) label] = nextLabel++;
+                }
+
+                final var newLabel = labelLabelMapping[(int) label];
+
+                if (label % 1 > 0) {
+                    if (orientedIndexMapping[newLabel] == null) {
+                        final var index = Math.abs(j - shifting.size()) - 1;
+                        final var cycle = cycleIndex[shifting.get(index)].startingBy(shifting.get(index));
+                        orientedIndexMapping[newLabel] = cycle.getSymbolIndexes();
+                    }
+
+                    final var index = Math.abs(j - shifting.size()) - 1;
+                    final var orientationIndex = orientedIndexMapping[newLabel][shifting.get(index)] + 1;
+                    mirroredSignature[j] = newLabel + ((float) orientationIndex / 100);
+                } else {
+                    mirroredSignature[j] = newLabel;
+                }
+            }
+
+            equivalentSignatures.add(new Signature(shifting, mirroredSignature, true));
         }
 
         return equivalentSignatures;
@@ -159,33 +187,26 @@ public class Configuration {
      * Assumes that this configuration is equivalent to the one provided as parameter.
      */
     public List<Cycle> translatedSorting(final Configuration config, final List<Cycle> sorting) {
-        final var matchedSignature = config.getEquivalentSignatures().stream()
-                .filter(c -> Arrays.equals(c.getContent(), this.getSignature().getContent()))
+        final var matchedSignature = this.getEquivalentSignatures().stream()
+                .filter(c -> Arrays.equals(c.getContent(), config.getSignature().getContent()))
                 .findFirst().get();
 
-        var shiftedOrMirroredSorting = sorting;
-
-        if (matchedSignature.isMirror()) {
-            final var pis = Lists.newArrayList(config.getPi());
-            final var spis = Lists.newArrayList(new MulticyclePermutation[]{config.getSpi()});
-            var mirroredMoves = new ArrayList<Cycle>();
-            for (final var move : sorting) {
-                pis.add(computeProduct(move, pis.get(pis.size() - 1)).asNCycle());
-                spis.add(computeProduct(spis.get(spis.size() - 1), move.getInverse()));
-                mirroredMoves.add(move.getInverse().conjugateBy(spis.get(spis.size() - 1)).asNCycle());
-            }
-            shiftedOrMirroredSorting = mirroredMoves;
-        }
-
         final var translatedSorting = new ArrayList<Cycle>();
+        var pi = config.getPi();
+        var _pi = matchedSignature.pi;
 
-        var pi = matchedSignature.getPi();
-        var _pi = this.pi;
-        for (final var move : shiftedOrMirroredSorting) {
-            translatedSorting.add(Cycle.create(
-                    _pi.get(pi.indexOf(move.get(0))),
-                    _pi.get(pi.indexOf(move.get(1))),
-                    _pi.get(pi.indexOf(move.get(2)))));
+        for (final var move : sorting) {
+            if (matchedSignature.isMirror()) {
+                translatedSorting.add(Cycle.create(
+                        _pi.get(Math.abs(pi.indexOf(move.get(0)) - pi.size()) - 1),
+                        _pi.get(Math.abs(pi.indexOf(move.get(1)) - pi.size()) - 1),
+                        _pi.get(Math.abs(pi.indexOf(move.get(2)) - pi.size()) - 1)).getInverse());
+            } else {
+                translatedSorting.add(Cycle.create(
+                        _pi.get(pi.indexOf(move.get(0))),
+                        _pi.get(pi.indexOf(move.get(1))),
+                        _pi.get(pi.indexOf(move.get(2)))));
+            }
             pi = applyTransposition(pi, move);
             _pi = applyTransposition(_pi, translatedSorting.get(translatedSorting.size() - 1));
         }

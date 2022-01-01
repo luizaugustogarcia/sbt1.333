@@ -10,7 +10,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.primitives.Ints;
 import lombok.SneakyThrows;
-import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.velocity.app.Velocity;
 
 import java.io.*;
@@ -30,7 +30,7 @@ import static java.util.stream.Collectors.*;
 
 public class FinalPermutations {
 
-    final static Cache<String, Set<String>> UNSUCCESSFUL_CONFIGS = CacheBuilder.newBuilder().maximumSize(60_000_000).build();
+    final static Cache<String, String[]> UNSUCCESSFUL_CONFIGS = CacheBuilder.newBuilder().maximumSize(60_000_000).build();
 
     public static void main(String[] args) {
         Velocity.setProperty("resource.loader", "class");
@@ -221,9 +221,6 @@ public class FinalPermutations {
         return removed;
     }
 
-    static AtomicLong times = new AtomicLong();
-    static AtomicLong totalTime = new AtomicLong();
-
     @SneakyThrows
     public static ListOfCycles search(final ListOfCycles spi,
                                       final boolean[] parity, final int[][] spiIndex,
@@ -235,14 +232,9 @@ public class FinalPermutations {
         }
 
         if (root.mu == 0) {
-            //long inital = System.currentTimeMillis();
             final var key = getCanonicalSignature(spi, pi, spiIndex, maxSymbol);
-//            long elapsed = System.currentTimeMillis() - inital;
-//            totalTime.addAndGet(elapsed);
-//            times.incrementAndGet();
-//            System.out.println("Avg: " + totalTime.get() / (float)times.get());
 
-            if (UNSUCCESSFUL_CONFIGS.getIfPresent(key) != null && UNSUCCESSFUL_CONFIGS.getIfPresent(key).contains(root.path())) {
+            if (UNSUCCESSFUL_CONFIGS.getIfPresent(key) != null && ArrayUtils.contains(UNSUCCESSFUL_CONFIGS.getIfPresent(key), root.path())) {
                 return ListOfCycles.EMPTY_LIST;
             }
 
@@ -251,8 +243,12 @@ public class FinalPermutations {
                 return sorting;
             }
 
-            var set = UNSUCCESSFUL_CONFIGS.get(key, HashSet::new);
-            set.add(root.path());
+            final var paths = UNSUCCESSFUL_CONFIGS.getIfPresent(key);
+            if (paths == null) {
+                UNSUCCESSFUL_CONFIGS.put(key, new String[]{ root.path() });
+            } else {
+                UNSUCCESSFUL_CONFIGS.put(key, ArrayUtils.add(paths, root.path()));
+            }
         } else {
             var sorting = analyzeOrientedCycles(spi, parity, spiIndex, maxSymbol, pi, moves, root);
             if (!sorting.isEmpty()) {

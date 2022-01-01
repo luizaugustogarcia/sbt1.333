@@ -12,7 +12,7 @@ import static br.unb.cic.tdp.base.CommonOperations.mod;
 public class Cycle implements Permutation, Comparable<Cycle> {
 
     private final int[] symbols;
-    private byte[] symbolIndexes;
+    private int[] symbolIndexes;
     private int minSymbol = -1;
     private int minSymbolIndex = -1;
     private int maxSymbol = -1;
@@ -61,7 +61,7 @@ public class Cycle implements Permutation, Comparable<Cycle> {
             }
         }
 
-        symbolIndexes = new byte[maxSymbol + 1];
+        symbolIndexes = new int[maxSymbol + 1];
         Arrays.fill(symbolIndexes, 0, maxSymbol, (byte)-1);
 
         for (var i = 0; i < symbols.length; i++) {
@@ -236,7 +236,7 @@ public class Cycle implements Permutation, Comparable<Cycle> {
         return this.size() > 3;
     }
 
-    public byte[] getSymbolIndexes() {
+    public int[] getSymbolIndexes() {
         return symbolIndexes;
     }
 }
