@@ -35,7 +35,7 @@ public class FinalPermutations {
             .concurrencyLevel(Runtime.getRuntime().availableProcessors())
             .build();
 
-    final static AtomicLong _0000times = new AtomicLong();
+    final static AtomicLong hits = new AtomicLong();
 
     public static void main(String[] args) {
         Velocity.setProperty("resource.loader", "class");
@@ -45,15 +45,13 @@ public class FinalPermutations {
         final var timer = new Timer();
         timer.scheduleAtFixedRate(new TimerTask() {
             public void run() {
-                System.out.println("Config cache size: " + UNSUCCESSFUL_CONFIGS.size());
+                System.out.println("Cache size: " + UNSUCCESSFUL_CONFIGS.size());
+                System.out.println("Cache hits (<= 5): " + hits);
 
                 long heapSize = Runtime.getRuntime().totalMemory();
                 System.out.println("Heap size GB: " + (((heapSize / 1024) / 1024) / 1024));
-
                 long heapFreeSize = Runtime.getRuntime().freeMemory();
                 System.out.println("Heap free size GB: " + (((heapFreeSize / 1024) / 1024) / 1024));
-
-                System.out.println("0000 times: " + _0000times);
             }
         }, 0, 10 * 60 * 1000);
 
@@ -241,11 +239,8 @@ public class FinalPermutations {
         if (root.mu == 0) {
             final var key = getCanonicalSignature(spi, pi, spiIndex, maxSymbol);
 
-            if (root.pathToRoot().equals("0000")) {
-                _0000times.incrementAndGet();
-            }
-
             if (UNSUCCESSFUL_CONFIGS.getIfPresent(key) != null && contains(UNSUCCESSFUL_CONFIGS.getIfPresent(key), root.pathToRoot())) {
+                if (root.pathToRoot().length() <= 5) hits.incrementAndGet();
                 return ListOfCycles.EMPTY_LIST;
             }
 
