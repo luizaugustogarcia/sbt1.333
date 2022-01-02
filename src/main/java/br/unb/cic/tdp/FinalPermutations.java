@@ -30,7 +30,12 @@ import static java.util.stream.Collectors.*;
 
 public class FinalPermutations {
 
-    final static Cache<String, String[]> UNSUCCESSFUL_CONFIGS = CacheBuilder.newBuilder().maximumSize(60_000_000).build();
+    final static Cache<String, String[]> UNSUCCESSFUL_CONFIGS = CacheBuilder.newBuilder()
+            .maximumSize(200_000_000)
+            .concurrencyLevel(Runtime.getRuntime().availableProcessors())
+            .build();
+
+    final static AtomicLong _0000times = new AtomicLong();
 
     public static void main(String[] args) {
         Velocity.setProperty("resource.loader", "class");
@@ -47,8 +52,10 @@ public class FinalPermutations {
 
                 long heapFreeSize = Runtime.getRuntime().freeMemory();
                 System.out.println("Heap free size GB: " + (((heapFreeSize / 1024) / 1024) / 1024));
+
+                System.out.println("0000 times: " + _0000times);
             }
-        }, 0, 60 * 60 * 1000);
+        }, 0, 10 * 60 * 1000);
 
 //        Stream.of(
 //                new Configuration("(0 4 2)(1 5 3)(6 10 8)(7 11 9)(12 16 14)(13 17 15)(24 34 26)(25 35 27)(28 32 30)(29 33 31)(18 22 20)(19 23 21)"), // bad
@@ -234,7 +241,11 @@ public class FinalPermutations {
         if (root.mu == 0) {
             final var key = getCanonicalSignature(spi, pi, spiIndex, maxSymbol);
 
-            if (UNSUCCESSFUL_CONFIGS.getIfPresent(key) != null && ArrayUtils.contains(UNSUCCESSFUL_CONFIGS.getIfPresent(key), root.path())) {
+            if (root.pathToRoot().equals("0000")) {
+                _0000times.incrementAndGet();
+            }
+
+            if (UNSUCCESSFUL_CONFIGS.getIfPresent(key) != null && contains(UNSUCCESSFUL_CONFIGS.getIfPresent(key), root.pathToRoot())) {
                 return ListOfCycles.EMPTY_LIST;
             }
 
@@ -245,9 +256,9 @@ public class FinalPermutations {
 
             final var paths = UNSUCCESSFUL_CONFIGS.getIfPresent(key);
             if (paths == null) {
-                UNSUCCESSFUL_CONFIGS.put(key, new String[]{ root.path() });
+                UNSUCCESSFUL_CONFIGS.put(key, new String[]{ root.pathToRoot() });
             } else {
-                UNSUCCESSFUL_CONFIGS.put(key, ArrayUtils.add(paths, root.path()));
+                UNSUCCESSFUL_CONFIGS.put(key, ArrayUtils.add(paths, root.pathToRoot()));
             }
         } else {
             var sorting = analyzeOrientedCycles(spi, parity, spiIndex, maxSymbol, pi, moves, root);
@@ -262,6 +273,14 @@ public class FinalPermutations {
         }
 
         return ListOfCycles.EMPTY_LIST;
+    }
+
+    private static boolean contains(final String[] array, final String string) {
+        for (String s : array) {
+            if (s.equals(string))
+                return true;
+        }
+        return false;
     }
 
     private static String getCanonicalSignature(final ListOfCycles spi,

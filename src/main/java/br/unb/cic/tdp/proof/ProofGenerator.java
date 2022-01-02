@@ -17,12 +17,9 @@ import org.eclipse.collections.api.set.primitive.MutableIntSet;
 
 import java.io.Serializable;
 import java.io.Writer;
-import java.net.URISyntaxException;
 import java.nio.file.*;
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static br.unb.cic.tdp.BaseAlgorithm.*;
 import static br.unb.cic.tdp.base.CommonOperations.*;
@@ -346,7 +343,7 @@ public class ProofGenerator {
         public Move parent;
         public final int mu;
         public Move[] children;
-        private String stack;
+        private String pathToRoot;
 
         public Move(int mu, Move[] children, Move parent) {
             this.mu = mu;
@@ -362,8 +359,8 @@ public class ProofGenerator {
             return mu == m.mu;
         }
 
-        public String path() {
-            if (stack == null) {
+        public String pathToRoot() {
+            if (pathToRoot == null) {
                 final var list = new ArrayList<String>();
                 var current = this;
                 while (current != null) {
@@ -371,9 +368,9 @@ public class ProofGenerator {
                     current = current.parent;
                 }
 
-                stack = list.stream().sorted().collect(Collectors.joining());
+                pathToRoot = list.stream().sorted().collect(Collectors.joining());
             }
-            return stack;
+            return pathToRoot;
         }
 
         @Override
