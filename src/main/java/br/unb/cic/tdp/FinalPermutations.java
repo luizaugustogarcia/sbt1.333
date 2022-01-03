@@ -58,6 +58,7 @@ public class FinalPermutations {
                 System.out.println("Heap size GB: " + (((heapSize / 1024) / 1024) / 1024));
                 long heapFreeSize = Runtime.getRuntime().freeMemory();
                 System.out.println("Heap free size GB: " + (((heapFreeSize / 1024) / 1024) / 1024));
+                System.out.println();
             }
         }, 0, Integer.parseInt(args[2]) * 60 * 1000);
 
@@ -303,7 +304,7 @@ public class FinalPermutations {
         var leastHashCode = Integer.MAX_VALUE;
         float[] canonical = null;
 
-        for (int symbol : startingBy(pi, maxSymbol)) {
+        for (int symbol : pi) {
             final var shifting = startingBy(pi, symbol);
 
             var signature = signature(spi, shifting, spiIndex, maxSymbol);
@@ -313,6 +314,8 @@ public class FinalPermutations {
             if (hashCode < leastHashCode) {
                 leastHashCode = hashCode;
                 canonical = signature;
+            } else if (hashCode == leastHashCode) {
+                canonical = least(signature, canonical);
             }
 
             final var mirroredSignature = signature.clone();
@@ -350,10 +353,24 @@ public class FinalPermutations {
             if (hashCode < leastHashCode) {
                 leastHashCode = hashCode;
                 canonical = signature;
+            } else if (hashCode == leastHashCode) {
+                canonical = least(signature, canonical);
             }
         }
 
         return toString(canonical);
+    }
+
+    private static float[] least(final float[] signature, final float[] canonical) {
+        for (int i = 0; i < signature.length; i++) {
+            if (signature[i] != canonical[i]) {
+                if (signature[i] < canonical[i])
+                    return signature;
+                else
+                    return canonical;
+            }
+        }
+        return canonical;
     }
 
     public static float[] signature(final ListOfCycles spi, final int[] pi, final int[][] spiIndex, final int maxSymbol) {
