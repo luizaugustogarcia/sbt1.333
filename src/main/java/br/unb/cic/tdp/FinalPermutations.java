@@ -53,6 +53,7 @@ public class FinalPermutations {
                 System.out.println("Cache size: " + UNSUCCESSFUL_CONFIGS.size());
                 System.out.println("Cache hits: " + hits);
                 System.out.println("Cache misses: " + misses);
+                System.out.println("Cache miss rate: " + String.format("%.2f", misses.get() / (double)hits.get()));
                 long heapSize = Runtime.getRuntime().totalMemory();
                 System.out.println("Heap size GB: " + (((heapSize / 1024) / 1024) / 1024));
                 long heapFreeSize = Runtime.getRuntime().freeMemory();
