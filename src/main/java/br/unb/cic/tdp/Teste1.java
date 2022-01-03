@@ -6,11 +6,9 @@ import lombok.SneakyThrows;
 import org.apache.commons.lang.time.StopWatch;
 import org.apache.velocity.app.Velocity;
 
-import java.io.ByteArrayOutputStream;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.stream.Stream;
-import java.util.zip.GZIPOutputStream;
 
 import static br.unb.cic.tdp.FinalPermutations.*;
 import static br.unb.cic.tdp.proof.ProofGenerator.*;
@@ -27,7 +25,7 @@ public class Teste1 {
                 .concurrencyLevel(Runtime.getRuntime().availableProcessors())
                 .build();
 
-        numberOfMovesToCache = Integer.parseInt(args[1]);
+        lengthOfSequenceToBeCached = Integer.parseInt(args[1]);
 
         final var timer = new Timer();
         timer.scheduleAtFixedRate(new TimerTask() {
