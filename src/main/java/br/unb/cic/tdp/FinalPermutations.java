@@ -249,7 +249,7 @@ public class FinalPermutations {
         String key = null;
         String[] paths = null;
 
-        if (moves.size <= numberOfMovesToCache) {
+        if (root.pathToRoot().length() <= numberOfMovesToCache) {
             key = getCanonicalSignature(spi, pi, spiIndex, maxSymbol);
 
             paths = UNSUCCESSFUL_CONFIGS.getIfPresent(key);
@@ -279,7 +279,7 @@ public class FinalPermutations {
             }
         }
 
-        if (moves.size <= numberOfMovesToCache) {
+        if (root.pathToRoot().length() <= numberOfMovesToCache) {
             if (UNSUCCESSFUL_CONFIGS.getIfPresent(key) == null) {
                 UNSUCCESSFUL_CONFIGS.put(key, new String[]{root.pathToRoot()});
             } else {
