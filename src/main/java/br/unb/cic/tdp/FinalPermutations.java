@@ -20,7 +20,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
-import java.util.zip.CRC32;
 
 import static br.unb.cic.tdp.base.CommonOperations.*;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
@@ -31,11 +30,12 @@ import static java.util.stream.Collectors.*;
 public class FinalPermutations {
 
     final static Cache<String, String[]> UNSUCCESSFUL_CONFIGS = CacheBuilder.newBuilder()
-            .maximumSize(200_000_000)
+            .maximumSize(120_000_000)
             .concurrencyLevel(Runtime.getRuntime().availableProcessors())
             .build();
 
     final static AtomicLong hits = new AtomicLong();
+    final static AtomicLong misses = new AtomicLong();
 
     public static void main(String[] args) {
         Velocity.setProperty("resource.loader", "class");
@@ -46,8 +46,8 @@ public class FinalPermutations {
         timer.scheduleAtFixedRate(new TimerTask() {
             public void run() {
                 System.out.println("Cache size: " + UNSUCCESSFUL_CONFIGS.size());
-                System.out.println("Cache hits (<= 5): " + hits);
-
+                System.out.println("Cache hits: " + hits);
+                System.out.println("Cache misses: " + misses);
                 long heapSize = Runtime.getRuntime().totalMemory();
                 System.out.println("Heap size GB: " + (((heapSize / 1024) / 1024) / 1024));
                 long heapFreeSize = Runtime.getRuntime().freeMemory();
@@ -226,34 +226,41 @@ public class FinalPermutations {
         return removed;
     }
 
+    static AtomicLong total = new AtomicLong();
+    static AtomicLong times = new AtomicLong();
+
     @SneakyThrows
     public static ListOfCycles search(final ListOfCycles spi,
-                                      final boolean[] parity, final int[][] spiIndex,
-                                      final int maxSymbol, final int[] pi,
+                                      final boolean[] parity,
+                                      final int[][] spiIndex,
+                                      final int maxSymbol,
+                                      final int[] pi,
                                       final ListOfCycles moves,
                                       final Move root) {
         if (Thread.currentThread().isInterrupted()) {
             return ListOfCycles.EMPTY_LIST;
         }
 
-        if (root.mu == 0) {
-            final var key = getCanonicalSignature(spi, pi, spiIndex, maxSymbol);
+        String key = null;
+        String[] paths = null;
 
-            if (UNSUCCESSFUL_CONFIGS.getIfPresent(key) != null && contains(UNSUCCESSFUL_CONFIGS.getIfPresent(key), root.pathToRoot())) {
-                if (root.pathToRoot().length() <= 5) hits.incrementAndGet();
+        if (moves.size <= 12) {
+            key = getCanonicalSignature(spi, pi, spiIndex, maxSymbol);
+
+            paths = UNSUCCESSFUL_CONFIGS.getIfPresent(key);
+
+            if (paths != null && contains(paths, root.pathToRoot())) {
+                hits.incrementAndGet();
                 return ListOfCycles.EMPTY_LIST;
+            } else {
+                misses.incrementAndGet();
             }
+        }
 
+        if (root.mu == 0) {
             final var sorting = analyze0Moves(spi, parity, spiIndex, maxSymbol, pi, moves, root);
             if (!sorting.isEmpty()) {
                 return sorting;
-            }
-
-            final var paths = UNSUCCESSFUL_CONFIGS.getIfPresent(key);
-            if (paths == null) {
-                UNSUCCESSFUL_CONFIGS.put(key, new String[]{ root.pathToRoot() });
-            } else {
-                UNSUCCESSFUL_CONFIGS.put(key, ArrayUtils.add(paths, root.pathToRoot()));
             }
         } else {
             var sorting = analyzeOrientedCycles(spi, parity, spiIndex, maxSymbol, pi, moves, root);
@@ -264,6 +271,14 @@ public class FinalPermutations {
             sorting = analyzeOddCycles(spi, parity, spiIndex, maxSymbol, pi, moves, root);
             if (!sorting.isEmpty()) {
                 return sorting;
+            }
+        }
+
+        if (moves.size <= 12) {
+            if (UNSUCCESSFUL_CONFIGS.getIfPresent(key) == null) {
+                UNSUCCESSFUL_CONFIGS.put(key, new String[]{root.pathToRoot()});
+            } else {
+                UNSUCCESSFUL_CONFIGS.put(key, ArrayUtils.add(paths, root.pathToRoot()));
             }
         }
 
@@ -283,21 +298,18 @@ public class FinalPermutations {
                                                 final int[][] spiIndex,
                                                 final int maxSymbol) throws IOException {
         var leastHashCode = Integer.MAX_VALUE;
-        String canonical = null;
+        float[] canonical = null;
 
-        for (int symbol : pi) {
+        for (int symbol : startingBy(pi, maxSymbol)) {
             final var shifting = startingBy(pi, symbol);
 
             var signature = signature(spi, shifting, spiIndex, maxSymbol);
-            var hashCode = hashCode(signature);
+
+            var hashCode = Arrays.hashCode(signature);
+
             if (hashCode < leastHashCode) {
                 leastHashCode = hashCode;
-                canonical = toString(signature);
-            } else if (hashCode == leastHashCode) {
-                // Hash collisions can occur when computing the canonical signature
-                final var candidate = toString(signature);
-                if (candidate.compareTo(canonical) < 0)
-                    canonical = candidate;
+                canonical = signature;
             }
 
             final var mirroredSignature = signature.clone();
@@ -331,27 +343,32 @@ public class FinalPermutations {
                 }
             }
 
-            hashCode = hashCode(mirroredSignature);
+            hashCode = Arrays.hashCode(mirroredSignature);
             if (hashCode < leastHashCode) {
                 leastHashCode = hashCode;
-                canonical = toString(signature);
-            } else if (hashCode == leastHashCode) {
-                // Hash collisions can occur when computing the canonical signature
-                final var candidate = toString(signature);
-                if (candidate.compareTo(canonical) < 0)
-                    canonical = candidate;
+                canonical = signature;
             }
         }
 
-        return canonical;
+        return toString(canonical);
     }
 
     public static float[] signature(final ListOfCycles spi, final int[] pi, final int[][] spiIndex, final int maxSymbol) {
         final var piInverseIndex = getPiInverseIndex(pi, maxSymbol);
         final var orientedCycles = getOrientedCycles(spi, piInverseIndex);
 
-        final var labelByCycle = new HashMap<int[], Float>();
-        final var symbolIndexByOrientedCycle = new HashMap<int[], int[]>();
+        final var orientationByCycle = new boolean[maxSymbol + 1];
+        Arrays.fill(orientationByCycle, false);
+
+        var current = orientedCycles.head;
+        for (int l = 0; l < orientedCycles.size; l++) {
+            orientationByCycle[current.data[0]] = true;
+        }
+
+        final var labelByCycle = new float[maxSymbol + 1];
+        Arrays.fill(labelByCycle, -1);
+
+        final var symbolIndexByOrientedCycle = new int[maxSymbol + 1][];
 
         final var signature = new float[pi.length];
 
@@ -361,29 +378,33 @@ public class FinalPermutations {
             piIndex[pi[i]] = i;
         }
 
+        var currentLabel = 1f;
+
         for (var i = 0; i < signature.length; i++) {
             final int symbol = pi[i];
             final var cycle = spiIndex[symbol];
 
-            if (orientedCycles.contains(cycle)) {
-                symbolIndexByOrientedCycle.computeIfAbsent(cycle, c -> {
-                    final var symbolIndex = new int[maxSymbol + 1];
-                    final int symbolMinIndex = Ints.asList(c).stream().min(comparing(integer -> piIndex[integer])).get();
-                    for (int j = 0; j < c.length; j++) {
-                        if (c[j] == symbolMinIndex) {
-                            for (int k = 0; k < c.length; k++) {
-                                symbolIndex[c[(j + k) % c.length]] = k + 1;
-                            }
-                            break;
+            if (orientationByCycle[cycle[0]]) {
+                final var symbolIndex = new int[maxSymbol + 1];
+                final int symbolMinIndex = Ints.asList(cycle).stream().min(comparing(integer -> piIndex[integer])).get();
+                for (int j = 0; j < cycle.length; j++) {
+                    if (cycle[j] == symbolMinIndex) {
+                        for (int k = 0; k < cycle.length; k++) {
+                            symbolIndex[cycle[(j + k) % cycle.length]] = k + 1;
                         }
+                        break;
                     }
-                    return symbolIndex;
-                });
+                }
+                symbolIndexByOrientedCycle[cycle[0]] = symbolIndex;
             }
 
-            labelByCycle.computeIfAbsent(cycle, c -> (float) (labelByCycle.size() + 1));
-            signature[i] = orientedCycles.contains(cycle) ?
-                    labelByCycle.get(cycle) + (float) symbolIndexByOrientedCycle.get(cycle)[symbol] / 100 : labelByCycle.get(cycle);
+            if (labelByCycle[cycle[0]] == -1) {
+                labelByCycle[cycle[0]] = currentLabel;
+                currentLabel++;
+            }
+
+            signature[i] = orientationByCycle[cycle[0]] ?
+                    labelByCycle[cycle[0]] + (float) symbolIndexByOrientedCycle[cycle[0]][symbol] / 100 : labelByCycle[cycle[0]];
         }
 
         return signature;
@@ -1013,6 +1034,7 @@ public class FinalPermutations {
 
             tail.previous.next = null;
             tail = tail.previous;
+            size--;
         }
 
         public void remove(int[] data) {
@@ -1043,10 +1065,12 @@ public class FinalPermutations {
         }
 
         public boolean contains(final int[] data) {
-            for (var current = head; current != null; current = current.next) {
+            var current = this.head;
+            for (int i = 0; i < this.size; i++) {
                 if (current.data == data) {
                     return true;
                 }
+                current = current.next;
             }
             return false;
         }
@@ -1107,16 +1131,5 @@ public class FinalPermutations {
         public String toString() {
             return Arrays.toString(data);
         }
-    }
-
-    public static int hashCode(final float[] content) throws IOException {
-        final var bas = new ByteArrayOutputStream();
-        final var ds = new DataOutputStream(bas);
-        for (float f : content)
-            ds.writeFloat(f);
-        byte[] bytes = bas.toByteArray();
-        final var crc32 = new CRC32();
-        crc32.update(bytes, 0, bytes.length);
-        return (int) crc32.getValue();
     }
 }

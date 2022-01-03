@@ -315,7 +315,7 @@ public class Configuration {
         @Override
         public int hashCode() {
             if (hashCode == null) {
-                final var bas = new ByteArrayOutputStream();
+                final var bas = new ByteArrayOutputStream(content.length * 4);
                 final var ds = new DataOutputStream(bas);
                 for (float f : content)
                     ds.writeFloat(f);
