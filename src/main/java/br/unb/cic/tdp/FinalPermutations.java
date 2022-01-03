@@ -29,10 +29,8 @@ import static java.util.stream.Collectors.*;
 
 public class FinalPermutations {
 
-    final static Cache<String, String[]> UNSUCCESSFUL_CONFIGS = CacheBuilder.newBuilder()
-            .maximumSize(120_000_000)
-            .concurrencyLevel(Runtime.getRuntime().availableProcessors())
-            .build();
+    static Cache<String, String[]> UNSUCCESSFUL_CONFIGS;
+    static int numberOfMovesToCache = 12;
 
     final static AtomicLong hits = new AtomicLong();
     final static AtomicLong misses = new AtomicLong();
@@ -41,6 +39,13 @@ public class FinalPermutations {
         Velocity.setProperty("resource.loader", "class");
         Velocity.setProperty("class.resource.loader.class", "org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader");
         Velocity.init();
+
+        UNSUCCESSFUL_CONFIGS = CacheBuilder.newBuilder()
+                .maximumSize(Integer.parseInt(args[0]))
+                .concurrencyLevel(Runtime.getRuntime().availableProcessors())
+                .build();
+
+        numberOfMovesToCache = Integer.parseInt(args[1]);
 
         final var timer = new Timer();
         timer.scheduleAtFixedRate(new TimerTask() {
@@ -53,7 +58,7 @@ public class FinalPermutations {
                 long heapFreeSize = Runtime.getRuntime().freeMemory();
                 System.out.println("Heap free size GB: " + (((heapFreeSize / 1024) / 1024) / 1024));
             }
-        }, 0, 10 * 60 * 1000);
+        }, 0, Integer.parseInt(args[2]) * 60 * 1000);
 
 //        Stream.of(
 //                new Configuration("(0 4 2)(1 5 3)(6 10 8)(7 11 9)(12 16 14)(13 17 15)(24 34 26)(25 35 27)(28 32 30)(29 33 31)(18 22 20)(19 23 21)"), // bad
@@ -244,7 +249,7 @@ public class FinalPermutations {
         String key = null;
         String[] paths = null;
 
-        if (moves.size <= 12) {
+        if (moves.size <= numberOfMovesToCache) {
             key = getCanonicalSignature(spi, pi, spiIndex, maxSymbol);
 
             paths = UNSUCCESSFUL_CONFIGS.getIfPresent(key);
@@ -274,7 +279,7 @@ public class FinalPermutations {
             }
         }
 
-        if (moves.size <= 12) {
+        if (moves.size <= numberOfMovesToCache) {
             if (UNSUCCESSFUL_CONFIGS.getIfPresent(key) == null) {
                 UNSUCCESSFUL_CONFIGS.put(key, new String[]{root.pathToRoot()});
             } else {

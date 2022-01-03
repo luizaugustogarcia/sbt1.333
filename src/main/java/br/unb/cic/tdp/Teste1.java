@@ -1,6 +1,7 @@
 package br.unb.cic.tdp;
 
 import br.unb.cic.tdp.base.Configuration;
+import com.google.common.cache.CacheBuilder;
 import lombok.SneakyThrows;
 import org.apache.commons.lang.time.StopWatch;
 import org.apache.velocity.app.Velocity;
@@ -21,6 +22,13 @@ public class Teste1 {
         Velocity.setProperty("class.resource.loader.class", "org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader");
         Velocity.init();
 
+        UNSUCCESSFUL_CONFIGS = CacheBuilder.newBuilder()
+                .maximumSize(Integer.parseInt(args[0]))
+                .concurrencyLevel(Runtime.getRuntime().availableProcessors())
+                .build();
+
+        numberOfMovesToCache = Integer.parseInt(args[1]);
+
         final var timer = new Timer();
         timer.scheduleAtFixedRate(new TimerTask() {
             public void run() {
@@ -32,7 +40,7 @@ public class Teste1 {
                 long heapFreeSize = Runtime.getRuntime().freeMemory();
                 System.out.println("Heap free size GB: " + (((heapFreeSize / 1024) / 1024) / 1024));
             }
-        }, 0, 10 * 60 * 1000);
+        }, 0, Integer.parseInt(args[2]) * 60 * 1000);
 
 
         var s = new StopWatch();
