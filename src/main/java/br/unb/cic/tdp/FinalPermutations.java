@@ -233,6 +233,9 @@ public class FinalPermutations {
         return removed;
     }
 
+//    static AtomicLong total = new AtomicLong();
+//    static AtomicLong times = new AtomicLong();
+
     @SneakyThrows
     public static ListOfCycles search(final ListOfCycles spi,
                                       final boolean[] parity,
@@ -249,9 +252,14 @@ public class FinalPermutations {
         String[] paths = null;
 
         if (root.pathToRoot().length() <= lengthOfSequenceToBeCached) {
-            key = getCanonicalSignature(spi, pi, spiIndex, maxSymbol);
+//            long i = System.nanoTime();
 
+            key = getCanonicalSignature(spi, pi, spiIndex, maxSymbol);
             paths = UNSUCCESSFUL_CONFIGS.getIfPresent(key);
+
+//            total.addAndGet(System.nanoTime() - i);
+//            times.incrementAndGet();
+//            System.out.println(total.get() / (float)times.get());
 
             if (paths != null && contains(paths, root.pathToRoot())) {
                 hits.incrementAndGet();
@@ -406,7 +414,13 @@ public class FinalPermutations {
 
             if (orientationByCycle[cycle[0]]) {
                 final var symbolIndex = new int[maxSymbol + 1];
-                final int symbolMinIndex = Ints.asList(cycle).stream().min(comparing(integer -> piIndex[integer])).get();
+
+                var symbolMinIndex = Integer.MAX_VALUE;
+                for (int s : cycle) {
+                    if (piIndex[s] < symbolMinIndex)
+                        symbolMinIndex = piIndex[s];
+                }
+
                 for (int j = 0; j < cycle.length; j++) {
                     if (cycle[j] == symbolMinIndex) {
                         for (int k = 0; k < cycle.length; k++) {
