@@ -7,10 +7,10 @@ import br.unb.cic.tdp.proof.seq12_9.Combinations;
 import br.unb.cic.tdp.proof.seq12_9.SearchForSortingStrategy;
 import br.unb.cic.tdp.util.Pair;
 import cern.colt.list.IntArrayList;
+import com.google.common.base.Throwables;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.primitives.Ints;
-import lombok.Getter;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.Velocity;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
@@ -24,6 +24,8 @@ import java.util.stream.Collectors;
 import static br.unb.cic.tdp.BaseAlgorithm.*;
 import static br.unb.cic.tdp.base.CommonOperations.*;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
+import static br.unb.cic.tdp.proof.seq12_9._19_14Seq._19_14;
+import static br.unb.cic.tdp.proof.seq12_9._20_15._20_15;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 public class ProofGenerator {
@@ -33,27 +35,27 @@ public class ProofGenerator {
     static final int[][] _4_3 = new int[][]{{0,2,2,2}};
 
     static final int[][] _8_6 = new int[][]{
-                {0,2,2,0,2,2,2,2},
-                {0,2,0,2,2,2,2,2},
-                {0,0,2,2,2,2,2,2}};
+            {0,2,2,0,2,2,2,2},
+            {0,2,0,2,2,2,2,2},
+            {0,0,2,2,2,2,2,2}};
 
     static final int[][] _12_9 = new int[][]{
-                {0,2,2,0,2,2,2,0,2,2,2,2},
-                {0,2,2,0,2,2,0,2,2,2,2,2},
-                {0,2,2,0,2,0,2,2,2,2,2,2},
-                {0,2,2,0,0,2,2,2,2,2,2,2},
-                {0,2,0,2,2,2,2,0,2,2,2,2},
-                {0,2,0,2,2,2,0,2,2,2,2,2},
-                {0,2,0,2,2,0,2,2,2,2,2,2},
-                {0,2,0,2,0,2,2,2,2,2,2,2},
-                {0,2,0,0,2,2,2,2,2,2,2,2},
-                {0,0,2,2,2,2,2,0,2,2,2,2},
-                {0,0,2,2,2,2,0,2,2,2,2,2},
-                {0,0,2,2,2,0,2,2,2,2,2,2},
-                {0,0,2,2,0,2,2,2,2,2,2,2},
-                {0,0,2,0,2,2,2,2,2,2,2,2},
-                {0,0,0,2,2,2,2,2,2,2,2,2}
-        };
+            {0,2,2,0,2,2,2,0,2,2,2,2},
+            {0,2,2,0,2,2,0,2,2,2,2,2},
+            {0,2,2,0,2,0,2,2,2,2,2,2},
+            {0,2,2,0,0,2,2,2,2,2,2,2},
+            {0,2,0,2,2,2,2,0,2,2,2,2},
+            {0,2,0,2,2,2,0,2,2,2,2,2},
+            {0,2,0,2,2,0,2,2,2,2,2,2},
+            {0,2,0,2,0,2,2,2,2,2,2,2},
+            {0,2,0,0,2,2,2,2,2,2,2,2},
+            {0,0,2,2,2,2,2,0,2,2,2,2},
+            {0,0,2,2,2,2,0,2,2,2,2,2},
+            {0,0,2,2,2,0,2,2,2,2,2,2},
+            {0,0,2,2,0,2,2,2,2,2,2,2},
+            {0,0,2,0,2,2,2,2,2,2,2,2},
+            {0,0,0,2,2,2,2,2,2,2,2,2}
+    };
 
     static final int[][] _16_12 = new int[][]{
             {0,2,2,0,2,2,2,0,2,2,2,0,2,2,2,2},
@@ -148,16 +150,39 @@ public class ProofGenerator {
             {0,0,0,2,0,2,2,2,2,2,2,2,2,2,2,2},
             {0,0,0,0,2,2,2,2,2,2,2,2,2,2,2,2}};
 
-    public static final Move _4_3_SEQS = new Move(0, new Move[0]);
-    public static final Move _8_6_SEQS = new Move(0, new Move[0]);
-    public static final Move _12_9_SEQS = new Move(0, new Move[0]);
-    public static final Move _16_12_SEQS = new Move(0, new Move[0]);
+    public static final Move _4_3_SEQS = new Move(0, new Move[0], null);
+    public static final Move _8_6_SEQS = new Move(0, new Move[0], null);
+    public static final Move _12_9_SEQS = new Move(0, new Move[0], null);
+    public static final Move _16_12_SEQS = new Move(0, new Move[0], null);
+    public static final Move _20_15_SEQS = new Move(0, new Move[0], null);
+    public static final Move _24_18_SEQS = new Move(0, new Move[0], null);
+    public static final Move _19_14_SEQS = new Move(0, new Move[0], null);
 
     static {
-        toTrie(_4_3, _4_3_SEQS);
-        toTrie(_8_6, _8_6_SEQS);
-        toTrie(_12_9, _12_9_SEQS);
-        toTrie(_16_12, _16_12_SEQS);
+        final var _24_18 = new int[4389][];
+        try {
+            final int[] j = {0};
+            final Path path = Paths.get(ProofGenerator.class.getClassLoader().getResource("24_18-seqs.txt").toURI());
+            Files.lines(path).forEach(s -> {
+                final var seq = new int[s.split(",").length];
+
+                for (int i = 0; i < s.split(",").length; i++) {
+                    seq[i] = Integer.parseInt(s.split(",")[i]);
+                }
+
+                _24_18[j[0]++] = seq;
+            });
+
+            toTrie(_4_3, _4_3_SEQS);
+            toTrie(_8_6, _8_6_SEQS);
+            toTrie(_12_9, _12_9_SEQS);
+            toTrie(_16_12, _16_12_SEQS);
+            toTrie(_20_15, _20_15_SEQS);
+            toTrie(_19_14, _19_14_SEQS);
+            toTrie(_24_18, _24_18_SEQS);
+        } catch (Exception e) {
+            Throwables.propagate(e);
+        }
     }
 
     public static void toTrie(final int[][] seqs, Move root) {
@@ -169,11 +194,11 @@ public class ProofGenerator {
                 if (Arrays.stream(root.children).noneMatch(m -> m.mu == move)) {
                     if (root.children.length == 0) {
                         root.children = new Move[1];
-                        root.children[0] = new Move(move, new Move[0]);
+                        root.children[0] = new Move(move, new Move[0], root);
                     } else {
                         final var children = new Move[2];
                         children[0] = root.children[0];
-                        children[1] = new Move(move, new Move[0]);
+                        children[1] = new Move(move, new Move[0], root);
                         root.children = children;
                     }
                 }
@@ -315,12 +340,16 @@ public class ProofGenerator {
     }
 
     public static class Move implements Serializable {
+        public Move parent;
         public final int mu;
         public Move[] children;
+        private String pathToRoot;
 
-        public Move(int mu, Move[] children) {
+        public Move(int mu, Move[] children, Move parent) {
             this.mu = mu;
             this.children = children;
+            this.parent = parent;
+            pathToRoot();
         }
 
         @Override
@@ -329,6 +358,20 @@ public class ProofGenerator {
             if (o == null || getClass() != o.getClass()) return false;
             Move m = (Move) o;
             return mu == m.mu;
+        }
+
+        public String pathToRoot() {
+            if (pathToRoot == null) {
+                final var list = new ArrayList<String>();
+                var current = this;
+                while (current != null) {
+                    list.add(Integer.toString(current.mu));
+                    current = current.parent;
+                }
+
+                pathToRoot = list.stream().sorted().collect(Collectors.joining());
+            }
+            return pathToRoot;
         }
 
         @Override
