@@ -40,12 +40,11 @@ public abstract class SortOrExtend extends RecursiveAction {
 
         if (!badCaseFile.exists()) {
             try {
-                if (workingConfigurations.containsKey(canonical.getSpi().toString())) {
+                final var previousValue = workingConfigurations.putIfAbsent(canonical.getSpi().toString(), Boolean.TRUE);
+                if (previousValue != null && previousValue) {
                     // some thread already is working on this case, skipping
                     return;
                 }
-
-                workingConfigurations.put(canonical.getSpi().toString(), Boolean.TRUE);
 
                 final var sorting = searchForSorting(canonical);
                 if (sorting.isPresent()) {
