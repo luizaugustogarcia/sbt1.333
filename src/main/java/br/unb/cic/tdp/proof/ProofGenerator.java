@@ -203,6 +203,7 @@ public class ProofGenerator {
     public static void main(String[] args) throws Throwable {
         Velocity.setProperty("resource.loader", "class");
         Velocity.setProperty("class.resource.loader.class", "org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader");
+        Velocity.setProperty("parser.pool.size", 100);
         Velocity.init();
 
         Files.createDirectories(Paths.get(args[0]));
