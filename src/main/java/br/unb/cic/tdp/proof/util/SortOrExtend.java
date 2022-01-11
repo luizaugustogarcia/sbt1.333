@@ -94,10 +94,10 @@ public abstract class SortOrExtend extends RecursiveAction {
             sorting = searchSorting(configuration, _12_9_SEQS);
         }
 
-//        if (_3norm >= 12 && sorting.isEmpty()) {
-//            Thread.currentThread().setName(configuration.hashCode() + "-" + configuration.getSpi() + "-16,12");
-//            sorting = searchSorting(configuration, _16_12_SEQS);
-//        }
+        if (_3norm >= 12 && sorting.isEmpty()) {
+            Thread.currentThread().setName(configuration.hashCode() + "-" + configuration.getSpi() + "-16,12");
+            sorting = searchSorting(configuration, _16_12_SEQS);
+        }
 
         Thread.currentThread().setName(threadName);
 

@@ -308,8 +308,8 @@ public class Combinations {
 
         @Override
         protected void extend(Configuration canonical) {
-            if (configuration.get3Norm() > 10) {
-                System.out.println("BAD: Combination does not allow (12/9): " + canonical.getSpi());
+            if (configuration.get3Norm() >= 12) {
+                System.out.println("BAD: Combination does not allow (16/12): " + canonical.getSpi());
                 return;
             }
 
