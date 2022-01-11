@@ -3,10 +3,10 @@ package br.unb.cic.tdp.proof.seq12_9;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
+import br.unb.cic.tdp.proof.util.SortOrExtend;
 import br.unb.cic.tdp.util.Pair;
 import cern.colt.list.FloatArrayList;
 import com.google.common.base.Preconditions;
-import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
 
@@ -27,8 +27,6 @@ import static br.unb.cic.tdp.proof.seq12_9.ListCases.isBadExtension;
 
 public class Extensions {
 
-    private static final SearchForSortingStrategy DEFAULT_STRATEGY = new DefaultSearchForSortingStrategy();
-
     @SneakyThrows
     public static void generate(final String outputDir) {
         Files.createDirectories(Paths.get(outputDir + "/dfs/"));
@@ -40,15 +38,15 @@ public class Extensions {
         cleanUpBadExtensionAndInvalidFiles(outputDir + "/dfs/");
 
         // ATTENTION: The Sort Or Extend fork/join can never run with BAD EXTENSION files in the dfs directory.
-        // Otherwise, it will skip cases.
+        // Otherwise, it will wrongly skip cases.
 
         var pool = new ForkJoinPool();
         // oriented 5-cycle
-        pool.execute(new SortOrExtend(new Configuration(new MulticyclePermutation("(0,3,1,4,2)")), outputDir + "/dfs/"));
+        pool.execute(new SortOrExtendExtensions(new Configuration(new MulticyclePermutation("(0,3,1,4,2)")), outputDir + "/dfs/"));
         // interleaving pair
-        pool.execute(new SortOrExtend(new Configuration(new MulticyclePermutation("(0,4,2)(1,5,3)")), outputDir + "/dfs/"));
+        pool.execute(new SortOrExtendExtensions(new Configuration(new MulticyclePermutation("(0,4,2)(1,5,3)")), outputDir + "/dfs/"));
         // intersecting pair
-        pool.execute(new SortOrExtend(new Configuration(new MulticyclePermutation("(0,3,1)(2,5,4)")), outputDir + "/dfs/"));
+        pool.execute(new SortOrExtendExtensions(new Configuration(new MulticyclePermutation("(0,3,1)(2,5,4)")), outputDir + "/dfs/"));
         pool.shutdown();
         // boundless
         pool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
@@ -349,64 +347,6 @@ public class Extensions {
         return extension;
     }
 
-    @AllArgsConstructor
-    static class SortOrExtend extends RecursiveAction {
-        final Configuration config;
-        final String outputDir;
-
-        @SneakyThrows
-        @Override
-        protected void compute() {
-            final var canonical = config.getCanonical();
-
-            final var sortingFile = new File(outputDir + "/" + canonical.getSpi() + ".html");
-            if (sortingFile.exists()) {
-                // if it's already sorted, return
-                return;
-            }
-
-            final var badCaseFile = new File(outputDir + "/bad-cases/" + canonical.getSpi());
-
-            if (!badCaseFile.exists()) {
-                try {
-                    try (final var workingFile = new RandomAccessFile(new File(outputDir + "/working/" + canonical.getSpi()), "rw")) {
-                        final var buffer = new StringBuffer();
-                        while (workingFile.getFilePointer() < workingFile.length()) {
-                            buffer.append(workingFile.readLine());
-                        }
-
-                        if (buffer.toString().equals("working")) {
-                            // some thread already is working on this case, skipping
-                            return;
-                        }
-
-                        workingFile.write("working".getBytes());
-
-                        final var sorting = searchForSorting(canonical, DEFAULT_STRATEGY);
-                        if (sorting.isPresent()) {
-                            try (final var file = new RandomAccessFile(outputDir + "/" + canonical.getSpi() + ".html", "rw")) {
-                                try (final var writer = new FileWriter(file.getFD())) {
-                                    renderSorting(canonical, sorting.get(), writer);
-                                    return;
-                                }
-                            }
-                        } else {
-                            try (final var writer = new FileWriter(outputDir + "/bad-cases/" + canonical.getSpi())) {
-                                // create the base case
-                            }
-                        }
-                    }
-                } finally {
-                    new File(outputDir + "/working/" + canonical.getSpi()).delete();
-                }
-            }
-
-            type1Extensions(canonical).stream().map(extension -> new SortOrExtend(extension.getSecond(), outputDir)).forEach(ForkJoinTask::fork);
-            type2Extensions(canonical).stream().map(extension -> new SortOrExtend(extension.getSecond(), outputDir)).forEach(ForkJoinTask::fork);
-            type3Extensions(canonical).stream().map(extension -> new SortOrExtend(extension.getSecond(), outputDir)).forEach(ForkJoinTask::fork);
-        }
-    }
-
     @SneakyThrows
     private static void makeHtmlNavigation (final Configuration configuration, final String outputDir) {
         try (final var out = new PrintStream(outputDir + "/dfs/" + configuration.getSpi() + ".html")) {
@@ -480,6 +420,20 @@ public class Extensions {
 
             out.println("</body>");
             out.println("</html>");
+        }
+    }
+
+    static class SortOrExtendExtensions extends SortOrExtend {
+
+        public SortOrExtendExtensions(final Configuration configuration, final String outputDir) {
+            super(configuration, outputDir);
+        }
+
+        @Override
+        protected void extend(Configuration canonical) {
+            type1Extensions(canonical).stream().map(extension -> new SortOrExtendExtensions(extension.getSecond(), outputDir)).forEach(ForkJoinTask::fork);
+            type2Extensions(canonical).stream().map(extension -> new SortOrExtendExtensions(extension.getSecond(), outputDir)).forEach(ForkJoinTask::fork);
+            type3Extensions(canonical).stream().map(extension -> new SortOrExtendExtensions(extension.getSecond(), outputDir)).forEach(ForkJoinTask::fork);
         }
     }
 }

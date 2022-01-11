@@ -4,33 +4,26 @@ import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.proof.seq12_9.Combinations;
-import br.unb.cic.tdp.proof.seq12_9.SearchForSortingStrategy;
-import br.unb.cic.tdp.util.Pair;
+import br.unb.cic.tdp.proof.seq12_9.Extensions;
+import br.unb.cic.tdp.proof.util.*;
 import cern.colt.list.IntArrayList;
 import com.google.common.base.Throwables;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
 import com.google.common.primitives.Ints;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.Velocity;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 
-import java.io.Serializable;
 import java.io.Writer;
 import java.nio.file.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static br.unb.cic.tdp.BaseAlgorithm.*;
-import static br.unb.cic.tdp.base.CommonOperations.*;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 import static br.unb.cic.tdp.proof.seq12_9._19_14Seq._19_14;
 import static br.unb.cic.tdp.proof.seq12_9._20_15._20_15;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 public class ProofGenerator {
-
-    public static final Multimap<Integer, Pair<Configuration, List<Cycle>>> sortings = HashMultimap.create();
 
     static final int[][] _4_3 = new int[][]{{0,2,2,2}};
 
@@ -177,9 +170,8 @@ public class ProofGenerator {
             toTrie(_8_6, _8_6_SEQS);
             toTrie(_12_9, _12_9_SEQS);
             toTrie(_16_12, _16_12_SEQS);
-            toTrie(_20_15, _20_15_SEQS);
             toTrie(_19_14, _19_14_SEQS);
-            toTrie(_24_18, _24_18_SEQS);
+            toTrie(_20_15, _20_15_SEQS);
         } catch (Exception e) {
             Throwables.propagate(e);
         }
@@ -222,71 +214,8 @@ public class ProofGenerator {
         Files.copy(ProofGenerator.class.getClassLoader().getResourceAsStream("draw-config.js"),
                 Paths.get(args[0] + "/draw-config.js"), REPLACE_EXISTING);
 
-        // TODO load sortings from 11/8 algorithm
-        // this one here is for the algorithm
-        //loadSortings("cases/cases-dfs.txt", sortings);
-        loadSortings("cases/cases-comb.txt", sortings);
-
-        //Extensions.generate(args[0]);
+        Extensions.generate(args[0]);
         Combinations.generate(args[0]);
-    }
-
-    public static Optional<List<Cycle>> searchForSorting(final Configuration config,
-                                                         final SearchForSortingStrategy strategy) {
-        var candidates = sortings.get(config.hashCode());
-
-        Optional<Pair<Configuration, List<Cycle>>> pair;
-        if (candidates.size() == 1) {
-            pair = candidates.stream().findFirst();
-        } else {
-            pair = candidates.stream().filter(p -> p.getFirst().equals(config)).findFirst();
-        }
-
-        if (pair.isPresent() && (pair.get().getSecond().size() == 4 || pair.get().getSecond().size() == 8)) {
-            // in this case, we found a 4/3-sequence earlier in the previous work
-            return Optional.of(config.translatedSorting(pair.get().getFirst(), pair.get().getSecond()));
-        }
-
-        final var _3norm = config.getSpi().get3Norm();
-
-        final var sorting = new Stack<Cycle>();
-
-        String threadName = Thread.currentThread().getName();
-
-        if (_3norm >= 3) {
-            Thread.currentThread().setName(config.hashCode() + "-" + config.getSpi() + "-4,3");
-            strategy.search(config.getSpi(), config.getPi(), sorting, _4_3_SEQS);
-        }
-
-        if (_3norm >= 6 && sorting.isEmpty()) {
-            Thread.currentThread().setName(config.hashCode() + "-" + config.getSpi() + "-8,6");
-            strategy.search(config.getSpi(), config.getPi(), sorting, _8_6_SEQS);
-            Thread.currentThread().setName(threadName);
-        }
-
-        if (_3norm >= 9 && sorting.isEmpty()) {
-            Thread.currentThread().setName(config.hashCode() + "-" + config.getSpi() + "-12,9");
-            strategy.search(config.getSpi(), config.getPi(), sorting, _12_9_SEQS);
-            Thread.currentThread().setName(threadName);
-        }
-
-        if (_3norm >= 12 && sorting.isEmpty()) {
-            System.out.println("Searching for 16/12: " + config.getSpi());
-            Thread.currentThread().setName(config.hashCode() + "-" + config.getSpi() + "-12,9 or 16,12");
-            strategy.search(config.getSpi(), config.getPi(), sorting, _16_12_SEQS);
-        }
-
-        Thread.currentThread().setName(threadName);
-
-        if (!sorting.isEmpty()) {
-            return Optional.of(sorting);
-        }
-
-        if (config.isFull() && getComponents(config.getSpi(), config.getPi()).size() == 1) {
-            System.out.println("Full configuration without (12/9): " + config.getCanonical().getSpi());
-        }
-
-        return Optional.empty();
     }
 
     public static Cycle removeExtraSymbols(final MutableIntSet symbols, final Cycle pi) {
@@ -337,46 +266,5 @@ public class ProofGenerator {
 
         final var template = Velocity.getTemplate("templates/sorting.html");
         template.merge(context, writer);
-    }
-
-    public static class Move implements Serializable {
-        public Move parent;
-        public final int mu;
-        public Move[] children;
-        private String pathToRoot;
-
-        public Move(int mu, Move[] children, Move parent) {
-            this.mu = mu;
-            this.children = children;
-            this.parent = parent;
-            pathToRoot();
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            Move m = (Move) o;
-            return mu == m.mu;
-        }
-
-        public String pathToRoot() {
-            if (pathToRoot == null) {
-                final var list = new ArrayList<String>();
-                var current = this;
-                while (current != null) {
-                    list.add(Integer.toString(current.mu));
-                    current = current.parent;
-                }
-
-                pathToRoot = list.stream().sorted().collect(Collectors.joining());
-            }
-            return pathToRoot;
-        }
-
-        @Override
-        public String toString() {
-            return Integer.toString(mu);
-        }
     }
 }

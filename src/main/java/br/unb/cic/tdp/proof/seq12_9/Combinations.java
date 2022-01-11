@@ -3,8 +3,11 @@ package br.unb.cic.tdp.proof.seq12_9;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
+import br.unb.cic.tdp.proof.util.*;
 import br.unb.cic.tdp.util.Pair;
 import cern.colt.list.FloatArrayList;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.common.primitives.Floats;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
@@ -14,18 +17,18 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.stream.Collectors;
 
-import static br.unb.cic.tdp.base.CommonOperations.combinations;
-import static br.unb.cic.tdp.base.CommonOperations.getComponents;
+import static br.unb.cic.tdp.base.CommonOperations.generateAll0And2Moves;
+import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 import static br.unb.cic.tdp.proof.ProofGenerator.*;
 import static br.unb.cic.tdp.proof.seq12_9.Extensions.cleanUpBadExtensionAndInvalidFiles;
+import static br.unb.cic.tdp.proof.seq12_9.Extensions.cleanUpIncompleteCases;
+import static br.unb.cic.tdp.proof.util.SequenceSearcher.applyTransposition;
+import static java.util.stream.Collectors.toList;
 
 public class Combinations {
 
     private static final Map<Integer, Set<Configuration>> incompleteConfigs = new HashMap<>();
-
-    private static final SearchForSortingStrategy DEFAULT_STRATEGY = new DefaultSearchForSortingStrategy();
 
     private static final Configuration ORIENTED_5_CYCLE = new Configuration(
             new MulticyclePermutation("(0,3,1,4,2)"));
@@ -54,66 +57,27 @@ public class Combinations {
         Files.createDirectories(Paths.get(outputDir + "/comb/working/"));
         Files.createDirectories(Paths.get(outputDir + "/comb/bad-cases/"));
 
-        //cleanUpIncompleteCases(outputDir + "/comb/");
+        cleanUpIncompleteCases(outputDir + "/comb/");
 
-        //cleanUpBadExtensionAndInvalidFiles(outputDir + "/comb/");
-
-        //includeBadSmallCasesInBadCases(outputDir + "/comb/");
+        cleanUpBadExtensionAndInvalidFiles(outputDir + "/comb/");
 
         // ATTENTION: The Sort Or Extend fork/join can never run with BAD EXTENSION files in the comb directory.
-        // Otherwise, it will skip cases.
+        // Otherwise, it will wrongly skip cases.
 
-        final Queue<Configuration> notSortedOrExtended = new LinkedList<>(Arrays.asList(BAD_SMALL_COMPONENTS));
+        var pool = new ForkJoinPool();
 
-        while (!notSortedOrExtended.isEmpty()) {
-            final var drainedConfigs = new ArrayList<Configuration>();
-            while (!notSortedOrExtended.isEmpty()) {
-                drainedConfigs.add(notSortedOrExtended.remove());
-            }
-
-            final var forkJoinPool = new ForkJoinPool();
-            drainedConfigs.forEach(configuration -> forkJoinPool.execute(new SortOrExtend(configuration, outputDir, notSortedOrExtended)));
-            forkJoinPool.shutdown();
-            forkJoinPool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
-            System.out.println("Wait a bit to continue");
-            Thread.sleep(1000 * 60 * 10);
+        for (final var configuration : BAD_SMALL_COMPONENTS) {
+            pool.execute(new SortOrExtendCombinations(configuration, outputDir + "/comb/"));
         }
+
+        pool.shutdown();
+        // boundless
+        pool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
 
         var forkJoinPool = new ForkJoinPool();
         Arrays.stream(BAD_SMALL_COMPONENTS).forEach(c -> forkJoinPool.execute(new MakeHtmlNavigation(c, outputDir)));
         forkJoinPool.shutdown();
         forkJoinPool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
-
-        System.out.println(incompleteConfigs.keySet());
-        System.out.println(incompleteConfigs.values().size());
-        incompleteConfigs.values().stream().flatMap(Collection::stream).map(Configuration::getSpi).forEach(System.out::println);
-
-//        final var executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-//        incompleteConfigs.forEach((key, value) -> value.forEach(configuration -> {
-//            executorService.submit(() -> {
-//                final var sorting = searchForSorting(configuration, new DefaultSearchForSortingStrategy());
-//                final var canonical = configuration.getCanonical();
-//                System.out.println("Sorted " + canonical.getSpi() + "-" + sorting);
-//                try (final var out = new FileWriter(outputDir + "/comb/" + canonical.getSpi() + ".html")) {
-//                    renderSorting(canonical, sorting.get(), out);
-//                } catch (Throwable e) {
-//                    e.printStackTrace();
-//                }
-//            });
-//        }));
-//
-//        executorService.shutdown();
-//        executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
-    }
-
-    private static void includeBadSmallCasesInBadCases(final String outputDir) {
-        Arrays.stream(BAD_SMALL_COMPONENTS).forEach(c -> {
-            try (final var writer = new FileWriter(outputDir + "/bad-cases/" + c.getCanonical().getSpi())) {
-                // create the base case
-            } catch (Throwable e) {
-                e.printStackTrace();
-            }
-        });
     }
 
     private static List<Pair<String, Configuration>> extend(final Configuration config) {
@@ -150,138 +114,6 @@ public class Combinations {
             }
         }
         return result;
-    }
-
-    @AllArgsConstructor
-    static class SortOrExtend extends RecursiveAction {
-        final Configuration config;
-        final String outputDir;
-        final Queue<Configuration> notSortedOrExtended;
-
-        @Override
-        protected void compute() {
-            final var canonical = config.getCanonical();
-
-            final var sortingFile = new File(outputDir + "/comb/" + canonical.getSpi() + ".html");
-            if (sortingFile.exists()) {
-                // if it's already sorted, return
-                return;
-            }
-
-            final var badCaseFile = new File(outputDir + "/comb/bad-cases/" + canonical.getSpi());
-
-            if (!badCaseFile.exists()) {
-                final var workingFile = new File(outputDir + "/comb/working/" + canonical.getSpi());
-                if (workingFile.exists()) {
-                    // some thread already is working on this case, skipping
-                    return;
-                }
-
-                try (final var writer = new FileWriter(workingFile)) {
-                    final var sorting = searchForSortingSubCombinations(config, outputDir + "/comb");
-                    if (!sorting.getFirst()) {
-                        if (!sorting.getSecond().isEmpty()) {
-                            System.out.println("Sorted " + config.getSpi() + "-" + sorting);
-                            try (final var out = new FileWriter(outputDir + "/comb/" + config.getSpi() + ".html")) {
-                                renderSorting(config, sorting.getSecond(), out);
-                                return;
-                            }
-                        } else {
-                            try (final var w = new FileWriter(outputDir + "/comb/bad-cases/" + canonical.getSpi())) {
-                                // create the bad case
-                            }
-                        }
-                    } else {
-                        synchronized (notSortedOrExtended) {
-                            // this configuration is not ready yet to be sorted. Other threads are working in the same case
-                            notSortedOrExtended.offer(config);
-                        }
-                        return;
-                    }
-                } catch (Throwable e) {
-                    e.printStackTrace();
-                    return;
-                } finally {
-                    workingFile.delete();
-                }
-            }
-
-            if (config.get3Norm() >= 12) {
-                System.out.println("Combination does not allow (16/12): " + canonical.getSpi());
-                System.exit(1);
-            }
-
-            extend(config).stream().map(extension -> new SortOrExtend(extension.getSecond(), outputDir, notSortedOrExtended)).forEach(ForkJoinTask::fork);
-        }
-    }
-
-    public static Pair<Boolean, List<Cycle>> searchForSortingSubCombinations(final Configuration config, final String outputDir) throws InterruptedException, IOException {
-        final var smallComponents = getComponents(config.getSpi(), config.getPi());
-        boolean subCombinationsInWorkingState = false;
-        for (int i = 2; i < smallComponents.size(); i++) {
-            for (final var components : combinations(smallComponents, i)) {
-                final var spi = new MulticyclePermutation(components.getVector().stream().flatMap(Collection::stream).collect(Collectors.toList()));
-                final var subConfig = new Configuration(spi, removeExtraSymbols(spi.getSymbols(), config.getPi()));
-                final var canonical = subConfig.getCanonical();
-
-                final var badCaseFile = new File(outputDir + "/bad-cases/" + canonical.getSpi());
-                if (badCaseFile.exists()) {
-                    continue;
-                }
-
-                final var sortingFile = new File(outputDir + "/" + canonical.getSpi() + ".html");
-                if (sortingFile.exists()) {
-                    int wait = 0;
-                    while (wait <= 2) {
-                        try {
-                            final var sorting = ListCases.getSorting(new File(outputDir + "/" + canonical.getSpi() + ".html").toPath());
-                            if (!sorting.getSecond().isEmpty()) {
-                                final var translatedSorting = subConfig.translatedSorting(canonical, sorting.getSecond());
-                                return new Pair<>(Boolean.FALSE, translatedSorting);
-                            }
-                        } catch (IllegalStateException e) {
-                            // wait until for the other thread (maybe in another machine) to finish the sorting rendering
-                            Thread.sleep(2000);
-                            wait++;
-                        }
-                    }
-                }
-
-                final var workingFile = new File(outputDir + "/working/" + canonical.getSpi());
-                if (workingFile.exists()) {
-                    subCombinationsInWorkingState = true;
-                    continue;
-                }
-
-                try (final var writer = new FileWriter(workingFile)) {
-                    final Optional<List<Cycle>> sorting = searchForSorting(subConfig, new MaximizeSizeOfComponentsStrategy());
-                    if (sorting.isPresent()) {
-                        try (final var out = new FileWriter(outputDir + "/" + canonical.getSpi() + ".html")) {
-                            final var translatedSorting = canonical.translatedSorting(subConfig, sorting.get());
-                            renderSorting(canonical, translatedSorting, out);
-                            return new Pair<>(Boolean.FALSE, sorting.get());
-                        }
-                    } else {
-                        try (final var w = new FileWriter(outputDir + "/bad-cases/" + canonical.getSpi())) {
-                            // create the bad case
-                        }
-                    }
-                } finally {
-                    workingFile.delete();
-                }
-            }
-        }
-
-        if (subCombinationsInWorkingState) {
-            return new Pair<>(Boolean.TRUE, Collections.emptyList());
-        }
-
-        var sorting = searchForSorting(config, new MaximizeSizeOfComponentsStrategy());
-        if (sorting.isEmpty()) {
-            sorting = searchForSorting(config, DEFAULT_STRATEGY);
-        }
-
-        return sorting.map(cycles -> new Pair<>(Boolean.FALSE, cycles)).orElseGet(() -> new Pair<>(Boolean.FALSE, Collections.emptyList()));
     }
 
     @AllArgsConstructor
@@ -402,6 +234,118 @@ public class Combinations {
                     new MakeHtmlNavigation(extension.getSecond(), outputDir).fork();
                 }
             }
+        }
+    }
+
+    static class SortOrExtendCombinations extends SortOrExtend {
+
+        public SortOrExtendCombinations(final Configuration configuration, final String outputDir) {
+            super(configuration, outputDir);
+        }
+
+        @SneakyThrows
+        @Override
+        protected List<Cycle> searchSorting(Configuration configuration, Move rootMove) {
+            int numberOfMoves = rootMove.getHeight();
+
+            final var canonical = configuration.getCanonical();
+
+            final var sortingFile = new File(outputDir + "/comb/" + canonical.getSpi() + ".html");
+            if (sortingFile.exists()) {
+                return Collections.emptyList();
+            }
+
+            var list = generateAll0And2Moves(configuration.getSpi(), configuration.getPi())
+                    .filter(p -> p.getSecond() == rootMove.mu)
+                    .map(Pair::getFirst)
+                    .collect(toList());
+
+            Collections.shuffle(list);
+
+            var sorting = ListOfCycles.EMPTY_LIST;
+
+            outer: for (final var move : list) {
+                for (final var root : rootMove.children) {
+                    final var stack = new MovesStack(numberOfMoves);
+
+                    final var spi = new ListOfCycles();
+                    computeProduct(configuration.getSpi(), move.getInverse())
+                            .stream().map(Cycle::getSymbols).forEach(spi::add);
+
+                    final var parity = new boolean[configuration.getPi().size()];
+                    int[][] spiIndex = new int[configuration.getPi().size()][];
+                    var current = spi.head;
+                    while (current != null) {
+                        final var cycle = current.data;
+                        for (int i : cycle) {
+                            spiIndex[i] = cycle;
+                            parity[i] = (cycle.length & 1) == 1;
+                        }
+                        current = current.next;
+                    }
+
+                    final var removed = removeTrivialCycles(spi);
+
+                    final var pi = applyTransposition(configuration.getPi().getSymbols(),
+                            move.getSymbols()[0], move.getSymbols()[1], move.getSymbols()[2],
+                            configuration.getPi().size() - removed, spiIndex);
+
+                    stack.push(move.getSymbols()[0], move.getSymbols()[1], move.getSymbols()[2]);
+
+                    final Cache<String, String[]> unsuccessfulConfigs = CacheBuilder.newBuilder()
+                            .maximumSize(10_000_00)
+                            .build();;
+
+                    sorting = SequenceSearcher.search(unsuccessfulConfigs, spi, parity, spiIndex, spiIndex.length, pi, stack, root);
+                    if (!sorting.isEmpty()) {
+                        break outer;
+                    }
+                }
+            }
+
+            return sorting.toList().stream().map(Cycle::create).collect(toList());
+        }
+
+        @Override
+        protected void extend(Configuration canonical) {
+            if (configuration.get3Norm() > 10) {
+                System.out.println("BAD: Combination does not allow (12/9): " + canonical.getSpi());
+                return;
+            }
+
+            extendCombinations(configuration).stream().map(extension -> new SortOrExtendCombinations(extension, outputDir)).forEach(ForkJoinTask::fork);
+        }
+
+        private static int removeTrivialCycles(ListOfCycles spi) {
+            final var toRemove = new ArrayList<int[]>();
+            var removed = 0;
+            for (var current = spi.head; current != null; current = current.next) {
+                final var cycle = current.data;
+                if (cycle.length == 1) {
+                    toRemove.add(cycle);
+                    removed++;
+                }
+            }
+
+            spi.removeAll(toRemove);
+            return removed;
+        }
+
+        private List<Configuration> extendCombinations(final Configuration config) {
+            final var result = new ArrayList<Configuration>();
+            for (final var badSmallComponent : BAD_SMALL_COMPONENTS) {
+                for (int i = 0; i < config.getPi().size(); i++) {
+                    final var badSmallComponentSignature = badSmallComponent.getSignature().getContent().clone();
+                    for (int j = 0; j < badSmallComponentSignature.length; j++) {
+                        badSmallComponentSignature[j] += config.getSpi().size();
+                    }
+                    final var signature = new FloatArrayList(config.getSignature().getContent().clone());
+                    signature.beforeInsertAllOf(i, Floats.asList(badSmallComponentSignature));
+                    signature.trimToSize();
+                    result.add(Configuration.ofSignature(signature.elements()));
+                }
+            }
+            return result;
         }
     }
 }

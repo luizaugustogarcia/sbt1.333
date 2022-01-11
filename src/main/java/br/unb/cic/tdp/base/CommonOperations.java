@@ -134,7 +134,7 @@ public class CommonOperations implements Serializable {
      * (being the indexes of the resulting array).
      */
     public static Cycle[] cycleIndex(final Collection<Cycle> cycle, final Cycle pi) {
-        return cyclesIndex(Arrays.asList(cycle), pi);
+        return cyclesIndex(List.of(cycle), pi);
     }
 
     public static Cycle[] cyclesIndex(final List<Collection<Cycle>> components, final Cycle pi) {
@@ -156,7 +156,7 @@ public class CommonOperations implements Serializable {
 
         boolean leap = false;
         for (int i = 0; i < symbols.length; i++) {
-            if (symbolIndexes.get(symbols[i]) > symbolIndexes.get(symbols[(i + 1) % symbols.length])) {
+            if (symbolIndexes[symbols[i]] > symbolIndexes[symbols[(i + 1) % symbols.length]]) {
                 if (!leap) {
                     leap = true;
                 } else {
@@ -166,39 +166,6 @@ public class CommonOperations implements Serializable {
         }
 
         return true;
-    }
-
-    @SneakyThrows
-    public static List<Cycle> searchFor16_12SeqParallel(final MulticyclePermutation spi, final Cycle pi) {
-        final var executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-        final var completionService = new ExecutorCompletionService<List<Cycle>>(executorService);
-
-        final var submittedTasks = new ArrayList<Future<List<Cycle>>>();
-
-        generateAll0And2Moves(spi, pi).forEach(m -> {
-            final var move = m.getKey();
-            final var _partialSorting = new Stack<Cycle>();
-            _partialSorting.push(move);
-            submittedTasks.add(completionService.submit(() ->
-                    searchForSortingSeq(CommonOperations.applyTransposition(pi, move),
-                            PermutationGroups.computeProduct(spi, move.getInverse()), _partialSorting,
-                            spi.getNumberOfEvenCycles(), 1.34f)));
-        });
-
-        executorService.shutdown();
-
-        List<Cycle> sorting = Collections.emptyList();
-        for (int i = 0; i < submittedTasks.size(); i++) {
-            final var s = completionService.take();
-            if (s.get().size() > 0) {
-                sorting = s.get();
-                break;
-            }
-        }
-
-        executorService.shutdownNow();
-
-        return sorting;
     }
 
     /**
@@ -271,53 +238,6 @@ public class CommonOperations implements Serializable {
                                 }))).filter(Objects::nonNull);
     }
 
-    public static Stream<Pair<Cycle, Integer>> generateAll2Moves(final MulticyclePermutation spi, final Cycle pi) {
-        return Stream.concat(
-                generateAll2MovesFromOrientedCycles(spi, pi).stream().map(m -> new Pair<>(m, 2)),
-                generateAll2MovesFromOddCycles(spi, pi));
-    }
-
-    public static Stream<Pair<Cycle, Integer>> generateAll2MovesFromOddCycles(final MulticyclePermutation spi, final Cycle pi) {
-        final var ci = cycleIndex(spi, pi);
-        return IntStream.range(0, pi.size() - 2).boxed()
-                .filter(i -> ci[pi.get(i)].size() > 1 && !ci[pi.get(i)].isEven())
-                .flatMap(i -> IntStream.range(i + 1, pi.size() - 1).boxed()
-                .filter(j -> ci[pi.get(j)].size() > 1 && !ci[pi.get(j)].isEven())
-                .flatMap(j -> IntStream.range(j + 1, pi.size()).boxed()
-                .filter(k -> ci[pi.get(k)].size() > 1 && !ci[pi.get(k)].isEven())
-                .filter(k -> {
-                    int a = pi.get(i), b = pi.get(j), c = pi.get(k);
-                    final var is_2Move = ci[a] != ci[b] && ci[b] != ci[c] && ci[a] != ci[c];
-                    // skip (-2)-moves
-                    return !is_2Move;
-                }).map(k -> {
-                    int a = pi.get(i), b = pi.get(j), c = pi.get(k);
-                    if (!(ci[a] == ci[b] && ci[b] == ci[c])) {
-                        if (ci[a] == ci[b]) {
-                            int segment1 = ci[a].startingBy(a).getK(a, b);
-                            int segment2 = (ci[a].size() + ci[c].size()) - segment1;
-                            if (segment1 % 2 == 1 && segment2 % 2 == 1) {
-                                return new Pair<>(Cycle.create(a, b, c), 2);
-                            }
-                        } else if (ci[a] == ci[c]) {
-                            int segment1 = ci[a].startingBy(c).getK(c, a);
-                            int segment2 = (ci[a].size() + ci[b].size()) - segment1;
-                            if (segment1 % 2 == 1 && segment2 % 2 == 1) {
-                                return new Pair<>(Cycle.create(a, b, c), 2);
-                            }
-                        } else if (ci[b] == ci[c]) {
-                            int segment1 = ci[b].startingBy(b).getK(b, c);
-                            int segment2 = (ci[b].size() + ci[a].size()) - segment1;
-                            if (segment1 % 2 == 1 && segment2 % 2 == 1) {
-                                return new Pair<>(Cycle.create(a, b, c), 2);
-                            }
-                        }
-                    }
-
-                    return null;
-                }))).filter(Objects::nonNull);
-    }
-
     public static List<Cycle> generateAll2MovesFromOrientedCycles(final Collection<Cycle> spi, final Cycle pi) {
         final var _2moves = new ArrayList<Cycle>();
 
@@ -349,10 +269,6 @@ public class CommonOperations implements Serializable {
      */
     public static Optional<Cycle> searchFor2MoveFromOrientedCycle(final Collection<Cycle> spi, final Cycle pi) {
         return generateAll2MovesFromOrientedCycles(spi, pi).stream().findFirst();
-    }
-
-    public static <T> Generator<T> combinations(final Collection<T> collection, final int k) {
-        return Factory.createSimpleCombinationGenerator(Factory.createVector(collection), k);
     }
 
     /**

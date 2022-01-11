@@ -1,22 +1,18 @@
 package br.unb.cic.tdp.permutation;
 
 import cern.colt.list.IntArrayList;
-import com.google.common.primitives.Ints;
 import lombok.Getter;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang.StringUtils;
-import org.eclipse.collections.api.map.primitive.MutableIntIntMap;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
-import org.eclipse.collections.impl.factory.primitive.IntIntMaps;
 import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
 
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class MulticyclePermutation implements Collection<Cycle>, Permutation {
-    private HashSet<Cycle> cycles = new HashSet<>();
+    private List<Cycle> cycles = new ArrayList<>();
 
     @Getter
     private MutableIntObjectMap index = IntObjectMaps.mutable.empty();

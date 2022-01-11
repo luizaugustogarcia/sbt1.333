@@ -1,14 +1,12 @@
 package br.unb.cic.tdp.util;
 
-import br.unb.cic.tdp.base.CommonOperations;
 import org.paukov.combinatorics.Factory;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.stream.Collectors;
 
 
-public class ListXYSequences {
+public class List_x_y_Sequences {
 
     public static void main(String[] args) {
         final var sequences = new ArrayList<String>();
