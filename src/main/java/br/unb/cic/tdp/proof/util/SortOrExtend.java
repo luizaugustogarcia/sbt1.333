@@ -8,13 +8,12 @@ import lombok.SneakyThrows;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.RandomAccessFile;
-import java.nio.channels.FileLock;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RecursiveAction;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static br.unb.cic.tdp.base.CommonOperations.getComponents;
 import static br.unb.cic.tdp.proof.ProofGenerator.*;
@@ -24,7 +23,7 @@ import static java.util.stream.Collectors.toList;
 public abstract class SortOrExtend extends RecursiveAction {
     protected final Configuration configuration;
     protected final String outputDir;
-    private static final ReadWriteLock workingLock = new ReentrantReadWriteLock(true);
+    private static final Map<String, Boolean> workingConfigurations = new ConcurrentHashMap<>();
 
     @SneakyThrows
     @Override
@@ -40,14 +39,13 @@ public abstract class SortOrExtend extends RecursiveAction {
         final var badCaseFile = new File(outputDir + "/bad-cases/" + canonical.getSpi());
 
         if (!badCaseFile.exists()) {
-            final var workingFile = new File(outputDir + "/working/" + canonical.getSpi());
-
             try {
-                boolean hasLock = workingFile.mkdir();
-                if (!hasLock) {
+                if (workingConfigurations.containsKey(canonical.getSpi().toString())) {
                     // some thread already is working on this case, skipping
                     return;
                 }
+
+                workingConfigurations.put(canonical.getSpi().toString(), Boolean.TRUE);
 
                 final var sorting = searchForSorting(canonical);
                 if (sorting.isPresent()) {
@@ -63,7 +61,7 @@ public abstract class SortOrExtend extends RecursiveAction {
                     }
                 }
             } finally {
-                workingFile.delete();
+                workingConfigurations.remove(canonical.getSpi().toString());
             }
         }
 
