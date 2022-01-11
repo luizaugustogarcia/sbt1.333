@@ -12,6 +12,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.RecursiveAction;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static br.unb.cic.tdp.base.CommonOperations.getComponents;
 import static br.unb.cic.tdp.proof.ProofGenerator.*;
@@ -21,6 +23,7 @@ import static java.util.stream.Collectors.toList;
 public abstract class SortOrExtend extends RecursiveAction {
     protected final Configuration configuration;
     protected final String outputDir;
+    private static final ReadWriteLock workingLock = new ReentrantReadWriteLock(true);
 
     @SneakyThrows
     @Override
@@ -38,18 +41,28 @@ public abstract class SortOrExtend extends RecursiveAction {
         if (!badCaseFile.exists()) {
             try {
                 try (final var workingFile = new RandomAccessFile(new File(outputDir + "/working/" + canonical.getSpi()), "rws")) {
-                    final var buffer = new StringBuilder();
-                    while (workingFile.getFilePointer() < workingFile.length()) {
-                        buffer.append(workingFile.readLine());
+                    try {
+                        workingLock.readLock().lock();
+                        final var buffer = new StringBuilder();
+                        while (workingFile.getFilePointer() < workingFile.length()) {
+                            buffer.append(workingFile.readLine());
+                        }
+
+                        if (buffer.toString().equals("working")) {
+                            // some thread already is working on this case, skipping
+                            return;
+                        }
+                    } finally {
+                        workingLock.readLock().unlock();
                     }
 
-                    if (buffer.toString().equals("working")) {
-                        // some thread already is working on this case, skipping
-                        return;
+                    try {
+                        workingLock.writeLock().lock();
+                        workingFile.write("working".getBytes());
+                        workingFile.getFD().sync();
+                    } finally {
+                        workingLock.writeLock().unlock();
                     }
-
-                    workingFile.write("working".getBytes());
-                    workingFile.getFD().sync();
 
                     final var sorting = searchForSorting(canonical);
                     if (sorting.isPresent()) {
