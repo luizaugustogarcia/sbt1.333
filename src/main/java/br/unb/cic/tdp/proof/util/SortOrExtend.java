@@ -8,6 +8,7 @@ import lombok.SneakyThrows;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.RandomAccessFile;
+import java.nio.channels.FileLock;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -39,47 +40,30 @@ public abstract class SortOrExtend extends RecursiveAction {
         final var badCaseFile = new File(outputDir + "/bad-cases/" + canonical.getSpi());
 
         if (!badCaseFile.exists()) {
-            try {
-                try (final var workingFile = new RandomAccessFile(new File(outputDir + "/working/" + canonical.getSpi()), "rws")) {
-                    try {
-                        workingLock.readLock().lock();
-                        final var buffer = new StringBuilder();
-                        while (workingFile.getFilePointer() < workingFile.length()) {
-                            buffer.append(workingFile.readLine());
-                        }
+            final var workingFile = new File(outputDir + "/working/" + canonical.getSpi());
 
-                        if (buffer.toString().equals("working")) {
-                            // some thread already is working on this case, skipping
+            try {
+                boolean hasLock = workingFile.mkdir();
+                if (!hasLock) {
+                    // some thread already is working on this case, skipping
+                    return;
+                }
+
+                final var sorting = searchForSorting(canonical);
+                if (sorting.isPresent()) {
+                    try (final var file = new RandomAccessFile(outputDir + "/" + canonical.getSpi() + ".html", "rw")) {
+                        try (final var writer = new FileWriter(file.getFD())) {
+                            renderSorting(canonical, sorting.get(), writer);
                             return;
                         }
-                    } finally {
-                        workingLock.readLock().unlock();
                     }
-
-                    try {
-                        workingLock.writeLock().lock();
-                        workingFile.write("working".getBytes());
-                        workingFile.getFD().sync();
-                    } finally {
-                        workingLock.writeLock().unlock();
-                    }
-
-                    final var sorting = searchForSorting(canonical);
-                    if (sorting.isPresent()) {
-                        try (final var file = new RandomAccessFile(outputDir + "/" + canonical.getSpi() + ".html", "rw")) {
-                            try (final var writer = new FileWriter(file.getFD())) {
-                                renderSorting(canonical, sorting.get(), writer);
-                                return;
-                            }
-                        }
-                    } else {
-                        try (final var writer = new FileWriter(outputDir + "/bad-cases/" + canonical.getSpi())) {
-                            // create the base case
-                        }
+                } else {
+                    try (final var writer = new FileWriter(outputDir + "/bad-cases/" + canonical.getSpi())) {
+                        // create the base case
                     }
                 }
             } finally {
-                new File(outputDir + "/working/" + canonical.getSpi()).delete();
+                workingFile.delete();
             }
         }
 
