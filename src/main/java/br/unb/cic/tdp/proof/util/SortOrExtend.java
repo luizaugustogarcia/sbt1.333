@@ -37,7 +37,7 @@ public abstract class SortOrExtend extends RecursiveAction {
 
         if (!badCaseFile.exists()) {
             try {
-                try (final var workingFile = new RandomAccessFile(new File(outputDir + "/working/" + canonical.getSpi()), "rw")) {
+                try (final var workingFile = new RandomAccessFile(new File(outputDir + "/working/" + canonical.getSpi()), "rws")) {
                     final var buffer = new StringBuilder();
                     while (workingFile.getFilePointer() < workingFile.length()) {
                         buffer.append(workingFile.readLine());
@@ -49,6 +49,7 @@ public abstract class SortOrExtend extends RecursiveAction {
                     }
 
                     workingFile.write("working".getBytes());
+                    workingFile.getFD().sync();
 
                     final var sorting = searchForSorting(canonical);
                     if (sorting.isPresent()) {
