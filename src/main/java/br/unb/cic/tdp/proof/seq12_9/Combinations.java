@@ -237,7 +237,7 @@ public class Combinations {
         }
     }
 
-    static class SortOrExtendCombinations extends SortOrExtend {
+    public static class SortOrExtendCombinations extends SortOrExtend {
 
         public SortOrExtendCombinations(final Configuration configuration, final String outputDir) {
             super(configuration, outputDir);
@@ -267,31 +267,31 @@ public class Combinations {
             final var canonicalSignatures = new HashSet<String>();
 
             outer: for (final var move : list) {
-                for (final var root : rootMove.children) {
-                    final var spi = new ListOfCycles();
-                    computeProduct(configuration.getSpi(), move.getInverse())
-                            .stream().map(Cycle::getSymbols).forEach(spi::add);
+                final var spi = new ListOfCycles();
+                computeProduct(configuration.getSpi(), move.getInverse())
+                        .stream().map(Cycle::getSymbols).forEach(spi::add);
 
-                    final var parity = new boolean[configuration.getPi().size()];
-                    int[][] spiIndex = new int[configuration.getPi().size()][];
-                    var current = spi.head;
-                    while (current != null) {
-                        final var cycle = current.data;
-                        for (int i : cycle) {
-                            spiIndex[i] = cycle;
-                            parity[i] = (cycle.length & 1) == 1;
-                        }
-                        current = current.next;
+                final var parity = new boolean[configuration.getPi().size()];
+                int[][] spiIndex = new int[configuration.getPi().size()][];
+                var current = spi.head;
+                while (current != null) {
+                    final var cycle = current.data;
+                    for (int i : cycle) {
+                        spiIndex[i] = cycle;
+                        parity[i] = (cycle.length & 1) == 1;
                     }
+                    current = current.next;
+                }
 
-                    final var removed = removeTrivialCycles(spi);
+                final var removed = removeTrivialCycles(spi);
 
-                    final var pi = applyTransposition(configuration.getPi().getSymbols(),
-                            move.getSymbols()[0], move.getSymbols()[1], move.getSymbols()[2],
-                            configuration.getPi().size() - removed, spiIndex);
+                final var pi = applyTransposition(configuration.getPi().getSymbols(),
+                        move.getSymbols()[0], move.getSymbols()[1], move.getSymbols()[2],
+                        configuration.getPi().size() - removed, spiIndex);
 
-                    final var canonicalSignature = getCanonicalSignature(spi, pi, spiIndex, configuration.getPi().getMaxSymbol());
-                    if (!canonicalSignatures.contains(canonicalSignature)) {
+                final var canonicalSignature = getCanonicalSignature(spi, pi, spiIndex, configuration.getPi().getMaxSymbol());
+                if (!canonicalSignatures.contains(canonicalSignature)) {
+                    for (final var root : rootMove.children) {
                         final var stack = new MovesStack(numberOfMoves);
                         stack.push(move.getSymbols()[0], move.getSymbols()[1], move.getSymbols()[2]);
 
@@ -303,8 +303,8 @@ public class Combinations {
                         if (!sorting.isEmpty()) {
                             break outer;
                         }
-                        canonicalSignatures.add(canonicalSignature);
                     }
+                    canonicalSignatures.add(canonicalSignature);
                 }
             }
 
