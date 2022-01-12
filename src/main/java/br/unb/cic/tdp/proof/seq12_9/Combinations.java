@@ -24,6 +24,7 @@ import static br.unb.cic.tdp.proof.ProofGenerator.*;
 import static br.unb.cic.tdp.proof.seq12_9.Extensions.cleanUpBadExtensionAndInvalidFiles;
 import static br.unb.cic.tdp.proof.seq12_9.Extensions.cleanUpIncompleteCases;
 import static br.unb.cic.tdp.proof.util.SequenceSearcher.applyTransposition;
+import static br.unb.cic.tdp.proof.util.SequenceSearcher.getCanonicalSignature;
 import static java.util.stream.Collectors.toList;
 
 public class Combinations {
@@ -263,10 +264,10 @@ public class Combinations {
 
             var sorting = ListOfCycles.EMPTY_LIST;
 
+            final var canonicalSignatures = new HashSet<String>();
+
             outer: for (final var move : list) {
                 for (final var root : rootMove.children) {
-                    final var stack = new MovesStack(numberOfMoves);
-
                     final var spi = new ListOfCycles();
                     computeProduct(configuration.getSpi(), move.getInverse())
                             .stream().map(Cycle::getSymbols).forEach(spi::add);
@@ -289,15 +290,20 @@ public class Combinations {
                             move.getSymbols()[0], move.getSymbols()[1], move.getSymbols()[2],
                             configuration.getPi().size() - removed, spiIndex);
 
-                    stack.push(move.getSymbols()[0], move.getSymbols()[1], move.getSymbols()[2]);
+                    final var canonicalSignature = getCanonicalSignature(spi, pi, spiIndex, configuration.getPi().getMaxSymbol());
+                    if (!canonicalSignatures.contains(canonicalSignature)) {
+                        final var stack = new MovesStack(numberOfMoves);
+                        stack.push(move.getSymbols()[0], move.getSymbols()[1], move.getSymbols()[2]);
 
-                    final Cache<String, String[]> unsuccessfulConfigs = CacheBuilder.newBuilder()
-                            .maximumSize(10_000_00)
-                            .build();;
+                        final Cache<String, String[]> unsuccessfulConfigs = CacheBuilder.newBuilder()
+                                .maximumSize(10_000_00)
+                                .build();
 
-                    sorting = SequenceSearcher.search(unsuccessfulConfigs, spi, parity, spiIndex, spiIndex.length, pi, stack, root);
-                    if (!sorting.isEmpty()) {
-                        break outer;
+                        sorting = SequenceSearcher.search(unsuccessfulConfigs, spi, parity, spiIndex, spiIndex.length, pi, stack, root);
+                        if (!sorting.isEmpty()) {
+                            break outer;
+                        }
+                        canonicalSignatures.add(canonicalSignature);
                     }
                 }
             }

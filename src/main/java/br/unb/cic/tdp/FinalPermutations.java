@@ -84,27 +84,27 @@ public class FinalPermutations {
 //
 //        UNSUCCESSFUL_CONFIGS.invalidateAll();
 
+//        Stream.of(
+//                new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)")
+//        ).forEach(conf -> sort(conf, "/home/ubuntu/sbt", _19_14_SEQS));
+//
+//        UNSUCCESSFUL_CONFIGS.invalidateAll();
+
         Stream.of(
-                new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)")
+                new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)")
         ).forEach(conf -> sort(conf, "/home/ubuntu/sbt", _19_14_SEQS));
 
         UNSUCCESSFUL_CONFIGS.invalidateAll();
 
         Stream.of(
                 new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)")
-        ).forEach(conf -> sort(conf, "/home/ubuntu/sbt", _19_14_SEQS));
-
-        UNSUCCESSFUL_CONFIGS.cleanUp();
-
-        Stream.of(
-                new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)")
         ).forEach(conf -> sort(conf, "/home/ubuntu/sbt", _20_15_SEQS));
 
-        UNSUCCESSFUL_CONFIGS.cleanUp();
+//        UNSUCCESSFUL_CONFIGS.invalidateAll();
 
-        Stream.of(
-                new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)(48,52,50)(49,53,51)")
-        ).forEach(conf -> sort(conf, "/home/ubuntu/sbt", _24_18_SEQS));
+//        Stream.of(
+//                new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)(48,52,50)(49,53,51)")
+//        ).forEach(conf -> sort(conf, "/home/ubuntu/sbt", _24_18_SEQS));
 
         timer.cancel();
     }
@@ -162,22 +162,19 @@ public class FinalPermutations {
 
             final var canonicalSignature = getCanonicalSignature(spi, pi, spiIndex, configuration.getPi().getMaxSymbol());
             if (!canonicalSignatures.contains(canonicalSignature)) {
-                SearchParams searchParams = new SearchParams(move.getSymbols(), spi, parity, spiIndex, pi);
-
                 submittedTasks.add(completionService.submit(() -> {
                     var sorting = ListOfCycles.EMPTY_LIST;
                     for (final var root : rootMove.children) {
                         final var name = Thread.currentThread().getName();
-                        Thread.currentThread().setName(Thread.currentThread().getName() + "-" + Arrays.toString(searchParams.move) + "-" + root.mu);
+                        Thread.currentThread().setName(Thread.currentThread().getName() + "-" + Arrays.toString(move.getSymbols()) + "-" + root.mu);
 
                         final var stack = new MovesStack(numberOfMoves);
-                        stack.push(searchParams.move[0], searchParams.move[1], searchParams.move[2]);
+                        stack.push(move.getSymbols()[0], move.getSymbols()[1], move.getSymbols()[2]);
 
                         try {
-                            sorting = search(searchParams.spi, searchParams.parity,
-                                    searchParams.spiIndex, searchParams.spiIndex.length, searchParams.pi, stack, root);
+                            sorting = search(spi, parity, spiIndex, spiIndex.length, pi, stack, root);
                             if (sorting.isEmpty() && !Thread.currentThread().isInterrupted()) {
-                                System.out.println(Arrays.toString(searchParams.move) + ", branch " + root.mu + " unsuccessful");
+                                System.out.println(Arrays.toString(move.getSymbols()) + ", branch " + root.mu + " unsuccessful");
                             } else {
                                 break;
                             }

@@ -148,7 +148,7 @@ public class ProofGenerator {
     public static final Move _12_9_SEQS = new Move(0, new Move[0], null);
     public static final Move _16_12_SEQS = new Move(0, new Move[0], null);
     public static final Move _20_15_SEQS = new Move(0, new Move[0], null);
-    public static final Move _24_18_SEQS = new Move(0, new Move[0], null);
+    //public static final Move _24_18_SEQS = new Move(0, new Move[0], null);
     public static final Move _19_14_SEQS = new Move(0, new Move[0], null);
 
     static {
