@@ -30,7 +30,6 @@ public class Extensions {
     @SneakyThrows
     public static void generate(final String outputDir) {
         Files.createDirectories(Paths.get(outputDir + "/dfs/"));
-        Files.createDirectories(Paths.get(outputDir + "/dfs/working/"));
         Files.createDirectories(Paths.get(outputDir + "/dfs/bad-cases/"));
 
         cleanUpIncompleteCases(outputDir + "/dfs/");

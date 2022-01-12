@@ -54,7 +54,6 @@ public class Combinations {
     @SneakyThrows
     public static void generate(final String outputDir) {
         Files.createDirectories(Paths.get(outputDir + "/comb/"));
-        Files.createDirectories(Paths.get(outputDir + "/comb/working/"));
         Files.createDirectories(Paths.get(outputDir + "/comb/bad-cases/"));
 
         cleanUpIncompleteCases(outputDir + "/comb/");
@@ -245,7 +244,7 @@ public class Combinations {
 
         @SneakyThrows
         @Override
-        protected List<Cycle> searchSorting(Configuration configuration, Move rootMove) {
+        protected List<Cycle> searchSorting(final Configuration configuration, final Move rootMove) {
             int numberOfMoves = rootMove.getHeight();
 
             final var canonical = configuration.getCanonical();
@@ -307,7 +306,7 @@ public class Combinations {
         }
 
         @Override
-        protected void extend(Configuration canonical) {
+        protected void extend(final Configuration canonical) {
             if (configuration.get3Norm() >= 12) {
                 System.out.println("BAD: Combination does not allow (16/12): " + canonical.getSpi());
                 return;
@@ -316,7 +315,7 @@ public class Combinations {
             extendCombinations(configuration).stream().map(extension -> new SortOrExtendCombinations(extension, outputDir)).forEach(ForkJoinTask::fork);
         }
 
-        private static int removeTrivialCycles(ListOfCycles spi) {
+        private static int removeTrivialCycles(final ListOfCycles spi) {
             final var toRemove = new ArrayList<int[]>();
             var removed = 0;
             for (var current = spi.head; current != null; current = current.next) {

@@ -7,7 +7,6 @@ import lombok.SneakyThrows;
 
 import java.io.File;
 import java.io.FileWriter;
-import java.io.RandomAccessFile;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -48,11 +47,9 @@ public abstract class SortOrExtend extends RecursiveAction {
 
                 final var sorting = searchForSorting(canonical);
                 if (sorting.isPresent()) {
-                    try (final var file = new RandomAccessFile(outputDir + "/" + canonical.getSpi() + ".html", "rw")) {
-                        try (final var writer = new FileWriter(file.getFD())) {
-                            renderSorting(canonical, sorting.get(), writer);
-                            return;
-                        }
+                    try (final var writer = new FileWriter(outputDir + "/" + canonical.getSpi() + ".html")) {
+                        renderSorting(canonical, sorting.get(), writer);
+                        return;
                     }
                 } else {
                     try (final var writer = new FileWriter(outputDir + "/bad-cases/" + canonical.getSpi())) {
@@ -131,5 +128,5 @@ public abstract class SortOrExtend extends RecursiveAction {
                 .toList().stream().map(Cycle::create).collect(toList());
     }
 
-    protected abstract void extend(Configuration configuration);
+    protected abstract void extend(final Configuration configuration);
 }
