@@ -103,18 +103,15 @@ public class SequenceSearcher {
                     // == APPLY THE MOVE ===
                     spi.removeAll(triplet.first);
                     var numberOfTrivialCycles = 0;
-                    spi.removeAll(triplet.first);
 
-                    var current = triplet.second.head;
                     for (int l = 0; l < triplet.second.size; l++) {
-                        final var cycle = current.data;
+                        final var cycle = triplet.second.elementData[l];
 
                         if (cycle.length > 1) {
                             spi.add(cycle);
                         } else {
                             numberOfTrivialCycles++;
                         }
-                        current = current.next;
                     }
 
                     updateIndex(spiIndex, parity, triplet.second);
@@ -133,11 +130,10 @@ public class SequenceSearcher {
                     }
 
                     // ==== ROLLBACK ====
-                    current = triplet.second.head;
                     for (int l = 0; l < triplet.second.size; l++) {
-                        final var cycle = current.data;
-                        if (cycle.length > 1) spi.remove(cycle);
-                        current = current.next;
+                        final var cycle = triplet.second.elementData[l];
+                        if (cycle.length > 1)
+                            spi.remove(cycle);
                     }
                     spi.addAll(triplet.first);
                     updateIndex(spiIndex, parity, triplet.first);
@@ -163,9 +159,8 @@ public class SequenceSearcher {
 
         final var orientedCycles = getOrientedCycles(spi, piInverseIndex);
 
-        var current = orientedCycles.head;
         for (int l = 0; l < orientedCycles.size; l++) {
-            final var cycle = current.data;
+            final var cycle = orientedCycles.elementData[l];
 
             final var before = parity[cycle[0]] ? 1 : 0;
 
@@ -243,7 +238,6 @@ public class SequenceSearcher {
                     }
                 }
             }
-            current = current.next;
         }
 
         return ListOfCycles.EMPTY_LIST;
@@ -340,16 +334,14 @@ public class SequenceSearcher {
                     var numberOfTrivialCycles = 0;
                     spi.removeAll(triplet.first);
 
-                    var current = triplet.second.head;
                     for (int l = 0; l < triplet.second.size; l++) {
-                        final var cycle = current.data;
+                        final var cycle = triplet.second.elementData[l];
 
                         if (cycle.length > 1) {
                             spi.add(cycle);
                         } else {
                             numberOfTrivialCycles++;
                         }
-                        current = current.next;
                     }
                     updateIndex(spiIndex, parity, triplet.second);
                     // ==============================
@@ -367,11 +359,10 @@ public class SequenceSearcher {
                     }
 
                     // ==== ROLLBACK ====
-                    current = triplet.second.head;
                     for (int l = 0; l < triplet.second.size; l++) {
-                        final var cycle = current.data;
-                        if (cycle.length > 1) spi.remove(cycle);
-                        current = current.next;
+                        final var cycle = triplet.second.elementData[l];
+                        if (cycle.length > 1)
+                            spi.remove(cycle);
                     }
                     spi.addAll(triplet.first);
                     updateIndex(spiIndex, parity, triplet.first);
@@ -404,20 +395,18 @@ public class SequenceSearcher {
     }
 
     private static ListOfCycles getOrientedCycles(final ListOfCycles spi, final int[] piInverseIndex) {
-        final var orientedCycles = new ListOfCycles();
-        var current = spi.head;
+        final var orientedCycles = new ListOfCycles(2);
         for (int i = 0; i < spi.size; i++) {
-            final int[] cycle = current.data;
+            final int[] cycle = spi.elementData[i];
             if (!areSymbolsInCyclicOrder(piInverseIndex, cycle))
                 orientedCycles.add(cycle);
-            current = current.next;
         }
         return orientedCycles;
     }
 
     private static void updateIndex(final int[][] index, final boolean[] parity, final ListOfCycles cycles) {
-        for (var current = cycles.head; current != null; current = current.next) {
-            final var cycle = current.data;
+        for (int i = 0; i < cycles.size; i++) {
+            final var cycle = cycles.elementData[i];
             updateIndex(index, parity, cycle);
         }
     }
@@ -499,14 +488,14 @@ public class SequenceSearcher {
         newNumberOfEvenCycles += newaCycle.length & 1;
         newNumberOfEvenCycles += newbCycle.length & 1;
 
-        final var oldCycles = new ListOfCycles();
+        final var oldCycles = new ListOfCycles(2);
         oldCycles.add(spiIndex[a]);
         if (!oldCycles.contains(spiIndex[b]))
             oldCycles.add(spiIndex[b]);
         if (!oldCycles.contains(spiIndex[c]))
             oldCycles.add(spiIndex[c]);
 
-        final var newCycles = new ListOfCycles();
+        final var newCycles = new ListOfCycles(2);
         newCycles.add(newaCycle);
         newCycles.add(newbCycle);
 
@@ -587,9 +576,8 @@ public class SequenceSearcher {
         final var orientationByCycle = new boolean[maxSymbol + 1];
         Arrays.fill(orientationByCycle, false);
 
-        var current = orientedCycles.head;
         for (int l = 0; l < orientedCycles.size; l++) {
-            orientationByCycle[current.data[0]] = true;
+            orientationByCycle[orientedCycles.elementData[l][0]] = true;
         }
 
         final var labelByCycle = new float[maxSymbol + 1];

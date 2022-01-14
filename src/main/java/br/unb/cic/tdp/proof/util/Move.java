@@ -1,5 +1,7 @@
 package br.unb.cic.tdp.proof.util;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 
@@ -8,6 +10,7 @@ public class Move {
     public final int mu;
     public Move[] children;
     private String pathToRoot;
+    private int numberOfZeroMovesUntilTop = -1;
 
     public Move(int mu, Move[] children, Move parent) {
         this.mu = mu;
@@ -58,5 +61,12 @@ public class Move {
     @Override
     public String toString() {
         return Integer.toString(mu);
+    }
+
+    public int numberOfZeroMovesUntilTop() {
+        if (numberOfZeroMovesUntilTop == -1) {
+            numberOfZeroMovesUntilTop = StringUtils.countMatches(pathToRoot(), "0");
+        }
+        return numberOfZeroMovesUntilTop;
     }
 }

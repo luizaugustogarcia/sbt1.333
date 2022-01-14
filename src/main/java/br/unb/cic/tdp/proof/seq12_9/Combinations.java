@@ -267,20 +267,19 @@ public class Combinations {
             final var canonicalSignatures = new HashSet<String>();
 
             outer: for (final var move : list) {
-                final var spi = new ListOfCycles();
+                final var spi = new ListOfCycles(configuration.getPi().size());
                 computeProduct(configuration.getSpi(), move.getInverse())
                         .stream().map(Cycle::getSymbols).forEach(spi::add);
 
                 final var parity = new boolean[configuration.getPi().size()];
                 int[][] spiIndex = new int[configuration.getPi().size()][];
-                var current = spi.head;
-                while (current != null) {
-                    final var cycle = current.data;
-                    for (int i : cycle) {
-                        spiIndex[i] = cycle;
-                        parity[i] = (cycle.length & 1) == 1;
+
+                for (int i = 0; i < spi.size; i++) {
+                    final var cycle = spi.elementData[i];
+                    for (int s : cycle) {
+                        spiIndex[s] = cycle;
+                        parity[s] = (cycle.length & 1) == 1;
                     }
-                    current = current.next;
                 }
 
                 final var removed = removeTrivialCycles(spi);
@@ -324,14 +323,13 @@ public class Combinations {
         private static int removeTrivialCycles(final ListOfCycles spi) {
             final var toRemove = new ArrayList<int[]>();
             var removed = 0;
-            for (var current = spi.head; current != null; current = current.next) {
-                final var cycle = current.data;
+            for (int i = 0; i < spi.size; i++) {
+                final var cycle = spi.elementData[i];
                 if (cycle.length == 1) {
                     toRemove.add(cycle);
                     removed++;
                 }
             }
-
             spi.removeAll(toRemove);
             return removed;
         }

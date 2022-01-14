@@ -1,7 +1,5 @@
 package br.unb.cic.tdp.proof.util;
 
-import org.apache.commons.lang.NotImplementedException;
-
 public class MovesStack {
     final int maxSize;
     final int[] content;
@@ -24,7 +22,7 @@ public class MovesStack {
     }
 
     public ListOfCycles toListOfCycles() {
-        final ListOfCycles list = new ListOfCycles();
+        final ListOfCycles list = new ListOfCycles(size);
         for (int i = 0; i < size; i++) {
             list.add(new int[] {content[(i * 3)], content[(i * 3) + 1], content[(i * 3) + 2]});
         }

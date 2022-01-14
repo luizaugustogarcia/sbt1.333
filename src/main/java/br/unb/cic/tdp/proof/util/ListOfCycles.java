@@ -5,80 +5,70 @@ import java.util.Arrays;
 import java.util.List;
 
 public class ListOfCycles {
-    public static final ListOfCycles EMPTY_LIST = new ListOfCycles();
+    public static final ListOfCycles EMPTY_LIST = new ListOfCycles(0);
     public int size;
-    public Node head;
-    public Node tail;
+    public int[][] elementData;
 
-    public ListOfCycles() {
+    public ListOfCycles(final int initialSize) {
+        this.elementData = new int[initialSize][];
     }
 
     public static ListOfCycles singleton(int[] data) {
-        final var singleton = new ListOfCycles();
-        singleton.head = new Node(data);
-        singleton.size = 1;
+        final var singleton = new ListOfCycles(1);
+        singleton.add(data);
         return singleton;
     }
 
-    public static ListOfCycles asList(int[]... elements) {
-        final var list = new ListOfCycles();
-        for (int[] element : elements) {
-            list.add(element);
-        }
+    public static ListOfCycles asList(int[] c1, int[] c2, int[] c3) {
+        final var list = new ListOfCycles(3);
+        list.add(c1);
+        list.add(c2);
+        list.add(c3);
         return list;
     }
 
     public void add(int[] data) {
-        final var newNode = new Node(data);
+        add(data, elementData, size);
+    }
 
-        if (head == null) {
-            head = tail = newNode;
-            head.previous = null;
-        } else {
-            tail.next = newNode;
-            newNode.previous = tail;
-            tail = newNode;
-        }
+    private void add(int[] e, int[][] elementData, int s) {
+        if (s == elementData.length)
+            elementData = grow();
+        elementData[s] = e;
+        size = s + 1;
+    }
 
-        tail.next = null;
+    private int[][] grow() {
+        return grow(size + 1);
+    }
 
-        size++;
+    private int[][] grow(int minCapacity) {
+        return elementData = Arrays.copyOf(elementData, minCapacity);
     }
 
     public void remove(int[] data) {
-        var current = tail;
-
-        // do the search walking backwards
-        while (current != null && current.data != data) {
-            current = current.previous;
+        int i = size - 1;
+        for (; i >= 0; i--)
+            if (data == elementData[i])
+                break;
+        try {
+            fastRemove(elementData, i);
+        } catch (ArrayIndexOutOfBoundsException e) {
+            e.printStackTrace();
         }
+    }
 
-        if (current == null) {
-            return;
-        }
-
-        if (current.previous == null) {
-            head = current.next;
-        } else{
-            current.previous.next = current.next;
-        }
-
-        if (current.next == null) {
-            tail = current.previous;
-        } else {
-            current.next.previous = current.previous;
-        }
-
-        size--;
+    private void fastRemove(int[][] es, int i) {
+        final int newSize;
+        if ((newSize = size - 1) > i)
+            System.arraycopy(es, i + 1, es, i, newSize - i);
+        es[size = newSize] = null;
     }
 
     public boolean contains(final int[] data) {
-        var current = this.head;
-        for (int i = 0; i < this.size; i++) {
-            if (current.data == data) {
+        for (int i = 0; i < size; i++) {
+            if (elementData[i] == data)
                 return true;
-            }
-            current = current.next;
         }
         return false;
     }
@@ -94,8 +84,8 @@ public class ListOfCycles {
         final var str = new StringBuilder();
         str.append("[");
 
-        for (var current = head; current != null; current = current.next) {
-            str.append(Arrays.toString(current.data));
+        for (int i = 0; i < size; i++) {
+            str.append(Arrays.toString(elementData[i]));
             str.append(" ");
         }
 
@@ -105,14 +95,14 @@ public class ListOfCycles {
     }
 
     public void removeAll(final ListOfCycles other) {
-        for (var current = other.head; current != null; current = current.next) {
-            this.remove(current.data);
+        for (int i = 0; i < other.size; i++) {
+            this.remove(other.elementData[i]);
         }
     }
 
     public void addAll(final ListOfCycles other) {
-        for (var current = other.head; current != null; current = current.next) {
-            this.add(current.data);
+        for (int i = 0; i < other.size; i++) {
+            this.add(other.elementData[i]);
         }
     }
 
@@ -122,9 +112,25 @@ public class ListOfCycles {
 
     public List<int[]> toList() {
         final var list = new ArrayList<int[]>();
-        for (var current = head; current != null; current = current.next) {
-            list.add(current.data);
+
+        for (int i = 0; i < size; i++) {
+            list.add(elementData[i]);
         }
+
         return list;
+    }
+
+    public ListOfCycles clone() {
+        final var clone = new ListOfCycles(size);
+
+        for (int i = 0; i < size; i++) {
+            clone.add(elementData[i].clone());
+        }
+
+        return clone;
+    }
+
+    public void clear() {
+        size = 0;
     }
 }

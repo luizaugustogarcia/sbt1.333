@@ -105,19 +105,18 @@ public abstract class SortOrExtend extends RecursiveAction {
     }
 
     protected List<Cycle> searchSorting(final Configuration configuration, final Move rootMove) {
-        final var spi = new ListOfCycles();
+        final var spi = new ListOfCycles(configuration.getPi().size());
         configuration.getSpi().stream().map(Cycle::getSymbols).forEach(spi::add);
 
         final var parity = new boolean[configuration.getPi().size()];
         int[][] spiIndex = new int[configuration.getPi().size()][];
-        var current = spi.head;
-        while (current != null) {
-            final var cycle = current.data;
-            for (int i : cycle) {
-                spiIndex[i] = cycle;
-                parity[i] = (cycle.length & 1) == 1;
+
+        for (int i = 0; i < spi.size; i++) {
+            final var cycle = spi.elementData[i];
+            for (int s : cycle) {
+                spiIndex[s] = cycle;
+                parity[s] = (cycle.length & 1) == 1;
             }
-            current = current.next;
         }
 
         final var pi = configuration.getPi().getSymbols();
