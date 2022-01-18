@@ -24,7 +24,7 @@ import static br.unb.cic.tdp.proof.ProofGenerator.*;
 import static br.unb.cic.tdp.proof.seq12_9.Extensions.cleanUpBadExtensionAndInvalidFiles;
 import static br.unb.cic.tdp.proof.seq12_9.Extensions.cleanUpIncompleteCases;
 import static br.unb.cic.tdp.proof.util.SequenceSearcher.applyTransposition;
-import static br.unb.cic.tdp.proof.util.SequenceSearcher.getCanonicalSignature;
+import static br.unb.cic.tdp.proof.util.SequenceSearcher.canonicalSignature;
 import static java.util.stream.Collectors.toList;
 
 public class Combinations {
@@ -288,7 +288,7 @@ public class Combinations {
                         move.getSymbols()[0], move.getSymbols()[1], move.getSymbols()[2],
                         configuration.getPi().size() - removed, spiIndex);
 
-                final var canonicalSignature = getCanonicalSignature(spi, pi, spiIndex, configuration.getPi().getMaxSymbol());
+                final var canonicalSignature = canonicalSignature(spi, pi, spiIndex, configuration.getPi().getMaxSymbol());
                 if (!canonicalSignatures.contains(canonicalSignature)) {
                     for (final var root : rootMove.children) {
                         final var stack = new MovesStack(numberOfMoves);

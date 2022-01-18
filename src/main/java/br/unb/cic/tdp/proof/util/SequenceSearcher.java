@@ -8,6 +8,8 @@ import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.Arrays;
 
+import static java.util.Comparator.comparing;
+
 public class SequenceSearcher {
 
     @SneakyThrows
@@ -23,7 +25,7 @@ public class SequenceSearcher {
             String key = null;
             String[] paths = null;
             if (unsuccessfulConfigs != null) {
-                key = getCanonicalSignature(spi, pi, spiIndex, maxSymbol);
+                key = canonicalSignature(spi, pi, spiIndex, maxSymbol);
                 paths = unsuccessfulConfigs.getIfPresent(key);
 
                 if (paths != null && contains(paths, root.pathToRoot())) {
@@ -157,7 +159,7 @@ public class SequenceSearcher {
                                                       final Move root) {
         final var piInverseIndex = getPiInverseIndex(pi, maxSymbol);
 
-        final var orientedCycles = getOrientedCycles(spi, piInverseIndex);
+        final var orientedCycles = orientedCycles(spi, piInverseIndex);
 
         for (int l = 0; l < orientedCycles.size; l++) {
             final var cycle = orientedCycles.elementData[l];
@@ -394,7 +396,7 @@ public class SequenceSearcher {
         return piInverseIndex;
     }
 
-    private static ListOfCycles getOrientedCycles(final ListOfCycles spi, final int[] piInverseIndex) {
+    private static ListOfCycles orientedCycles(final ListOfCycles spi, final int[] piInverseIndex) {
         final var orientedCycles = new ListOfCycles(2);
         for (int i = 0; i < spi.size; i++) {
             final int[] cycle = spi.elementData[i];
@@ -571,7 +573,7 @@ public class SequenceSearcher {
 
     public static float[] signature(final ListOfCycles spi, final int[] pi, final int[][] spiIndex, final int maxSymbol) {
         final var piInverseIndex = getPiInverseIndex(pi, maxSymbol);
-        final var orientedCycles = getOrientedCycles(spi, piInverseIndex);
+        final var orientedCycles = orientedCycles(spi, piInverseIndex);
 
         final var orientationByCycle = new boolean[maxSymbol + 1];
         Arrays.fill(orientationByCycle, false);
@@ -602,11 +604,7 @@ public class SequenceSearcher {
             if (orientationByCycle[cycle[0]]) {
                 final var symbolIndex = new int[maxSymbol + 1];
 
-                var symbolMinIndex = Integer.MAX_VALUE;
-                for (int s : cycle) {
-                    if (piIndex[s] < symbolMinIndex)
-                        symbolMinIndex = piIndex[s];
-                }
+                final int symbolMinIndex = Ints.asList(cycle).stream().min(comparing(s -> piIndex[s])).get();
 
                 for (int j = 0; j < cycle.length; j++) {
                     if (cycle[j] == symbolMinIndex) {
@@ -631,10 +629,10 @@ public class SequenceSearcher {
         return signature;
     }
 
-    public static String getCanonicalSignature(final ListOfCycles spi,
-                                                final int[] pi,
-                                                final int[][] spiIndex,
-                                                final int maxSymbol) {
+    public static String canonicalSignature(final ListOfCycles spi,
+                                            final int[] pi,
+                                            final int[][] spiIndex,
+                                            final int maxSymbol) {
         var leastHashCode = Integer.MAX_VALUE;
         float[] canonical = null;
 
@@ -657,6 +655,7 @@ public class SequenceSearcher {
 
             final var labelLabelMapping = new int[spi.size + 1];
             final var orientedIndexMapping = new int[spi.size + 1][];
+            final var deltas = new float[spi.size + 1];
 
             var nextLabel = 1;
             for (int j = 0; j < mirroredSignature.length; j++) {
@@ -671,13 +670,18 @@ public class SequenceSearcher {
                 if (label % 1 > 0) {
                     if (orientedIndexMapping[newLabel] == null) {
                         final var index = Math.abs(j - shifting.length) - 1;
-                        final int[] cycle = startingBy(spiIndex[shifting[index]], shifting[index]);
+                        var cycle = startingBy(spiIndex[shifting[index]], shifting[index]).clone();
+                        ArrayUtils.reverse(cycle);
                         orientedIndexMapping[newLabel] = cycleIndex(cycle);
+                        final var delta = cycle.length - round((label % 1) * 100);
+                        deltas[newLabel] = delta;
                     }
 
                     final var index = Math.abs(j - shifting.length) - 1;
                     final var orientationIndex = orientedIndexMapping[newLabel][shifting[index]] + 1;
-                    mirroredSignature[j] = newLabel + ((float) orientationIndex / 100);
+                    mirroredSignature[j] = newLabel + (((orientationIndex + deltas[newLabel]) % spiIndex[shifting[index]].length) / 100);
+                    if (mirroredSignature[j] % 1 == 0)
+                        mirroredSignature[j] = newLabel + (spiIndex[shifting[index]].length / 100f);
                 } else {
                     mirroredSignature[j] = newLabel;
                 }
@@ -693,6 +697,10 @@ public class SequenceSearcher {
         }
 
         return toString(canonical);
+    }
+
+    private static float round(final float value) {
+        return (float) Math.round(value * 100) / 100;
     }
 
     private static float[] least(final float[] signature, final float[] canonical) {

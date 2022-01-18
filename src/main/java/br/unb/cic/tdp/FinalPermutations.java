@@ -11,6 +11,7 @@ import br.unb.cic.tdp.util.Pair;
 import br.unb.cic.tdp.util.Triplet;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.primitives.Ints;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.velocity.app.Velocity;
@@ -25,12 +26,11 @@ import java.util.stream.Stream;
 
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 import static br.unb.cic.tdp.proof.ProofGenerator.*;
+import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
 public class FinalPermutations {
-
-    private ListOfCycles orientedCycles = new ListOfCycles(1);
 
     public static Cache<String, String[]> UNSUCCESSFUL_CONFIGS;
 
@@ -85,7 +85,7 @@ public class FinalPermutations {
 
         Stream.of(
                 new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)")
-        ).forEach(conf -> new FinalPermutations().sort(conf, "/home/luiskowada/proof1.333", _16_12_SEQS));
+        ).forEach(conf -> sort(conf, "/home/luiskowada/proof1.333", _16_12_SEQS));
 
         UNSUCCESSFUL_CONFIGS.invalidateAll();
 
@@ -344,18 +344,17 @@ public class FinalPermutations {
         return false;
     }
 
-    private static String canonicalSignature(final ListOfCycles spi,
-                                             final int[] pi,
-                                             final int[][] spiIndex,
-                                             final int maxSymbol,
-                                             final ListOfCycles orientedCycles) {
+    public static String canonicalSignature(final ListOfCycles spi,
+                                            final int[] pi,
+                                            final int[][] spiIndex,
+                                            final int maxSymbol) {
         var leastHashCode = Integer.MAX_VALUE;
         float[] canonical = null;
 
         for (int symbol : pi) {
             final var shifting = startingBy(pi, symbol);
 
-            var signature = signature(spi, shifting, spiIndex, maxSymbol, orientedCycles);
+            var signature = signature(spi, shifting, spiIndex, maxSymbol);
 
             var hashCode = Arrays.hashCode(signature);
 
@@ -371,6 +370,7 @@ public class FinalPermutations {
 
             final var labelLabelMapping = new int[spi.size + 1];
             final var orientedIndexMapping = new int[spi.size + 1][];
+            final var deltas = new float[spi.size + 1];
 
             var nextLabel = 1;
             for (int j = 0; j < mirroredSignature.length; j++) {
@@ -385,13 +385,18 @@ public class FinalPermutations {
                 if (label % 1 > 0) {
                     if (orientedIndexMapping[newLabel] == null) {
                         final var index = Math.abs(j - shifting.length) - 1;
-                        final int[] cycle = startingBy(spiIndex[shifting[index]], shifting[index]);
+                        var cycle = startingBy(spiIndex[shifting[index]], shifting[index]).clone();
+                        ArrayUtils.reverse(cycle);
                         orientedIndexMapping[newLabel] = cycleIndex(cycle);
+                        final var delta = cycle.length - round((label % 1) * 100);
+                        deltas[newLabel] = delta;
                     }
 
                     final var index = Math.abs(j - shifting.length) - 1;
                     final var orientationIndex = orientedIndexMapping[newLabel][shifting[index]] + 1;
-                    mirroredSignature[j] = newLabel + ((float) orientationIndex / 100);
+                    mirroredSignature[j] = newLabel + (((orientationIndex + deltas[newLabel]) % spiIndex[shifting[index]].length) / 100);
+                    if (mirroredSignature[j] % 1 == 0)
+                        mirroredSignature[j] = newLabel + (spiIndex[shifting[index]].length / 100f);
                 } else {
                     mirroredSignature[j] = newLabel;
                 }
@@ -409,6 +414,10 @@ public class FinalPermutations {
         return toString(canonical);
     }
 
+    private static float round(final float value) {
+        return (float) Math.round(value * 100) / 100;
+    }
+
     private static float[] least(final float[] signature, final float[] canonical) {
         for (int i = 0; i < signature.length; i++) {
             if (signature[i] != canonical[i]) {
@@ -421,13 +430,9 @@ public class FinalPermutations {
         return canonical;
     }
 
-    public static float[] signature(final ListOfCycles spi,
-                                    final int[] pi,
-                                    final int[][] spiIndex,
-                                    final int maxSymbol,
-                                    final ListOfCycles orientedCycles) {
+    public static float[] signature(final ListOfCycles spi, final int[] pi, final int[][] spiIndex, final int maxSymbol) {
         final var piInverseIndex = getPiInverseIndex(pi, maxSymbol);
-        orientedCycles(spi, piInverseIndex, orientedCycles);
+        final var orientedCycles = orientedCycles(spi, piInverseIndex);
 
         final var orientationByCycle = new boolean[maxSymbol + 1];
         Arrays.fill(orientationByCycle, false);
@@ -458,11 +463,7 @@ public class FinalPermutations {
             if (orientationByCycle[cycle[0]]) {
                 final var symbolIndex = new int[maxSymbol + 1];
 
-                var symbolMinIndex = Integer.MAX_VALUE;
-                for (int s : cycle) {
-                    if (piIndex[s] < symbolMinIndex)
-                        symbolMinIndex = piIndex[s];
-                }
+                final int symbolMinIndex = Ints.asList(cycle).stream().min(comparing(s -> piIndex[s])).get();
 
                 for (int j = 0; j < cycle.length; j++) {
                     if (cycle[j] == symbolMinIndex) {
@@ -509,7 +510,7 @@ public class FinalPermutations {
                                                final Move root) {
         final var piInverseIndex = getPiInverseIndex(pi, maxSymbol);
 
-        orientedCycles(spi, piInverseIndex, this.orientedCycles);
+        final var orientedCycles = orientedCycles(spi, piInverseIndex);
 
         for (int l = 0; l < orientedCycles.size; l++) {
             final var cycle = orientedCycles.elementData[l];
@@ -914,12 +915,14 @@ public class FinalPermutations {
         return piInverseIndex;
     }
 
-    private static void orientedCycles(final ListOfCycles spi, final int[] piInverseIndex, final ListOfCycles orientedCycles) {
+    private static ListOfCycles orientedCycles(final ListOfCycles spi, final int[] piInverseIndex) {
+        final var orientedCycles = new ListOfCycles(2);
         for (int i = 0; i < spi.size; i++) {
             final int[] cycle = spi.elementData[i];
             if (!areSymbolsInCyclicOrder(piInverseIndex, cycle))
                 orientedCycles.add(cycle);
         }
+        return orientedCycles;
     }
 
     private void updateIndex(final int[][] index, final boolean[] parity, final ListOfCycles cycles) {
