@@ -76,22 +76,23 @@ public class FinalPermutations {
 //        ).forEach(conf -> {
 //            sort(conf, "/home/luiskowada/proof1.333", _16_12_SEQS);
 //        });
+        ///UNSUCCESSFUL_CONFIGS.invalidateAll();
+//        Stream.of(
+//                new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)")
+//        ).forEach(conf -> sort(conf, "/home/luiskowada/proof1.333", _16_12_SEQS));
+//
+//        UNSUCCESSFUL_CONFIGS.invalidateAll();
 
-        Stream.of(
-                new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)")
-        ).forEach(conf -> sort(conf, "/home/luiskowada/proof1.333", _16_12_SEQS));
-
-        UNSUCCESSFUL_CONFIGS.invalidateAll();
+//        Stream.of(
+//                new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)")
+//        ).forEach(conf -> sort(conf, "/home/ubuntu/sbt", _19_14_SEQS));
+//
+//        UNSUCCESSFUL_CONFIGS.invalidateAll();
+//
 
         Stream.of(
                 new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)")
         ).forEach(conf -> sort(conf, "/home/luiskowada/proof1.333", _16_12_SEQS));
-
-        UNSUCCESSFUL_CONFIGS.invalidateAll();
-
-        Stream.of(
-                new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)")
-        ).forEach(conf -> sort(conf, "/home/ubuntu/sbt", _19_14_SEQS));
 
         UNSUCCESSFUL_CONFIGS.invalidateAll();
 
@@ -170,7 +171,7 @@ public class FinalPermutations {
                         stack.push(move.getSymbols()[0], move.getSymbols()[1], move.getSymbols()[2]);
 
                         try {
-                            sorting = new FinalPermutations().search(spi, parity, spiIndex, spiIndex.length, pi, stack, root);
+                            sorting = search(spi, parity, spiIndex, spiIndex.length, pi, stack, root);
                             if (sorting.isEmpty() && !Thread.currentThread().isInterrupted()) {
                                 System.out.println(Arrays.toString(move.getSymbols()) + ", branch " + root.mu + " unsuccessful");
                             } else {
@@ -209,13 +210,13 @@ public class FinalPermutations {
     }
 
     @SneakyThrows
-    public ListOfCycles search(final ListOfCycles spi,
-                               final boolean[] parity,
-                               final int[][] spiIndex,
-                               final int maxSymbol,
-                               final int[] pi,
-                               final MovesStack moves,
-                               final Move root) {
+    public static ListOfCycles search(final ListOfCycles spi,
+                                      final boolean[] parity,
+                                      final int[][] spiIndex,
+                                      final int maxSymbol,
+                                      final int[] pi,
+                                      final MovesStack moves,
+                                      final Move root) {
         if (Thread.currentThread().isInterrupted()) {
             return ListOfCycles.EMPTY_LIST;
         }
@@ -256,13 +257,13 @@ public class FinalPermutations {
         return ListOfCycles.EMPTY_LIST;
     }
 
-    private ListOfCycles analyzeOddCycles(final ListOfCycles spi,
-                                          final boolean[] parity,
-                                          final int[][] spiIndex,
-                                          final int maxSymbol,
-                                          final int[] pi,
-                                          final MovesStack moves,
-                                          final Move root) {
+    private static ListOfCycles analyzeOddCycles(final ListOfCycles spi,
+                                                 final boolean[] parity,
+                                                 final int[][] spiIndex,
+                                                 final int maxSymbol,
+                                                 final int[] pi,
+                                                 final MovesStack moves,
+                                                 final Move root) {
         for (int i = 0; i < pi.length - 2; i++) {
             if (parity[pi[i]]) continue;
             for (int j = i + 1; j < pi.length - 1; j++) {
@@ -336,7 +337,7 @@ public class FinalPermutations {
         return ListOfCycles.EMPTY_LIST;
     }
 
-    private boolean contains(final String[] array, final String string) {
+    private static boolean contains(final String[] array, final String string) {
         for (String s : array) {
             if (s.equals(string))
                 return true;
@@ -501,13 +502,13 @@ public class FinalPermutations {
         return builder.toString();
     }
 
-    private ListOfCycles analyzeOrientedCycles(final ListOfCycles spi,
-                                               final boolean[] parity,
-                                               final int[][] spiIndex,
-                                               final int maxSymbol,
-                                               final int[] pi,
-                                               final MovesStack moves,
-                                               final Move root) {
+    private static ListOfCycles analyzeOrientedCycles(final ListOfCycles spi,
+                                                      final boolean[] parity,
+                                                      final int[][] spiIndex,
+                                                      final int maxSymbol,
+                                                      final int[] pi,
+                                                      final MovesStack moves,
+                                                      final Move root) {
         final var piInverseIndex = getPiInverseIndex(pi, maxSymbol);
 
         final var orientedCycles = orientedCycles(spi, piInverseIndex);
@@ -596,19 +597,19 @@ public class FinalPermutations {
         return ListOfCycles.EMPTY_LIST;
     }
 
-    private boolean areSymbolsInCyclicOrder(final int[] piInverseIndex, final int a, final int b, final int c) {
+    private static boolean areSymbolsInCyclicOrder(final int[] piInverseIndex, final int a, final int b, final int c) {
         return (piInverseIndex[a] < piInverseIndex[b] && piInverseIndex[b] < piInverseIndex[c]) ||
                (piInverseIndex[b] < piInverseIndex[c] && piInverseIndex[c] < piInverseIndex[a]) ||
                (piInverseIndex[c] < piInverseIndex[a] && piInverseIndex[a] < piInverseIndex[b]);
     }
 
-    private ListOfCycles analyze0Moves(final ListOfCycles spi,
-                                       final boolean[] parity,
-                                       final int[][] spiIndex,
-                                       final int maxSymbol,
-                                       final int[] pi,
-                                       final MovesStack moves,
-                                       final Move root) {
+    private static ListOfCycles analyze0Moves(final ListOfCycles spi,
+                                              final boolean[] parity,
+                                              final int[][] spiIndex,
+                                              final int maxSymbol,
+                                              final int[] pi,
+                                              final MovesStack moves,
+                                              final Move root) {
         if (root.numberOfZeroMovesUntilTop() == 2) {
             return analyze0MovesSecondLevel(spi, parity, spiIndex, maxSymbol, pi, moves, root);
         }
@@ -732,13 +733,13 @@ public class FinalPermutations {
         return ListOfCycles.EMPTY_LIST;
     }
 
-    private ListOfCycles analyze0MovesSecondLevel(final ListOfCycles spi,
-                                                  final boolean[] parity,
-                                                  final int[][] spiIndex,
-                                                  final int maxSymbol,
-                                                  final int[] pi,
-                                                  final MovesStack moves,
-                                                  final Move root) {
+    private static ListOfCycles analyze0MovesSecondLevel(final ListOfCycles spi,
+                                                         final boolean[] parity,
+                                                         final int[][] spiIndex,
+                                                         final int maxSymbol,
+                                                         final int[] pi,
+                                                         final MovesStack moves,
+                                                         final Move root) {
         final var searchParams = collectSearchParams(spi, parity, spiIndex, maxSymbol, pi);
 
         for (SearchParams searchParam : searchParams) {
@@ -762,11 +763,11 @@ public class FinalPermutations {
         return ListOfCycles.EMPTY_LIST;
     }
 
-    private List<SearchParams> collectSearchParams(final ListOfCycles spi,
-                                                   final boolean[] parity,
-                                                   final int[][] spiIndex,
-                                                   final int maxSymbol,
-                                                   final int[] pi) {
+    private static List<SearchParams> collectSearchParams(final ListOfCycles spi,
+                                                          final boolean[] parity,
+                                                          final int[][] spiIndex,
+                                                          final int maxSymbol,
+                                                          final int[] pi) {
         final var cycleIndexes = new int[maxSymbol + 1][];
         final var canonicalSignatures = new HashSet<String>();
         final var searchParams = new ArrayList<SearchParams>();
@@ -887,7 +888,7 @@ public class FinalPermutations {
         return searchParams;
     }
 
-    private int[][] build(final ListOfCycles spi, final int length) {
+    private static int[][] build(final ListOfCycles spi, final int length) {
         final var spiIndex = new int[length][];
         for (int i = 0; i < spi.size; i++) {
             for (int s : spi.elementData[i]) {
@@ -897,7 +898,7 @@ public class FinalPermutations {
         return spiIndex;
     }
 
-    private void update(final int[][] index, final boolean[] parity, final int[]... cycles) {
+    private static void update(final int[][] index, final boolean[] parity, final int[]... cycles) {
         for (int[] cycle : cycles) {
             final var p = (cycle.length & 1) == 1;
             for (int k : cycle) {
@@ -925,14 +926,14 @@ public class FinalPermutations {
         return orientedCycles;
     }
 
-    private void updateIndex(final int[][] index, final boolean[] parity, final ListOfCycles cycles) {
+    private static void updateIndex(final int[][] index, final boolean[] parity, final ListOfCycles cycles) {
         for (int i = 0; i < cycles.size; i++) {
             final var cycle = cycles.elementData[i];
             updateIndex(index, parity, cycle);
         }
     }
 
-    private void updateIndex(final int[][] index, final boolean[] parity, final int[]... cycles) {
+    private static void updateIndex(final int[][] index, final boolean[] parity, final int[]... cycles) {
         for (int[] cycle : cycles) {
             final var p = (cycle.length & 1) == 1;
             for (int k : cycle) {
@@ -960,10 +961,10 @@ public class FinalPermutations {
         return true;
     }
 
-    private Triplet<ListOfCycles, ListOfCycles, Integer> simulate0MoveTwoCycles(final int[][] spiIndex,
-                                                                                final int a,
-                                                                                final int b,
-                                                                                final int c) {
+    private static Triplet<ListOfCycles, ListOfCycles, Integer> simulate0MoveTwoCycles(final int[][] spiIndex,
+                                                                                       final int a,
+                                                                                       final int b,
+                                                                                       final int c) {
         int numberOfEvenCycles = 0;
         int a_, b_, c_;
         if (spiIndex[a] == spiIndex[c]) {
@@ -1023,14 +1024,14 @@ public class FinalPermutations {
         return new Triplet<>(oldCycles, newCycles, newNumberOfEvenCycles - numberOfEvenCycles);
     }
 
-    private int image(int[] index, int[] cycle, int a) {
+    private static int image(int[] index, int[] cycle, int a) {
         return cycle[(index[a] + 1) % cycle.length];
     }
 
-    private Triplet<ListOfCycles, ListOfCycles, Integer> simulate0MoveSameCycle(final int[][] cycleIndex,
-                                                                                final int a,
-                                                                                final int b,
-                                                                                final int c) {
+    private static Triplet<ListOfCycles, ListOfCycles, Integer> simulate0MoveSameCycle(final int[][] cycleIndex,
+                                                                                       final int a,
+                                                                                       final int b,
+                                                                                       final int c) {
         final var oldCycle = cycleIndex[a];
 
         final int[] symbols = startingBy(oldCycle, b);
@@ -1074,7 +1075,7 @@ public class FinalPermutations {
         return max;
     }
 
-    private int getK(int[] cycleIndex, int[] cycle, int a, int b) {
+    private static int getK(int[] cycleIndex, int[] cycle, int a, int b) {
         final var aIndex = cycleIndex[a];
         final var bIndex = cycleIndex[b];
 

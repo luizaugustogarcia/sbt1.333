@@ -22,7 +22,6 @@ import static br.unb.cic.tdp.base.CommonOperations.generateAll0And2Moves;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 import static br.unb.cic.tdp.proof.ProofGenerator.*;
 import static br.unb.cic.tdp.proof.seq12_9.Extensions.cleanUpBadExtensionAndInvalidFiles;
-import static br.unb.cic.tdp.proof.seq12_9.Extensions.cleanUpIncompleteCases;
 import static br.unb.cic.tdp.proof.util.SequenceSearcher.applyTransposition;
 import static br.unb.cic.tdp.proof.util.SequenceSearcher.canonicalSignature;
 import static java.util.stream.Collectors.toList;
@@ -56,8 +55,6 @@ public class Combinations {
     public static void generate(final String outputDir) {
         Files.createDirectories(Paths.get(outputDir + "/comb/"));
         Files.createDirectories(Paths.get(outputDir + "/comb/bad-cases/"));
-
-        cleanUpIncompleteCases(outputDir + "/comb/");
 
         cleanUpBadExtensionAndInvalidFiles(outputDir + "/comb/");
 

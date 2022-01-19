@@ -32,8 +32,6 @@ public class Extensions {
         Files.createDirectories(Paths.get(outputDir + "/dfs/"));
         Files.createDirectories(Paths.get(outputDir + "/dfs/bad-cases/"));
 
-        cleanUpIncompleteCases(outputDir + "/dfs/");
-
         cleanUpBadExtensionAndInvalidFiles(outputDir + "/dfs/");
 
         // ATTENTION: The Sort Or Extend fork/join can never run with BAD EXTENSION files in the dfs directory.
@@ -125,27 +123,6 @@ public class Extensions {
             out.printf("View canonical extension: <a href=\"%s.html\">%s</a>%n", canonical.getSpi(), canonical.getSpi());
             out.println("</div>");
         }
-    }
-
-    @SneakyThrows
-    public static void cleanUpIncompleteCases(final String outputDir) {
-        final var excludeFiles = new ArrayList<File>();
-
-        Files.list(Paths.get(outputDir + "/working/"))
-                .map(Path::toFile)
-                .forEach(excludeFiles::add);
-
-        boolean canContinue = true;
-        for (final var file : excludeFiles) {
-            boolean deleted = FileUtils.deleteQuietly(file);
-            canContinue &= deleted;
-            if (!deleted) {
-                System.out.println("rm \"" + file + "\"");
-            }
-        }
-
-        if (!canContinue)
-            throw new RuntimeException("ERROR: working files not deleted, cannot continue.");
     }
 
     /*
