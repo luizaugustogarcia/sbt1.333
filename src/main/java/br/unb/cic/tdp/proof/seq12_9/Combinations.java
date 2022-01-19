@@ -11,14 +11,18 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.primitives.Floats;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
+import org.paukov.combinatorics.Factory;
+import org.paukov.combinatorics.Generator;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 import static br.unb.cic.tdp.base.CommonOperations.generateAll0And2Moves;
+import static br.unb.cic.tdp.base.CommonOperations.getComponents;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 import static br.unb.cic.tdp.proof.ProofGenerator.*;
 import static br.unb.cic.tdp.proof.seq12_9.Extensions.cleanUpBadExtensionAndInvalidFiles;
@@ -240,9 +244,59 @@ public class Combinations {
             super(configuration, outputDir);
         }
 
+        public static <T> Generator<T> combinations(final Collection<T> collection, final int k) {
+            return Factory.createSimpleCombinationGenerator(Factory.createVector(collection), k);
+        }
+
         @SneakyThrows
         @Override
         protected List<Cycle> searchSorting(final Configuration configuration, final Move rootMove) {
+            final var smallComponents = getComponents(configuration.getSpi(), configuration.getPi());
+
+            for (int i = 2; i < smallComponents.size(); i++) {
+                for (final var components : combinations(smallComponents, i)) {
+                    final var spi = new MulticyclePermutation(components.getVector().stream().flatMap(Collection::stream).collect(Collectors.toList()));
+                    final var subConfig = new Configuration(spi, removeExtraSymbols(spi.getSymbols(), configuration.getPi()));
+                    final var canonical = subConfig.getCanonical();
+
+                    final var badCaseFile = new File(outputDir + "/bad-cases/" + canonical.getSpi());
+                    if (badCaseFile.exists()) {
+                        continue;
+                    }
+
+                    final var sortingFile = new File(outputDir + "/" + canonical.getSpi() + ".html");
+                    if (sortingFile.exists()) {
+                        final var sorting = ListCases.getSorting(new File(outputDir + "/" + canonical.getSpi() + ".html").toPath());
+                        if (!sorting.getSecond().isEmpty()) {
+                            return subConfig.translatedSorting(canonical, sorting.getSecond());
+                        }
+                    }
+
+                    final List<Cycle> sorting = internalSearchSorting(subConfig, rootMove);
+                    if (!sorting.isEmpty()) {
+                        try (final var out = new FileWriter(outputDir + "/" + canonical.getSpi() + ".html")) {
+                            final var translatedSorting = canonical.translatedSorting(subConfig, sorting);
+                            renderSorting(canonical, translatedSorting, out);
+                            return sorting;
+                        }
+                    } else {
+                        try (final var w = new FileWriter(outputDir + "/bad-cases/" + canonical.getSpi())) {
+                            // create a bad case
+                        }
+                    }
+                }
+            }
+
+            var sorting = internalSearchSorting(configuration, rootMove);
+            if (sorting.isEmpty()) {
+                sorting = internalSearchSorting(configuration, rootMove);
+            }
+
+            return sorting;
+        }
+
+        @SneakyThrows
+        protected List<Cycle> internalSearchSorting(final Configuration configuration, final Move rootMove) {
             int numberOfMoves = rootMove.getHeight();
 
             final var canonical = configuration.getCanonical();
