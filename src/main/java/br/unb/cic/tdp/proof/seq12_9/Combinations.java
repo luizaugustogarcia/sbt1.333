@@ -271,28 +271,10 @@ public class Combinations {
                             return subConfig.translatedSorting(canonical, sorting.getSecond());
                         }
                     }
-
-                    final List<Cycle> sorting = internalSearchSorting(subConfig, rootMove);
-                    if (!sorting.isEmpty()) {
-                        try (final var out = new FileWriter(outputDir + "/" + canonical.getSpi() + ".html")) {
-                            final var translatedSorting = canonical.translatedSorting(subConfig, sorting);
-                            renderSorting(canonical, translatedSorting, out);
-                            return sorting;
-                        }
-                    } else {
-                        try (final var w = new FileWriter(outputDir + "/bad-cases/" + canonical.getSpi())) {
-                            // create a bad case
-                        }
-                    }
                 }
             }
 
-            var sorting = internalSearchSorting(configuration, rootMove);
-            if (sorting.isEmpty()) {
-                sorting = internalSearchSorting(configuration, rootMove);
-            }
-
-            return sorting;
+            return internalSearchSorting(configuration, rootMove);
         }
 
         @SneakyThrows
