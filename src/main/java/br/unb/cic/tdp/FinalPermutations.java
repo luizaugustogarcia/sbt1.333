@@ -464,7 +464,14 @@ public class FinalPermutations {
             if (orientationByCycle[cycle[0]]) {
                 final var symbolIndex = new int[maxSymbol + 1];
 
-                final int symbolMinIndex = Ints.asList(cycle).stream().min(comparing(s -> piIndex[s])).get();
+                var minIndex = Integer.MAX_VALUE;
+                var symbolMinIndex = 0;
+                for (int s : cycle) {
+                    if (piIndex[s] < minIndex) {
+                        minIndex = piIndex[s];
+                        symbolMinIndex = s;
+                    }
+                }
 
                 for (int j = 0; j < cycle.length; j++) {
                     if (cycle[j] == symbolMinIndex) {

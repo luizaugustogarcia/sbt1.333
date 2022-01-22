@@ -67,7 +67,14 @@ public class Configuration {
             if (orientedCycles.contains(cycle)) {
                 symbolIndexByOrientedCycle.computeIfAbsent(cycle, c -> {
                     final var symbolIndex = new int[pi.getMaxSymbol() + 1];
-                    final int symbolMinIndex = Ints.asList(c.getSymbols()).stream().min(comparing(pi::indexOf)).get();
+                    var minIndex = Integer.MAX_VALUE;
+                    var symbolMinIndex = 0;
+                    for (int s : c.getSymbols()) {
+                        if (pi.indexOf(s) < minIndex) {
+                            minIndex = pi.indexOf(s);
+                            symbolMinIndex = s;
+                        }
+                    }
                     for (int j = 0; j < c.getSymbols().length; j++) {
                         if (c.getSymbols()[j] == symbolMinIndex) {
                             for (int k = 0; k < c.getSymbols().length; k++) {
