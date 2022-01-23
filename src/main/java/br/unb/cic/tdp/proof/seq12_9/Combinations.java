@@ -1,5 +1,6 @@
 package br.unb.cic.tdp.proof.seq12_9;
 
+import br.unb.cic.tdp.base.CommonOperations;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
@@ -288,18 +289,28 @@ public class Combinations {
                 return Collections.emptyList();
             }
 
+//            var list = generateAll0And2Moves(configuration.getSpi(), configuration.getPi())
+//                    .filter(p -> p.getSecond() == rootMove.mu)
+//                    .map(Pair::getFirst)
+//                    .collect(toList());
+//
+//            Collections.shuffle(list);
+
             var list = generateAll0And2Moves(configuration.getSpi(), configuration.getPi())
                     .filter(p -> p.getSecond() == rootMove.mu)
                     .map(Pair::getFirst)
-                    .collect(toList());
-
-            Collections.shuffle(list);
+                    .map(move -> {
+                        final var spi_ = computeProduct(true, configuration.getPi().getMaxSymbol() + 1, configuration.getSpi(), move.getInverse());
+                        final var pi_ = CommonOperations.applyTransposition(configuration.getPi(), move);
+                        final var b_ = getComponents(spi_, pi_).stream().mapToInt(component -> component.stream().mapToInt(Cycle::size).sum()).max();
+                        return new Pair<>(b_.getAsInt(), move);
+                    }).sorted(Comparator.comparing(o -> ((Pair<Integer, Cycle>) o).getFirst()).reversed()).map(Pair::getSecond).collect(toList());
 
             var sorting = ListOfCycles.EMPTY_LIST;
 
             final var canonicalSignatures = new HashSet<String>();
 
-            outer: for (final var move : list) {
+            for (final var move : list) {
                 final var spi = new ListOfCycles(configuration.getPi().size());
                 computeProduct(configuration.getSpi(), move.getInverse())
                         .stream().map(Cycle::getSymbols).forEach(spi::add);
@@ -328,19 +339,19 @@ public class Combinations {
                         stack.push(move.getSymbols()[0], move.getSymbols()[1], move.getSymbols()[2]);
 
                         final Cache<String, String[]> unsuccessfulConfigs = CacheBuilder.newBuilder()
-                                .maximumSize(10_000_00)
+                                .maximumSize(1_000_000)
                                 .build();
 
                         sorting = SequenceSearcher.search(unsuccessfulConfigs, spi, parity, spiIndex, spiIndex.length, pi, stack, root);
                         if (!sorting.isEmpty()) {
-                            break outer;
+                            return sorting.toList().stream().map(Cycle::create).collect(toList());
                         }
                     }
                     canonicalSignatures.add(canonicalSignature);
                 }
             }
 
-            return sorting.toList().stream().map(Cycle::create).collect(toList());
+            return Collections.emptyList();
         }
 
         @Override
