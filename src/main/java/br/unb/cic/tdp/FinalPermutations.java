@@ -52,6 +52,7 @@ public class FinalPermutations {
                 System.out.println("Cache hits: " + hits);
                 System.out.println("Cache misses: " + misses);
                 System.out.println("Cache hit rate: " + String.format("%.2f", 1 - (misses.get() / (float) hits.get())));
+                System.gc();
                 long heapSize = Runtime.getRuntime().totalMemory();
                 System.out.println("Heap size GB: " + (((heapSize / 1024) / 1024) / 1024));
                 long heapFreeSize = Runtime.getRuntime().freeMemory();
@@ -221,23 +222,21 @@ public class FinalPermutations {
         if (root.mu == 0) {
             final var key = canonicalSignature(spi, pi, spiIndex, maxSymbol);
             final var paths = UNSUCCESSFUL_CONFIGS.getIfPresent(key);
-
-            if (paths != null && contains(paths, root.pathToRoot())) {
-                hits.incrementAndGet();
-                return ListOfCycles.EMPTY_LIST;
-            } else {
+            if (paths == null) {
                 misses.incrementAndGet();
+                UNSUCCESSFUL_CONFIGS.put(key, new String[]{root.pathToRoot()});
+            } else {
+                if (contains(paths, root.pathToRoot())) {
+                    hits.incrementAndGet();
+                    return ListOfCycles.EMPTY_LIST;
+                } else {
+                    UNSUCCESSFUL_CONFIGS.put(key, ArrayUtils.add(paths, root.pathToRoot()));
+                }
             }
 
             final var sorting = analyze0Moves(spi, parity, spiIndex, maxSymbol, pi, moves, root);
             if (!sorting.isEmpty()) {
                 return sorting;
-            }
-
-            if (UNSUCCESSFUL_CONFIGS.getIfPresent(key) == null) {
-                UNSUCCESSFUL_CONFIGS.put(key, new String[]{root.pathToRoot()});
-            } else {
-                UNSUCCESSFUL_CONFIGS.put(key, ArrayUtils.add(paths, root.pathToRoot()));
             }
         } else {
             var sorting = analyzeOrientedCycles(spi, parity, spiIndex, maxSymbol, pi, moves, root);
@@ -615,7 +614,7 @@ public class FinalPermutations {
                                               final MovesStack moves,
                                               final Move root) {
         if (root.numberOfZeroMovesUntilTop() == 2) {
-            return analyze0MovesSecondLevel(spi, parity, spiIndex, maxSymbol, pi, moves, root);
+            return analyze0MovesDeduplicateConfigs(spi, parity, spiIndex, maxSymbol, pi, moves, root);
         }
 
         final var cycleIndexes = new int[maxSymbol + 1][];
@@ -737,13 +736,13 @@ public class FinalPermutations {
         return ListOfCycles.EMPTY_LIST;
     }
 
-    private static ListOfCycles analyze0MovesSecondLevel(final ListOfCycles spi,
-                                                         final boolean[] parity,
-                                                         final int[][] spiIndex,
-                                                         final int maxSymbol,
-                                                         final int[] pi,
-                                                         final MovesStack moves,
-                                                         final Move root) {
+    private static ListOfCycles analyze0MovesDeduplicateConfigs(final ListOfCycles spi,
+                                                                final boolean[] parity,
+                                                                final int[][] spiIndex,
+                                                                final int maxSymbol,
+                                                                final int[] pi,
+                                                                final MovesStack moves,
+                                                                final Move root) {
         final var searchParams = collectSearchParams(spi, parity, spiIndex, maxSymbol, pi);
 
         for (SearchParams searchParam : searchParams) {

@@ -11,8 +11,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 
-import static java.util.Comparator.comparing;
-
 public class SequenceSearcher {
 
     @SneakyThrows
@@ -25,28 +23,21 @@ public class SequenceSearcher {
                                       final MovesStack moves,
                                       final Move root) {
         if (root.mu == 0) {
-            String key = null;
-            String[] paths = null;
-            if (unsuccessfulConfigs != null) {
-                key = canonicalSignature(spi, pi, spiIndex, maxSymbol);
-                paths = unsuccessfulConfigs.getIfPresent(key);
-
-                if (paths != null && contains(paths, root.pathToRoot())) {
+            final var key = canonicalSignature(spi, pi, spiIndex, maxSymbol);
+            final var paths = unsuccessfulConfigs.getIfPresent(key);
+            if (paths == null) {
+                unsuccessfulConfigs.put(key, new String[]{root.pathToRoot()});
+            } else {
+                if (contains(paths, root.pathToRoot())) {
                     return ListOfCycles.EMPTY_LIST;
+                } else {
+                    unsuccessfulConfigs.put(key, ArrayUtils.add(paths, root.pathToRoot()));
                 }
             }
 
             final var sorting = analyze0Moves(unsuccessfulConfigs, spi, parity, spiIndex, maxSymbol, pi, moves, root);
             if (!sorting.isEmpty()) {
                 return sorting;
-            }
-
-            if (unsuccessfulConfigs != null) {
-                if (unsuccessfulConfigs.getIfPresent(key) == null) {
-                    unsuccessfulConfigs.put(key, new String[]{root.pathToRoot()});
-                } else {
-                    unsuccessfulConfigs.put(key, ArrayUtils.add(paths, root.pathToRoot()));
-                }
             }
         } else {
             var sorting = analyzeOrientedCycles(unsuccessfulConfigs, spi, parity, spiIndex, maxSymbol, pi, moves, root);
@@ -263,7 +254,7 @@ public class SequenceSearcher {
                                               final MovesStack moves,
                                               final Move root) {
         if (root.numberOfZeroMovesUntilTop() == 2) {
-            return analyze0MovesSecondLevel(unsuccessfulConfigs, spi, parity, spiIndex, maxSymbol, pi, moves, root);
+            return analyze0MovesDeduplicateConfigs(unsuccessfulConfigs, spi, parity, spiIndex, maxSymbol, pi, moves, root);
         }
 
         final var cycleIndexes = new int[maxSymbol + 1][];
@@ -385,14 +376,14 @@ public class SequenceSearcher {
         return ListOfCycles.EMPTY_LIST;
     }
 
-    private static ListOfCycles analyze0MovesSecondLevel(final Cache<String, String[]> unsuccessfulConfigs,
-                                                         final ListOfCycles spi,
-                                                         final boolean[] parity,
-                                                         final int[][] spiIndex,
-                                                         final int maxSymbol,
-                                                         final int[] pi,
-                                                         final MovesStack moves,
-                                                         final Move root) {
+    private static ListOfCycles analyze0MovesDeduplicateConfigs(final Cache<String, String[]> unsuccessfulConfigs,
+                                                                final ListOfCycles spi,
+                                                                final boolean[] parity,
+                                                                final int[][] spiIndex,
+                                                                final int maxSymbol,
+                                                                final int[] pi,
+                                                                final MovesStack moves,
+                                                                final Move root) {
         final var searchParams = collectSearchParams(spi, parity, spiIndex, maxSymbol, pi);
 
         for (SearchParams searchParam : searchParams) {
