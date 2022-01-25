@@ -338,7 +338,7 @@ public class Combinations {
                         final var stack = new MovesStack(numberOfMoves);
                         stack.push(move.getSymbols()[0], move.getSymbols()[1], move.getSymbols()[2]);
 
-                        final Cache<String, String[]> unsuccessfulConfigs = CacheBuilder.newBuilder()
+                        final Cache<String, Set<String>> unsuccessfulConfigs = CacheBuilder.newBuilder()
                                 .maximumSize(1_000_000)
                                 .build();
 

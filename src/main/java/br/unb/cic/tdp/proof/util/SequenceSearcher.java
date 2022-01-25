@@ -6,15 +6,12 @@ import com.google.common.primitives.Ints;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.ArrayUtils;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 public class SequenceSearcher {
 
     @SneakyThrows
-    public static ListOfCycles search(final Cache<String, String[]> unsuccessfulConfigs,
+    public static ListOfCycles search(final Cache<String, Set<String>> unsuccessfulConfigs,
                                       final ListOfCycles spi,
                                       final boolean[] parity,
                                       final int[][] spiIndex,
@@ -24,14 +21,16 @@ public class SequenceSearcher {
                                       final Move root) {
         if (root.mu == 0) {
             final var key = canonicalSignature(spi, pi, spiIndex, maxSymbol);
-            final var paths = unsuccessfulConfigs.getIfPresent(key);
-            if (paths == null) {
-                unsuccessfulConfigs.put(key, new String[]{root.pathToRoot()});
-            } else {
-                if (contains(paths, root.pathToRoot())) {
-                    return ListOfCycles.EMPTY_LIST;
+            final var paths = unsuccessfulConfigs.get(key, HashSet::new);
+            synchronized (paths) {
+                if (paths.isEmpty()) {
+                    paths.add(root.pathToRoot());
                 } else {
-                    unsuccessfulConfigs.put(key, ArrayUtils.add(paths, root.pathToRoot()));
+                    if (paths.contains(root.pathToRoot())) {
+                        return ListOfCycles.EMPTY_LIST;
+                    } else {
+                        paths.add(root.pathToRoot());
+                    }
                 }
             }
 
@@ -62,7 +61,7 @@ public class SequenceSearcher {
         return false;
     }
 
-    private static ListOfCycles analyzeOddCycles(final Cache<String, String[]> unsuccessfulConfigs,
+    private static ListOfCycles analyzeOddCycles(final Cache<String, Set<String>> unsuccessfulConfigs,
                                                  final ListOfCycles spi,
                                                  final boolean[] parity,
                                                  final int[][] spiIndex,
@@ -143,7 +142,7 @@ public class SequenceSearcher {
         return ListOfCycles.EMPTY_LIST;
     }
 
-    private static ListOfCycles analyzeOrientedCycles(final Cache<String, String[]> unsuccessfulConfigs,
+    private static ListOfCycles analyzeOrientedCycles(final Cache<String, Set<String>> unsuccessfulConfigs,
                                                       final ListOfCycles spi,
                                                       final boolean[] parity,
                                                       final int[][] spiIndex,
@@ -245,7 +244,7 @@ public class SequenceSearcher {
                 (piInverseIndex[c] < piInverseIndex[a] && piInverseIndex[a] < piInverseIndex[b]);
     }
 
-    private static ListOfCycles analyze0Moves(final Cache<String, String[]> unsuccessfulConfigs,
+    private static ListOfCycles analyze0Moves(final Cache<String, Set<String>> unsuccessfulConfigs,
                                               final ListOfCycles spi,
                                               final boolean[] parity,
                                               final int[][] spiIndex,
@@ -376,7 +375,7 @@ public class SequenceSearcher {
         return ListOfCycles.EMPTY_LIST;
     }
 
-    private static ListOfCycles analyze0MovesDeduplicateConfigs(final Cache<String, String[]> unsuccessfulConfigs,
+    private static ListOfCycles analyze0MovesDeduplicateConfigs(final Cache<String, Set<String>> unsuccessfulConfigs,
                                                                 final ListOfCycles spi,
                                                                 final boolean[] parity,
                                                                 final int[][] spiIndex,

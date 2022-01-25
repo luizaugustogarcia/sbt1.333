@@ -30,7 +30,7 @@ import static java.util.stream.Collectors.toList;
 
 public class FinalPermutations {
 
-    public static Cache<String, String[]> UNSUCCESSFUL_CONFIGS;
+    public static Cache<String, Set<String>> UNSUCCESSFUL_CONFIGS;
 
     final static AtomicLong hits = new AtomicLong();
     final static AtomicLong misses = new AtomicLong();
@@ -221,16 +221,18 @@ public class FinalPermutations {
 
         if (root.mu == 0) {
             final var key = canonicalSignature(spi, pi, spiIndex, maxSymbol);
-            final var paths = UNSUCCESSFUL_CONFIGS.getIfPresent(key);
-            if (paths == null) {
-                misses.incrementAndGet();
-                UNSUCCESSFUL_CONFIGS.put(key, new String[]{root.pathToRoot()});
-            } else {
-                if (contains(paths, root.pathToRoot())) {
-                    hits.incrementAndGet();
-                    return ListOfCycles.EMPTY_LIST;
+            final var paths = UNSUCCESSFUL_CONFIGS.get(key, HashSet::new);
+            synchronized (paths) {
+                if (paths.isEmpty()) {
+                    misses.incrementAndGet();
+                    paths.add(root.pathToRoot());
                 } else {
-                    UNSUCCESSFUL_CONFIGS.put(key, ArrayUtils.add(paths, root.pathToRoot()));
+                    if (paths.contains(root.pathToRoot())) {
+                        hits.incrementAndGet();
+                        return ListOfCycles.EMPTY_LIST;
+                    } else {
+                        paths.add(root.pathToRoot());
+                    }
                 }
             }
 
