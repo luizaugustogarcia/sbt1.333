@@ -121,7 +121,7 @@ public abstract class SortOrExtend extends RecursiveAction {
 
         final var pi = configuration.getPi().getSymbols();
 
-        final var stack = new MovesStack(rootMove.getHeight());
+        final var stack = new Stack(rootMove.getHeight());
 
         return SequenceSearcher.search(null, spi, parity, spiIndex, spiIndex.length, pi, stack, rootMove)
                 .toList().stream().map(Cycle::create).collect(toList());

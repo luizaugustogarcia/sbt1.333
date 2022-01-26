@@ -17,7 +17,7 @@ public class SequenceSearcher {
                                       final int[][] spiIndex,
                                       final int maxSymbol,
                                       final int[] pi,
-                                      final MovesStack moves,
+                                      final Stack moves,
                                       final Move root) {
         if (root.mu == 0) {
             final var key = canonicalSignature(spi, pi, spiIndex, maxSymbol);
@@ -67,7 +67,7 @@ public class SequenceSearcher {
                                                  final int[][] spiIndex,
                                                  final int maxSymbol,
                                                  final int[] pi,
-                                                 final MovesStack moves,
+                                                 final Stack moves,
                                                  final Move root) {
         for (int i = 0; i < pi.length - 2; i++) {
             if (parity[pi[i]]) continue;
@@ -148,7 +148,7 @@ public class SequenceSearcher {
                                                       final int[][] spiIndex,
                                                       final int maxSymbol,
                                                       final int[] pi,
-                                                      final MovesStack moves,
+                                                      final Stack moves,
                                                       final Move root) {
         final var piInverseIndex = getPiInverseIndex(pi, maxSymbol);
 
@@ -250,7 +250,7 @@ public class SequenceSearcher {
                                               final int[][] spiIndex,
                                               final int maxSymbol,
                                               final int[] pi,
-                                              final MovesStack moves,
+                                              final Stack moves,
                                               final Move root) {
         if (root.numberOfZeroMovesUntilTop() == 2) {
             return analyze0MovesDeduplicateConfigs(unsuccessfulConfigs, spi, parity, spiIndex, maxSymbol, pi, moves, root);
@@ -381,7 +381,7 @@ public class SequenceSearcher {
                                                                 final int[][] spiIndex,
                                                                 final int maxSymbol,
                                                                 final int[] pi,
-                                                                final MovesStack moves,
+                                                                final Stack moves,
                                                                 final Move root) {
         final var searchParams = collectSearchParams(spi, parity, spiIndex, maxSymbol, pi);
 

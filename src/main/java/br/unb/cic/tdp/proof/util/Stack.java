@@ -1,11 +1,11 @@
 package br.unb.cic.tdp.proof.util;
 
-public class MovesStack {
-    final int maxSize;
-    final int[] content;
+public class Stack {
+    int maxSize;
+    int[] content;
     int size = 0;
 
-    public MovesStack(int size) {
+    public Stack(int size) {
         this.maxSize = size;
         this.content = new int[size * 3];
     }

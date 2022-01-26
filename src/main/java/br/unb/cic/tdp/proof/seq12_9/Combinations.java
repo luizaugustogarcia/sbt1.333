@@ -5,6 +5,7 @@ import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.proof.util.*;
+import br.unb.cic.tdp.proof.util.Stack;
 import br.unb.cic.tdp.util.Pair;
 import cern.colt.list.FloatArrayList;
 import com.google.common.cache.Cache;
@@ -335,7 +336,7 @@ public class Combinations {
                 final var canonicalSignature = canonicalSignature(spi, pi, spiIndex, configuration.getPi().getMaxSymbol());
                 if (!canonicalSignatures.contains(canonicalSignature)) {
                     for (final var root : rootMove.children) {
-                        final var stack = new MovesStack(numberOfMoves);
+                        final var stack = new Stack(numberOfMoves);
                         stack.push(move.getSymbols()[0], move.getSymbols()[1], move.getSymbols()[2]);
 
                         final Cache<String, Set<String>> unsuccessfulConfigs = CacheBuilder.newBuilder()

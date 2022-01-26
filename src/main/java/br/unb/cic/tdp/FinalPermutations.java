@@ -5,7 +5,7 @@ import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.proof.util.ListOfCycles;
 import br.unb.cic.tdp.proof.util.Move;
-import br.unb.cic.tdp.proof.util.MovesStack;
+import br.unb.cic.tdp.proof.util.Stack;
 import br.unb.cic.tdp.proof.util.SearchParams;
 import br.unb.cic.tdp.util.Pair;
 import br.unb.cic.tdp.util.Triplet;
@@ -16,6 +16,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.velocity.app.Velocity;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.util.*;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Executors;
@@ -48,57 +49,49 @@ public class FinalPermutations {
         final var timer = new Timer();
         timer.scheduleAtFixedRate(new TimerTask() {
             public void run() {
-                System.out.println("Cache size: " + UNSUCCESSFUL_CONFIGS.size());
-                System.out.println("Cache hits: " + hits);
-                System.out.println("Cache misses: " + misses);
-                System.out.println("Cache hit rate: " + String.format("%.2f", 1 - (misses.get() / (float) hits.get())));
                 System.gc();
                 long heapSize = Runtime.getRuntime().totalMemory();
-                System.out.println("Heap size GB: " + (((heapSize / 1024) / 1024) / 1024));
                 long heapFreeSize = Runtime.getRuntime().freeMemory();
-                System.out.println("Heap free size GB: " + (((heapFreeSize / 1024) / 1024) / 1024));
-                System.out.println();
+                System.out.println("Cache size: " + UNSUCCESSFUL_CONFIGS.size() + ", " +
+                        "Hit rate: " + String.format("%.2f", 1 - (misses.get() / (float) hits.get())) + ", " +
+                        "Heap size GB: " + (((heapSize / 1024) / 1024) / 1024) + ", " +
+                        "Heap free size GB: " + (((heapFreeSize / 1024) / 1024) / 1024)
+                );
             }
         }, 0, Integer.parseInt(args[1]) * 60 * 1000);
 
-//        Stream.of(
-//                //new Configuration("(0 4 2)(1 5 3)(6 10 8)(7 11 9)(12 16 14)(13 17 15)(24 34 26)(25 35 27)(28 32 30)(29 33 31)(18 22 20)(19 23 21)"), // bad
-//                //new Configuration("(0 4 2)(1 35 3)(5 9 7)(6 10 8)(11 15 13)(12 16 14)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"), // bad
-//                new Configuration("(0 4 2)(1 5 3)(6 16 14)(7 11 9)(8 12 10)(13 35 15)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"),
-//                new Configuration("(0 4 2)(1 5 3)(6 10 8)(7 11 9)(12 16 14)(13 17 15)(18 34 32)(19 35 33)(20 24 22)(21 25 23)(26 30 28)(27 31 29)"),
-//                new Configuration("(0 4 2)(1 5 3)(12 34 14)(13 35 33)(15 19 17)(16 20 18)(21 25 23)(22 26 24)(27 31 29)(28 32 30)(6 10 8)(7 11 9)"),
-//                new Configuration("(0 4 2)(1 5 3)(6 34 8)(7 35 33)(9 13 11)(10 14 12)(15 19 17)(16 20 18)(21 25 23)(22 26 24)(27 31 29)(28 32 30)"),
-//                new Configuration("(0 4 2)(1 5 3)(6 16 8)(7 35 9)(10 14 12)(11 15 13)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"),
-//                new Configuration("(0 4 2)(1 5 3)(6 10 8)(7 11 9)(12 22 20)(13 17 15)(14 18 16)(19 35 21)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"),
-//                new Configuration("(0 4 2)(1 5 3)(6 10 8)(7 11 9)(12 28 14)(13 35 15)(16 20 18)(17 21 19)(29 33 31)(30 34 32)(22 26 24)(23 27 25)"))
-//        ).forEach(conf -> {
-//            sort(conf, "/home/luiskowada/proof1.333", _16_12_SEQS);
-//        });
-        ///UNSUCCESSFUL_CONFIGS.invalidateAll();
+        Stream.of(
+                new Configuration("(0 16 14)(1 35 15)(2 6 4)(3 7 5)(8 12 10)(9 13 11)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"), //----- NO SORTING
+                new Configuration("(0 34 20)(1 5 3)(2 6 4)(7 11 9)(8 12 10)(13 35 33)(14 18 16)(15 19 17)(21 25 23)(22 26 24)(27 31 29)(28 32 30)"), //----- NO SORTING
+                new Configuration("(0 4 2)(1 35 3)(5 9 7)(6 10 8)(11 15 13)(12 28 14)(16 20 18)(17 21 19)(22 26 24)(23 27 25)(29 33 31)(30 34 32)"), //----- NO SORTING
+                new Configuration("(0 4 2)(1 5 3)(6 10 8)(7 11 9)(12 16 14)(13 17 15)(18 22 20)(19 23 21)(24 34 26)(25 35 33)(27 31 29)(28 32 30)"), //----- NO SORTING
+                new Configuration("(0 34 26)(1 35 33)(2 6 4)(3 7 5)(8 12 10)(9 13 11)(14 18 16)(15 19 17)(20 24 22)(21 25 23)(27 31 29)(28 32 30)"), //----- NO SORTING
+                new Configuration("(0 34 2)(1 35 33)(3 7 5)(4 8 6)(9 19 17)(10 14 12)(11 15 13)(16 26 18)(20 24 22)(21 25 23)(27 31 29)(28 32 30)"), //----- NO SORTING
+                new Configuration("(0 34 32)(1 29 27)(2 30 28)(3 7 5)(4 8 6)(9 13 11)(10 14 12)(15 19 17)(16 20 18)(21 25 23)(22 26 24)(31 35 33)"), //----- NO SORTING
+                new Configuration("(0 16 14)(1 5 3)(2 6 4)(7 11 9)(8 12 10)(13 35 15)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"), //----- NO SORTING
+                new Configuration("(0 34 2)(1 35 33)(3 7 5)(4 8 6)(9 13 11)(10 14 12)(15 25 17)(16 32 18)(19 23 21)(20 24 22)(26 30 28)(27 31 29)"), //----- NO SORTING
+                new Configuration("(0 34 32)(1 35 33)(2 6 4)(3 7 5)(8 12 10)(9 13 11)(14 18 16)(15 19 17)(20 24 22)(21 25 23)(26 30 28)(27 31 29)"), //----- NO SORTING
+                new Configuration("(0 34 32)(1 29 27)(2 6 4)(3 7 5)(8 12 10)(9 13 11)(14 30 28)(15 19 17)(16 20 18)(21 25 23)(22 26 24)(31 35 33)") //----- NO SORTING
+        ).forEach(conf -> {
+            sort(conf, "C:/Users/Luiz/Temp/sbt1.333proof", _16_12_SEQS);
+        });
+
 //        Stream.of(
 //                new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)")
 //        ).forEach(conf -> sort(conf, "/home/luiskowada/proof1.333", _16_12_SEQS));
 //
-//        UNSUCCESSFUL_CONFIGS.invalidateAll();
 
 //        Stream.of(
 //                new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)")
 //        ).forEach(conf -> sort(conf, "/home/ubuntu/sbt", _19_14_SEQS));
 //
-//        UNSUCCESSFUL_CONFIGS.invalidateAll();
-//
-//
 //        Stream.of(
 //                new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)")
 //        ).forEach(conf -> sort(conf, "/home/luiskowada/proof1.333", _16_12_SEQS)); // bad
 //
-//        UNSUCCESSFUL_CONFIGS.invalidateAll();
-
         Stream.of(
                 new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)")
         ).forEach(conf -> sort(conf, "/home/ubuntu/sbt", _19_14_SEQS));
-
-        UNSUCCESSFUL_CONFIGS.invalidateAll();
 
         Stream.of(
                 new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)")
@@ -110,8 +103,12 @@ public class FinalPermutations {
     @SneakyThrows
     public static void sort(final Configuration configuration,
                             final String outputDir,
-                            final Move rootMove) {
-        int numberOfMoves = rootMove.getHeight();
+                            final Move parentMove) {
+        hits.set(0);
+        misses.set(0);
+        UNSUCCESSFUL_CONFIGS.invalidateAll();
+
+        int numberOfMoves = parentMove.getHeight();
 
         final var canonical = configuration.getCanonical();
 
@@ -161,17 +158,18 @@ public class FinalPermutations {
             if (!canonicalSignatures.contains(canonicalSignature)) {
                 submittedTasks.add(completionService.submit(() -> {
                     var sorting = ListOfCycles.EMPTY_LIST;
-                    for (final var root : rootMove.children) {
+                    for (final var childMove : parentMove.children) {
                         final var name = Thread.currentThread().getName();
-                        Thread.currentThread().setName(Thread.currentThread().getName() + "-" + Arrays.toString(move.getSymbols()) + "-" + root.mu);
+                        Thread.currentThread().setName(Thread.currentThread().getName() + "-" + Arrays.toString(move.getSymbols()) + "-" + childMove.mu);
 
-                        final var stack = new MovesStack(numberOfMoves);
+                        final var stack = new Stack(numberOfMoves);
                         stack.push(move.getSymbols()[0], move.getSymbols()[1], move.getSymbols()[2]);
 
                         try {
-                            sorting = search(spi, parity, spiIndex, spiIndex.length, pi, stack, root);
+                            final var pair = clone(spi, spiIndex);
+                            sorting = search(pair.getFirst(), parity.clone(), pair.getSecond(), spiIndex.length, pi, stack, childMove);
                             if (sorting.isEmpty() && !Thread.currentThread().isInterrupted()) {
-                                System.out.println(Arrays.toString(move.getSymbols()) + ", branch " + root.mu + " unsuccessful");
+                                //System.out.println(Arrays.toString(move.getSymbols()) + ", branch " + childMove.mu + " unsuccessful");
                             } else {
                                 break;
                             }
@@ -196,9 +194,10 @@ public class FinalPermutations {
                 executorService.shutdownNow();
                 System.out.println("Sorted: " + configuration.getSpi() + ", sorting: " + sorting.get().stream().map(Arrays::toString).collect(joining(",")));
                 System.out.println();
-//                    try (final var out = new FileWriter(outputDir + "/comb/" + canonical.getSpi() + ".html")) {
-//                        renderSorting(canonical, canonical.translatedSorting(configuration, s), out);
-//                    }
+                try (final var out = new FileWriter(outputDir + "/comb/" + canonical.getSpi() + ".html")) {
+                    renderSorting(canonical, canonical.translatedSorting(configuration,
+                            sorting.get().stream().map(Cycle::create).collect(toList())), out);
+                }
                 break;
             }
         }
@@ -207,13 +206,27 @@ public class FinalPermutations {
             System.out.println("Didn't find sorting for " + configuration.getSpi());
     }
 
+    private static Pair<ListOfCycles, int[][]> clone(final ListOfCycles spi, final int[][] spiIndex) {
+        final var spiClone = spi.clone();
+        final var spiIndexClone = new int[spiIndex.length][];
+
+        for (int i = 0; i < spiClone.size; i++) {
+            final var cycle = spiClone.elementData[i];
+            for (int s : cycle) {
+                spiIndexClone[s] = cycle;
+            }
+        }
+
+        return new Pair<>(spiClone, spiIndexClone);
+    }
+
     @SneakyThrows
     public static ListOfCycles search(final ListOfCycles spi,
                                       final boolean[] parity,
                                       final int[][] spiIndex,
                                       final int maxSymbol,
                                       final int[] pi,
-                                      final MovesStack moves,
+                                      final Stack moves,
                                       final Move root) {
         if (Thread.currentThread().isInterrupted()) {
             return ListOfCycles.EMPTY_LIST;
@@ -260,7 +273,7 @@ public class FinalPermutations {
                                                  final int[][] spiIndex,
                                                  final int maxSymbol,
                                                  final int[] pi,
-                                                 final MovesStack moves,
+                                                 final Stack moves,
                                                  final Move root) {
         for (int i = 0; i < pi.length - 2; i++) {
             if (parity[pi[i]]) continue;
@@ -512,7 +525,7 @@ public class FinalPermutations {
                                                       final int[][] spiIndex,
                                                       final int maxSymbol,
                                                       final int[] pi,
-                                                      final MovesStack moves,
+                                                      final Stack moves,
                                                       final Move root) {
         final var piInverseIndex = getPiInverseIndex(pi, maxSymbol);
 
@@ -613,7 +626,7 @@ public class FinalPermutations {
                                               final int[][] spiIndex,
                                               final int maxSymbol,
                                               final int[] pi,
-                                              final MovesStack moves,
+                                              final Stack moves,
                                               final Move root) {
         if (root.numberOfZeroMovesUntilTop() == 2) {
             return analyze0MovesDeduplicateConfigs(spi, parity, spiIndex, maxSymbol, pi, moves, root);
@@ -743,7 +756,7 @@ public class FinalPermutations {
                                                                 final int[][] spiIndex,
                                                                 final int maxSymbol,
                                                                 final int[] pi,
-                                                                final MovesStack moves,
+                                                                final Stack moves,
                                                                 final Move root) {
         final var searchParams = collectSearchParams(spi, parity, spiIndex, maxSymbol, pi);
 
