@@ -32,4 +32,12 @@ public class Stack {
     public int size() {
         return size;
     }
+
+    public Stack clone() {
+        final var clone = new Stack(this.size);
+        clone.maxSize = maxSize;
+        clone.content = content.clone();
+        clone.size = size;
+        return clone;
+    }
 }
