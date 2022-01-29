@@ -71,9 +71,9 @@ public class FinalPermutations {
 //            sort(conf, "C:/Users/Luiz/Temp/sbt1.333proof", _16_12_SEQS);
 //        });
 
-        System.out.println("7 interleaving (16,12)");
-        sort(new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)"),
-                "C:/Users/Luiz/Temp/sbt1.333proof", _16_12_SEQS);
+//        System.out.println("7 interleaving (16,12)");
+//        sort(new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)"),
+//                "C:/Users/Luiz/Temp/sbt1.333proof", _16_12_SEQS); //----- NO SORTING
 
         System.out.println("7 interleaving (19,14)");
         sort(new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)"),
@@ -148,6 +148,10 @@ public class FinalPermutations {
         @SneakyThrows({IOException.class, ExecutionException.class})
         @Override
         protected void compute() {
+            if (Thread.currentThread().isInterrupted()) {
+                return;
+            }
+
             final var parity = new boolean[configuration.getSpi().getMaxSymbol() + 1];
             final var spiIndex = new int[configuration.getSpi().getMaxSymbol() + 1][];
 
@@ -166,8 +170,8 @@ public class FinalPermutations {
 
             removeTrivialCycles(spi);
 
-            // if passed through two zeros moves, COMPUTE DIRECTLY
-            if (root.numberOfZeroMovesUntilTop() >= 2) {
+            // if passed through three zeros moves, COMPUTE DIRECTLY
+            if (root.numberOfZeroMovesUntilTop() > 3) {
                 final var sorting = search(spi, parity, spiIndex, spiIndex.length, newPi, stack, root);
                 if (!sorting.isEmpty()) {
                     hasSorting[0] = true;
