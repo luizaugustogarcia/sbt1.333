@@ -899,68 +899,68 @@ public class SequenceSearcher {
     }
 
     public static int[] applyTransposition(final int[] pi,
-                                            final int a,
-                                            final int b,
-                                            final int c,
-                                            int numberOfSymbols, int[][] spiIndex) {
-        final var indexes = new int[3];
-        Arrays.fill(indexes, -1);
+                                           final int a,
+                                           final int b,
+                                           final int c,
+                                           final int numberOfSymbols,
+                                           final int[][] spiIndex) {
+        int index0 = -1, index1 = -1, index2 = -1;
 
         for (var i = 0; i < pi.length; i++) {
             if (pi[i] == a)
-                indexes[0] = i;
+                index0 = i;
             if (pi[i] == b)
-                indexes[1] = i;
+                index1 = i;
             if (pi[i] == c)
-                indexes[2] = i;
+                index2 = i;
 
-            if (indexes[0] != -1 && indexes[1] != -1 && indexes[2] != -1)
+            if (index0 != -1 && index1 != -1 && index2 != -1)
                 break;
         }
 
         // sort indexes - this is CPU efficient
-        if (indexes[0] > indexes[2]) {
-            final var temp = indexes[0];
-            indexes[0] = indexes[2];
-            indexes[2] = temp;
+        if (index0 > index2) {
+            final var temp = index0;
+            index0 = index2;
+            index2 = temp;
         }
 
-        if (indexes[0] > indexes[1]) {
-            final var temp = indexes[0];
-            indexes[0] = indexes[1];
-            indexes[1] = temp;
+        if (index0 > index1) {
+            final var temp = index0;
+            index0 = index1;
+            index1 = temp;
         }
 
-        if (indexes[1] > indexes[2]) {
-            final var temp = indexes[1];
-            indexes[1] = indexes[2];
-            indexes[2] = temp;
+        if (index1 > index2) {
+            final var temp = index1;
+            index1 = index2;
+            index2 = temp;
         }
 
         final var result = new int[numberOfSymbols];
 
         int counter = 0;
-        for (int i = 0; i < indexes[0]; i++) {
+        for (int i = 0; i < index0; i++) {
             if (spiIndex[pi[i]].length == 1) continue;
             result[counter] = pi[i];
             counter++;
         }
 
-        for (int i = 0; i < indexes[2] - indexes[1]; i++) {
-            if (spiIndex[pi[indexes[1] + i]].length == 1) continue;
-            result[counter] = pi[indexes[1] + i];
+        for (int i = 0; i < index2 - index1; i++) {
+            if (spiIndex[pi[index1 + i]].length == 1) continue;
+            result[counter] = pi[index1 + i];
             counter++;
         }
 
-        for (int i = 0; i < indexes[1] - indexes[0]; i++) {
-            if (spiIndex[pi[indexes[0] + i]].length == 1) continue;
-            result[counter] = pi[indexes[0] + i];
+        for (int i = 0; i < index1 - index0; i++) {
+            if (spiIndex[pi[index0 + i]].length == 1) continue;
+            result[counter] = pi[index0 + i];
             counter++;
         }
 
-        for (int i = 0; i < pi.length - indexes[2]; i++) {
-            if (spiIndex[pi[indexes[2] + i]].length == 1) continue;
-            result[counter] = pi[indexes[2] + i];
+        for (int i = 0; i < pi.length - index2; i++) {
+            if (spiIndex[pi[index2 + i]].length == 1) continue;
+            result[counter] = pi[index2 + i];
             counter++;
         }
 

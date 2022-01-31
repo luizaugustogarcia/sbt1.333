@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 
 import static br.unb.cic.tdp.proof.ProofGenerator.*;
 import static java.util.stream.Collectors.joining;
@@ -55,21 +56,21 @@ public class FinalPermutations {
             }
         }, 0, Integer.parseInt(args[1]) * 60 * 1000);
 
-//        Stream.of(
+        Stream.of(
 //                new Configuration("(0 16 14)(1 35 15)(2 6 4)(3 7 5)(8 12 10)(9 13 11)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"), //----- NO SORTING - DOUBLE CHECKED
 //                new Configuration("(0 34 20)(1 5 3)(2 6 4)(7 11 9)(8 12 10)(13 35 33)(14 18 16)(15 19 17)(21 25 23)(22 26 24)(27 31 29)(28 32 30)"), //----- NO SORTING - DOUBLE CHECKED
 //                new Configuration("(0 4 2)(1 35 3)(5 9 7)(6 10 8)(11 15 13)(12 28 14)(16 20 18)(17 21 19)(22 26 24)(23 27 25)(29 33 31)(30 34 32)"), //----- NO SORTING - DOUBLE CHECKED
-//                new Configuration("(0 4 2)(1 5 3)(6 10 8)(7 11 9)(12 16 14)(13 17 15)(18 22 20)(19 23 21)(24 34 26)(25 35 33)(27 31 29)(28 32 30)"), //----- NO SORTING
-//                new Configuration("(0 34 26)(1 35 33)(2 6 4)(3 7 5)(8 12 10)(9 13 11)(14 18 16)(15 19 17)(20 24 22)(21 25 23)(27 31 29)(28 32 30)"), //----- NO SORTING
-//                new Configuration("(0 34 2)(1 35 33)(3 7 5)(4 8 6)(9 19 17)(10 14 12)(11 15 13)(16 26 18)(20 24 22)(21 25 23)(27 31 29)(28 32 30)"), //----- NO SORTING
-//                new Configuration("(0 34 32)(1 29 27)(2 30 28)(3 7 5)(4 8 6)(9 13 11)(10 14 12)(15 19 17)(16 20 18)(21 25 23)(22 26 24)(31 35 33)"), //----- NO SORTING
-//                new Configuration("(0 16 14)(1 5 3)(2 6 4)(7 11 9)(8 12 10)(13 35 15)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"), //----- NO SORTING
-//                new Configuration("(0 34 2)(1 35 33)(3 7 5)(4 8 6)(9 13 11)(10 14 12)(15 25 17)(16 32 18)(19 23 21)(20 24 22)(26 30 28)(27 31 29)"), //----- NO SORTING
-//                new Configuration("(0 34 32)(1 35 33)(2 6 4)(3 7 5)(8 12 10)(9 13 11)(14 18 16)(15 19 17)(20 24 22)(21 25 23)(26 30 28)(27 31 29)"), //----- NO SORTING
-//                new Configuration("(0 34 32)(1 29 27)(2 6 4)(3 7 5)(8 12 10)(9 13 11)(14 30 28)(15 19 17)(16 20 18)(21 25 23)(22 26 24)(31 35 33)") //----- NO SORTING
-//        ).forEach(conf -> {
-//            sort(conf, "C:/Users/Luiz/Temp/sbt1.333proof", _16_12_SEQS);
-//        });
+//                new Configuration("(0 4 2)(1 5 3)(6 10 8)(7 11 9)(12 16 14)(13 17 15)(18 22 20)(19 23 21)(24 34 26)(25 35 33)(27 31 29)(28 32 30)"), //----- NO SORTING - DOUBLE CHECKED
+                new Configuration("(0 34 26)(1 35 33)(2 6 4)(3 7 5)(8 12 10)(9 13 11)(14 18 16)(15 19 17)(20 24 22)(21 25 23)(27 31 29)(28 32 30)"), //----- NO SORTING
+                new Configuration("(0 34 2)(1 35 33)(3 7 5)(4 8 6)(9 19 17)(10 14 12)(11 15 13)(16 26 18)(20 24 22)(21 25 23)(27 31 29)(28 32 30)"), //----- NO SORTING
+                new Configuration("(0 34 32)(1 29 27)(2 30 28)(3 7 5)(4 8 6)(9 13 11)(10 14 12)(15 19 17)(16 20 18)(21 25 23)(22 26 24)(31 35 33)"), //----- NO SORTING
+                new Configuration("(0 16 14)(1 5 3)(2 6 4)(7 11 9)(8 12 10)(13 35 15)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"), //----- NO SORTING
+                new Configuration("(0 34 2)(1 35 33)(3 7 5)(4 8 6)(9 13 11)(10 14 12)(15 25 17)(16 32 18)(19 23 21)(20 24 22)(26 30 28)(27 31 29)"), //----- NO SORTING
+                new Configuration("(0 34 32)(1 35 33)(2 6 4)(3 7 5)(8 12 10)(9 13 11)(14 18 16)(15 19 17)(20 24 22)(21 25 23)(26 30 28)(27 31 29)"), //----- NO SORTING
+                new Configuration("(0 34 32)(1 29 27)(2 6 4)(3 7 5)(8 12 10)(9 13 11)(14 30 28)(15 19 17)(16 20 18)(21 25 23)(22 26 24)(31 35 33)") //----- NO SORTING
+        ).forEach(conf -> {
+            sort(conf, "C:/Users/Luiz/Temp/sbt1.333proof", _16_12_SEQS);
+        });
 
 //        System.out.println("7 interleaving (16,12)");
 //        sort(new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)"),
@@ -1213,64 +1214,63 @@ public class FinalPermutations {
                                             final int c,
                                             final int numberOfSymbols,
                                             final int[][] spiIndex) {
-        final var indexes = new int[3];
-        Arrays.fill(indexes, -1);
+        int index0 = -1, index1 = -1, index2 = -1;
 
         for (var i = 0; i < pi.length; i++) {
             if (pi[i] == a)
-                indexes[0] = i;
+                index0 = i;
             if (pi[i] == b)
-                indexes[1] = i;
+                index1 = i;
             if (pi[i] == c)
-                indexes[2] = i;
+                index2 = i;
 
-            if (indexes[0] != -1 && indexes[1] != -1 && indexes[2] != -1)
+            if (index0 != -1 && index1 != -1 && index2 != -1)
                 break;
         }
 
         // sort indexes - this is CPU efficient
-        if (indexes[0] > indexes[2]) {
-            final var temp = indexes[0];
-            indexes[0] = indexes[2];
-            indexes[2] = temp;
+        if (index0 > index2) {
+            final var temp = index0;
+            index0 = index2;
+            index2 = temp;
         }
 
-        if (indexes[0] > indexes[1]) {
-            final var temp = indexes[0];
-            indexes[0] = indexes[1];
-            indexes[1] = temp;
+        if (index0 > index1) {
+            final var temp = index0;
+            index0 = index1;
+            index1 = temp;
         }
 
-        if (indexes[1] > indexes[2]) {
-            final var temp = indexes[1];
-            indexes[1] = indexes[2];
-            indexes[2] = temp;
+        if (index1 > index2) {
+            final var temp = index1;
+            index1 = index2;
+            index2 = temp;
         }
 
         final var result = new int[numberOfSymbols];
 
         int counter = 0;
-        for (int i = 0; i < indexes[0]; i++) {
+        for (int i = 0; i < index0; i++) {
             if (spiIndex[pi[i]].length == 1) continue;
             result[counter] = pi[i];
             counter++;
         }
 
-        for (int i = 0; i < indexes[2] - indexes[1]; i++) {
-            if (spiIndex[pi[indexes[1] + i]].length == 1) continue;
-            result[counter] = pi[indexes[1] + i];
+        for (int i = 0; i < index2 - index1; i++) {
+            if (spiIndex[pi[index1 + i]].length == 1) continue;
+            result[counter] = pi[index1 + i];
             counter++;
         }
 
-        for (int i = 0; i < indexes[1] - indexes[0]; i++) {
-            if (spiIndex[pi[indexes[0] + i]].length == 1) continue;
-            result[counter] = pi[indexes[0] + i];
+        for (int i = 0; i < index1 - index0; i++) {
+            if (spiIndex[pi[index0 + i]].length == 1) continue;
+            result[counter] = pi[index0 + i];
             counter++;
         }
 
-        for (int i = 0; i < pi.length - indexes[2]; i++) {
-            if (spiIndex[pi[indexes[2] + i]].length == 1) continue;
-            result[counter] = pi[indexes[2] + i];
+        for (int i = 0; i < pi.length - index2; i++) {
+            if (spiIndex[pi[index2 + i]].length == 1) continue;
+            result[counter] = pi[index2 + i];
             counter++;
         }
 
@@ -1279,12 +1279,11 @@ public class FinalPermutations {
 
     private static void removeTrivialCycles(final ListOfCycles spi) {
         final var toRemove = new ArrayList<int[]>();
-        var removed = 0;
+
         for (int i = 0; i < spi.size; i++) {
             final var cycle = spi.elementData[i];
             if (cycle.length == 1) {
                 toRemove.add(cycle);
-                removed++;
             }
         }
 
