@@ -11,9 +11,9 @@ public class List_x_y_Sequences {
     public static void main(String[] args) {
         final var sequences = new ArrayList<String>();
 
-        for (int i = 1; i <= 25; i++) {
+        for (int i = 1; i <= 20; i++) {
             final var seq = new ArrayList<>();
-            while (i / (i - ((float) seq.size() + 1)) <= 1.33334) {
+            while (i / (i - ((float) seq.size() + 1)) <= 1.3333334) {
                 seq.add(0);
             }
             while (seq.size() < i) {

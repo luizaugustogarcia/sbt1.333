@@ -39,7 +39,7 @@ public class FinalPermutations {
 
         UNSUCCESSFUL_VISITED_CONFIGS = CacheBuilder.newBuilder()
                 .maximumSize(Integer.parseInt(args[0]))
-                .concurrencyLevel(Runtime.getRuntime().availableProcessors())
+                .concurrencyLevel(Integer.parseInt(args[2]))
                 .build();
 
         final var timer = new Timer();
@@ -56,46 +56,56 @@ public class FinalPermutations {
             }
         }, 0, Integer.parseInt(args[1]) * 60 * 1000);
 
-        Stream.of(
+//        Stream.of(
 //                new Configuration("(0 16 14)(1 35 15)(2 6 4)(3 7 5)(8 12 10)(9 13 11)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"), //----- NO SORTING - DOUBLE CHECKED
 //                new Configuration("(0 34 20)(1 5 3)(2 6 4)(7 11 9)(8 12 10)(13 35 33)(14 18 16)(15 19 17)(21 25 23)(22 26 24)(27 31 29)(28 32 30)"), //----- NO SORTING - DOUBLE CHECKED
 //                new Configuration("(0 4 2)(1 35 3)(5 9 7)(6 10 8)(11 15 13)(12 28 14)(16 20 18)(17 21 19)(22 26 24)(23 27 25)(29 33 31)(30 34 32)"), //----- NO SORTING - DOUBLE CHECKED
 //                new Configuration("(0 4 2)(1 5 3)(6 10 8)(7 11 9)(12 16 14)(13 17 15)(18 22 20)(19 23 21)(24 34 26)(25 35 33)(27 31 29)(28 32 30)"), //----- NO SORTING - DOUBLE CHECKED
-                new Configuration("(0 34 26)(1 35 33)(2 6 4)(3 7 5)(8 12 10)(9 13 11)(14 18 16)(15 19 17)(20 24 22)(21 25 23)(27 31 29)(28 32 30)"), //----- NO SORTING
-                new Configuration("(0 34 2)(1 35 33)(3 7 5)(4 8 6)(9 19 17)(10 14 12)(11 15 13)(16 26 18)(20 24 22)(21 25 23)(27 31 29)(28 32 30)"), //----- NO SORTING
-                new Configuration("(0 34 32)(1 29 27)(2 30 28)(3 7 5)(4 8 6)(9 13 11)(10 14 12)(15 19 17)(16 20 18)(21 25 23)(22 26 24)(31 35 33)"), //----- NO SORTING
-                new Configuration("(0 16 14)(1 5 3)(2 6 4)(7 11 9)(8 12 10)(13 35 15)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"), //----- NO SORTING
-                new Configuration("(0 34 2)(1 35 33)(3 7 5)(4 8 6)(9 13 11)(10 14 12)(15 25 17)(16 32 18)(19 23 21)(20 24 22)(26 30 28)(27 31 29)"), //----- NO SORTING
-                new Configuration("(0 34 32)(1 35 33)(2 6 4)(3 7 5)(8 12 10)(9 13 11)(14 18 16)(15 19 17)(20 24 22)(21 25 23)(26 30 28)(27 31 29)"), //----- NO SORTING
-                new Configuration("(0 34 32)(1 29 27)(2 6 4)(3 7 5)(8 12 10)(9 13 11)(14 30 28)(15 19 17)(16 20 18)(21 25 23)(22 26 24)(31 35 33)") //----- NO SORTING
-        ).forEach(conf -> {
-            sort(conf, "C:/Users/Luiz/Temp/sbt1.333proof", _16_12_SEQS);
-        });
+//                new Configuration("(0 34 26)(1 35 33)(2 6 4)(3 7 5)(8 12 10)(9 13 11)(14 18 16)(15 19 17)(20 24 22)(21 25 23)(27 31 29)(28 32 30)"), //----- NO SORTING - DOUBLE CHECKED
+//                new Configuration("(0 34 2)(1 35 33)(3 7 5)(4 8 6)(9 19 17)(10 14 12)(11 15 13)(16 26 18)(20 24 22)(21 25 23)(27 31 29)(28 32 30)"), //----- NO SORTING - DOUBLE CHECKED
+//                new Configuration("(0 34 32)(1 29 27)(2 30 28)(3 7 5)(4 8 6)(9 13 11)(10 14 12)(15 19 17)(16 20 18)(21 25 23)(22 26 24)(31 35 33)"), //----- NO SORTING - DOUBLE CHECKED
+//                new Configuration("(0 16 14)(1 5 3)(2 6 4)(7 11 9)(8 12 10)(13 35 15)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"), //----- NO SORTING
+//                new Configuration("(0 34 2)(1 35 33)(3 7 5)(4 8 6)(9 13 11)(10 14 12)(15 25 17)(16 32 18)(19 23 21)(20 24 22)(26 30 28)(27 31 29)"), //----- NO SORTING
+//                new Configuration("(0 34 32)(1 35 33)(2 6 4)(3 7 5)(8 12 10)(9 13 11)(14 18 16)(15 19 17)(20 24 22)(21 25 23)(26 30 28)(27 31 29)"), //----- NO SORTING
+//                new Configuration("(0 34 32)(1 29 27)(2 6 4)(3 7 5)(8 12 10)(9 13 11)(14 30 28)(15 19 17)(16 20 18)(21 25 23)(22 26 24)(31 35 33)") //----- NO SORTING
+//        ).forEach(conf -> {
+//            sort(conf, "C:/Users/Luiz/Temp/sbt1.333proof", _16_12_SEQS);
+//        });
 
 //        System.out.println("7 interleaving (16,12)");
 //        sort(new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)"),
 //                "C:/Users/Luiz/Temp/sbt1.333proof", _16_12_SEQS); //----- NO SORTING
 
-        System.out.println("7 interleaving (19,14)");
-        sort(new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)"),
-                "C:/Users/Luiz/Temp/sbt1.333proof", _19_14_SEQS);
+//        System.out.println("7 interleaving (19,14)");
+//        sort(new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)"),
+//                "C:/Users/Luiz/Temp/sbt1.333proof", _19_14_SEQS); //----- already running
 
+        System.out.println("(16,12)");
         sort(new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)"),
-                "C:/Users/Luiz/Temp/sbt1.333proof", _16_12_SEQS);
+                args[3], _16_12_SEQS);
 
+        System.out.println("(19,14)");
         sort(new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)"),
-                "C:/Users/Luiz/Temp/sbt1.333proof", _19_14_SEQS);
+                args[3], _19_14_SEQS);
 
+        System.out.println("(20,15)");
         sort(new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)"),
-                "C:/Users/Luiz/Temp/sbt1.333proof", _20_15_SEQS);
+                args[3], _20_15_SEQS);
 
         timer.cancel();
+    }
+
+    public static void sort(final Configuration configuration,
+                            final String outputDir,
+                            final Move root) {
+        sort(configuration, outputDir, root, Runtime.getRuntime().availableProcessors());
     }
 
     @SneakyThrows
     public static void sort(final Configuration configuration,
                             final String outputDir,
-                            final Move root) {
+                            final Move root,
+                            final int numberOfProcessors) {
         hits.set(0);
         misses.set(0);
         UNSUCCESSFUL_VISITED_CONFIGS.invalidateAll();
@@ -111,7 +121,7 @@ public class FinalPermutations {
         System.out.println("Sorting " + configuration.getSpi());
 
         final var hasSorting = new boolean[1];
-        final var forkJoinPool = new ForkJoinPool(Runtime.getRuntime().availableProcessors());
+        final var forkJoinPool = new ForkJoinPool(numberOfProcessors);
         final var task = new Search(configuration, outputDir,
                   toListOfCycle(configuration.getSpi(), configuration.getPi()), configuration.getPi().getSymbols(),
                 new Stack(root.getHeight()), root, forkJoinPool, hasSorting);
@@ -705,7 +715,6 @@ public class FinalPermutations {
         final var orientedCycles = orientedCycles(spi, piInverseIndex);
 
         final var orientationByCycle = new boolean[maxSymbol + 1];
-        Arrays.fill(orientationByCycle, false);
 
         for (int l = 0; l < orientedCycles.size; l++) {
             orientationByCycle[orientedCycles.elementData[l][0]] = true;
