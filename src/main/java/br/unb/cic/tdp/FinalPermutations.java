@@ -31,6 +31,8 @@ public class FinalPermutations {
 
     final static AtomicLong hits = new AtomicLong();
     final static AtomicLong misses = new AtomicLong();
+    final static AtomicLong forks = new AtomicLong();
+    final static AtomicLong computes = new AtomicLong();
 
     public static void main(String[] args) {
         Velocity.setProperty("resource.loader", "class");
@@ -50,6 +52,8 @@ public class FinalPermutations {
                 long heapFreeSize = Runtime.getRuntime().freeMemory();
                 System.out.println("Cache size: " + UNSUCCESSFUL_VISITED_CONFIGS.size() + ", " +
                         "Hit rate: " + String.format("%.2f", 1 - (misses.get() / (float) hits.get())) + ", " +
+                        "Forks: " + forks.get() + ", " +
+                        "Computes: " + computes.get() + ", " +
                         "Heap size GB: " + (((heapSize / 1024) / 1024) / 1024) + ", " +
                         "Heap free size GB: " + (((heapFreeSize / 1024) / 1024) / 1024)
                 );
@@ -76,21 +80,21 @@ public class FinalPermutations {
 //        sort(new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)"),
 //                "C:/Users/Luiz/Temp/sbt1.333proof", _16_12_SEQS); //----- NO SORTING
 
-//        System.out.println("7 interleaving (19,14)");
-//        sort(new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)"),
-//                "C:/Users/Luiz/Temp/sbt1.333proof", _19_14_SEQS); //----- already running
+        System.out.println("7 interleaving (19,14) - 37_165_181 computes");
+        sort(new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)"),
+                "C:/Users/Luiz/Temp/sbt1.333proof", _19_14_SEQS);
 
-        System.out.println("(16,12)");
-        sort(new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)"),
-                args[3], _16_12_SEQS, Integer.parseInt(args[2]));
+//        System.out.println("(16,12)");
+//        sort(new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)"),
+//                args[3], _16_12_SEQS, Integer.parseInt(args[2])); //----- NO SORTING
 
-        System.out.println("(19,14)");
-        sort(new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)"),
-                args[3], _19_14_SEQS, Integer.parseInt(args[2]));
+//        System.out.println("(19,14)");
+//        sort(new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)"),
+//                args[3], _19_14_SEQS, Integer.parseInt(args[2]));
 
-        System.out.println("(20,15)");
-        sort(new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)"),
-                args[3], _20_15_SEQS, Integer.parseInt(args[2]));
+//        System.out.println("(20,15)");
+//        sort(new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)"),
+//                args[3], _20_15_SEQS, Integer.parseInt(args[2]));
 
         timer.cancel();
     }
@@ -108,6 +112,8 @@ public class FinalPermutations {
                             final int numberOfProcessors) {
         hits.set(0);
         misses.set(0);
+        forks.set(0);
+        computes.set(0);
         UNSUCCESSFUL_VISITED_CONFIGS.invalidateAll();
 
         final var canonical = configuration.getCanonical();
@@ -184,6 +190,9 @@ public class FinalPermutations {
             // if passed through three zeros moves, COMPUTE DIRECTLY
             if (root.numberOfZeroMovesUntilTop() > 3) {
                 final var sorting = search(spi, parity, spiIndex, spiIndex.length, newPi, stack, root);
+
+                computes.incrementAndGet();
+
                 if (!sorting.isEmpty()) {
                     hasSorting[0] = true;
 
@@ -197,6 +206,10 @@ public class FinalPermutations {
                     }
                 }
             } else {
+                if (root.numberOfZeroMovesUntilTop() == 3) {
+                    forks.incrementAndGet();
+                }
+
                 // else, FORK
                 if (root.mu == 0) {
                     final var key = canonicalSignature(spi, pi, spiIndex, spiIndex.length);
