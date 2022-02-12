@@ -17,8 +17,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import static br.unb.cic.tdp.FinalPermutations.search;
 import static java.util.stream.Collectors.joining;
@@ -36,7 +34,7 @@ public class Consumer {
     }
 
     private void readMoves(final Move root, final Map<String, Move> rootMap) {
-        rootMap.put(root.pathToRoot(), root);
+        rootMap.put(root.pathToRootUnsorted(), root);
         for (final var child: root.children) {
             readMoves(child, rootMap);
         }
@@ -46,8 +44,6 @@ public class Consumer {
     @Transactional
     @RabbitListener(queues = "sbt_19_14")
     public void receivedMessage(String message) {
-        final var executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-
         final var scanner = new Scanner(message);
         while (scanner.hasNextLine()) {
             final var line = scanner.nextLine();
@@ -82,18 +78,12 @@ public class Consumer {
                 }
             }
 
-            executorService.submit(() -> {
-                final var sorting = search(spi, parity, spiIndex, spiIndex.length, pi, stack, rootMap.get(split[4]));
+            final var sorting = search(spi, parity, spiIndex, spiIndex.length, pi, stack, rootMap.get(split[4]));
 
-                if (!sorting.isEmpty()) {
-                    System.out.println("Sorted: " + configuration.getSpi() + ", sorting: " + sorting.toList().stream().map(Arrays::toString).collect(joining(",")) + "\n");
-                    rabbitTemplate.convertAndSend("sbt_19_14_found", sorting.toList().stream().map(Arrays::toString).collect(joining(",")));
-                }
-            });
+            if (!sorting.isEmpty()) {
+                System.out.println("Sorted: " + configuration.getSpi() + ", sorting: " + sorting.toList().stream().map(Arrays::toString).collect(joining(",")) + "\n");
+                rabbitTemplate.convertAndSend("sbt_19_14_found", sorting.toList().stream().map(Arrays::toString).collect(joining(",")));
+            }
         }
-
-        executorService.shutdown();
-
-        executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
     }
 }

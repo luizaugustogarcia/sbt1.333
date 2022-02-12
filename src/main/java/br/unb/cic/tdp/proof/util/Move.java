@@ -10,6 +10,7 @@ public class Move {
     public final int mu;
     public Move[] children;
     private String pathToRoot;
+    private String pathToRootUnsorted;
     private int numberOfZeroMovesUntilTop = -1;
 
     public Move(int mu, Move[] children, Move parent) {
@@ -56,6 +57,20 @@ public class Move {
             pathToRoot = list.stream().sorted().collect(Collectors.joining());
         }
         return pathToRoot;
+    }
+
+    public String pathToRootUnsorted() {
+        if (pathToRootUnsorted == null) {
+            final var list = new ArrayList<String>();
+            var current = this;
+            while (current != null) {
+                list.add(Integer.toString(current.mu));
+                current = current.parent;
+            }
+
+            pathToRootUnsorted = list.stream().collect(Collectors.joining());
+        }
+        return pathToRootUnsorted;
     }
 
     @Override
