@@ -8,10 +8,8 @@ import br.unb.cic.tdp.proof.util.Move;
 import br.unb.cic.tdp.proof.util.Stack;
 import br.unb.cic.tdp.util.Triplet;
 import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.velocity.app.Velocity;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -19,7 +17,6 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Stream;
 
 import static br.unb.cic.tdp.proof.ProofGenerator.*;
 import static java.util.stream.Collectors.joining;
@@ -27,39 +24,12 @@ import static java.util.stream.Collectors.toList;
 
 public class FinalPermutations {
 
-    private static Cache<String, Set<String>> UNSUCCESSFUL_VISITED_CONFIGS;
+    public static Cache<String, Set<String>> UNSUCCESSFUL_VISITED_CONFIGS;
 
-    final static AtomicLong hits = new AtomicLong();
-    final static AtomicLong misses = new AtomicLong();
-    final static AtomicLong forks = new AtomicLong();
-    final static AtomicLong computes = new AtomicLong();
+    public static final AtomicLong HITS = new AtomicLong();
+    public static final AtomicLong MISSES = new AtomicLong();
 
     public static void main(String[] args) {
-        Velocity.setProperty("resource.loader", "class");
-        Velocity.setProperty("class.resource.loader.class", "org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader");
-        Velocity.init();
-
-        UNSUCCESSFUL_VISITED_CONFIGS = CacheBuilder.newBuilder()
-                .maximumSize(Integer.parseInt(args[0]))
-                .concurrencyLevel(Integer.parseInt(args[2]))
-                .build();
-
-        final var timer = new Timer();
-        timer.scheduleAtFixedRate(new TimerTask() {
-            public void run() {
-                System.gc();
-                long heapSize = Runtime.getRuntime().totalMemory();
-                long heapFreeSize = Runtime.getRuntime().freeMemory();
-                System.out.println("Cache size: " + UNSUCCESSFUL_VISITED_CONFIGS.size() + ", " +
-                        "Hit rate: " + String.format("%.2f", 1 - (misses.get() / (float) hits.get())) + ", " +
-                        "Forks: " + forks.get() + ", " +
-                        "Computes: " + computes.get() + ", " +
-                        "Heap size GB: " + (((heapSize / 1024) / 1024) / 1024) + ", " +
-                        "Heap free size GB: " + (((heapFreeSize / 1024) / 1024) / 1024)
-                );
-            }
-        }, 0, Integer.parseInt(args[1]) * 60 * 1000);
-
 //        Stream.of(
 //                new Configuration("(0 16 14)(1 35 15)(2 6 4)(3 7 5)(8 12 10)(9 13 11)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"), //----- NO SORTING - DOUBLE CHECKED
 //                new Configuration("(0 34 20)(1 5 3)(2 6 4)(7 11 9)(8 12 10)(13 35 33)(14 18 16)(15 19 17)(21 25 23)(22 26 24)(27 31 29)(28 32 30)"), //----- NO SORTING - DOUBLE CHECKED
@@ -95,8 +65,6 @@ public class FinalPermutations {
 //        System.out.println("(20,15)");
 //        sort(new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)"),
 //                args[3], _20_15_SEQS, Integer.parseInt(args[2]));
-
-        timer.cancel();
     }
 
     public static void sort(final Configuration configuration,
@@ -110,10 +78,8 @@ public class FinalPermutations {
                             final String outputDir,
                             final Move root,
                             final int numberOfProcessors) {
-        hits.set(0);
-        misses.set(0);
-        forks.set(0);
-        computes.set(0);
+        HITS.set(0);
+        MISSES.set(0);
         UNSUCCESSFUL_VISITED_CONFIGS.invalidateAll();
 
         final var canonical = configuration.getCanonical();
@@ -191,8 +157,6 @@ public class FinalPermutations {
             if (root.numberOfZeroMovesUntilTop() > 3) {
                 final var sorting = search(spi, parity, spiIndex, spiIndex.length, newPi, stack, root);
 
-                computes.incrementAndGet();
-
                 if (!sorting.isEmpty()) {
                     hasSorting[0] = true;
 
@@ -206,21 +170,17 @@ public class FinalPermutations {
                     }
                 }
             } else {
-                if (root.numberOfZeroMovesUntilTop() == 3) {
-                    forks.incrementAndGet();
-                }
-
                 // else, FORK
                 if (root.mu == 0) {
                     final var key = canonicalSignature(spi, pi, spiIndex, spiIndex.length);
                     final var paths = UNSUCCESSFUL_VISITED_CONFIGS.get(key, () -> new HashSet(1));
                     synchronized (paths) {
                         if (paths.isEmpty()) {
-                            misses.incrementAndGet();
+                            MISSES.incrementAndGet();
                             paths.add(root.pathToRoot());
                         } else {
                             if (paths.contains(root.pathToRoot())) {
-                                hits.incrementAndGet();
+                                HITS.incrementAndGet();
                                 return;
                             } else {
                                 paths.add(root.pathToRoot());
@@ -526,11 +486,11 @@ public class FinalPermutations {
             final var paths = UNSUCCESSFUL_VISITED_CONFIGS.get(key, () -> new HashSet(1));
             synchronized (paths) {
                 if (paths.isEmpty()) {
-                    misses.incrementAndGet();
+                    MISSES.incrementAndGet();
                     paths.add(root.pathToRoot());
                 } else {
                     if (paths.contains(root.pathToRoot())) {
-                        hits.incrementAndGet();
+                        HITS.incrementAndGet();
                         return ListOfCycles.EMPTY_LIST;
                     } else {
                         paths.add(root.pathToRoot());
