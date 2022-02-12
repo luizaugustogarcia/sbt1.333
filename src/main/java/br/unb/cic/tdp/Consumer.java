@@ -92,6 +92,8 @@ public class Consumer {
             });
         }
 
+        executorService.shutdown();
+
         executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
     }
 }

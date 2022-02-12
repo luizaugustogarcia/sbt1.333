@@ -32,7 +32,7 @@ public class Filler implements CommandLineRunner {
         String line;
         while ((line = reader.readLine()) != null) {
           list.add(line);
-          if (list.size() % 10000 == 0) {
+          if (list.size() % 500 == 0) {
             String message = list.stream().collect(Collectors.joining("\n"));
             rabbitTemplate.convertAndSend("sbt_19_14", message);
             list.clear();
