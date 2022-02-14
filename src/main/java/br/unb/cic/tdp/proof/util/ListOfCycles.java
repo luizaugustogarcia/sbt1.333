@@ -51,11 +51,7 @@ public class ListOfCycles {
         for (; i >= 0; i--)
             if (data == elementData[i])
                 break;
-        try {
-            fastRemove(elementData, i);
-        } catch (ArrayIndexOutOfBoundsException e) {
-            e.printStackTrace();
-        }
+        fastRemove(elementData, i);
     }
 
     private void fastRemove(int[][] es, int i) {
