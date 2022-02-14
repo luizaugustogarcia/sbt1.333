@@ -8,6 +8,7 @@ import br.unb.cic.tdp.proof.util.Move;
 import br.unb.cic.tdp.proof.util.Stack;
 import br.unb.cic.tdp.util.Triplet;
 import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -30,6 +31,11 @@ public class FinalPermutations {
     public static final AtomicLong MISSES = new AtomicLong();
 
     public static void main(String[] args) {
+        UNSUCCESSFUL_VISITED_CONFIGS = CacheBuilder.newBuilder()
+                .maximumSize(10_000)
+                .concurrencyLevel(Runtime.getRuntime().availableProcessors())
+                .build();
+
 //        Stream.of(
 //                new Configuration("(0 16 14)(1 35 15)(2 6 4)(3 7 5)(8 12 10)(9 13 11)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"), //----- NO SORTING - DOUBLE CHECKED
 //                new Configuration("(0 34 20)(1 5 3)(2 6 4)(7 11 9)(8 12 10)(13 35 33)(14 18 16)(15 19 17)(21 25 23)(22 26 24)(27 31 29)(28 32 30)"), //----- NO SORTING - DOUBLE CHECKED
@@ -50,7 +56,7 @@ public class FinalPermutations {
 //        sort(new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)"),
 //                "C:/Users/Luiz/Temp/sbt1.333proof", _16_12_SEQS); //----- NO SORTING
 
-        System.out.println("7 interleaving (19,14) - 37_165_181 computes");
+        System.out.println("7 interleaving (19,14) - 37881237 computes");
         sort(new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)"),
                 "C:/Users/Luiz/Temp/sbt1.333proof", _19_14_SEQS);
 
@@ -804,15 +810,24 @@ public class FinalPermutations {
                             final int[] symbols = startingBy(cycle, a);
                             final var aCycle = new int[ca_k];
                             aCycle[0] = a;
-                            System.arraycopy(symbols, ab_k + bc_k + 1, aCycle, 1, ca_k - 1);
+                            // do not use System.arrayCopy to avoid JNI overhead
+                            for (int m = 0; m < ca_k - 1; m++) {
+                                aCycle[m + 1] = symbols[ab_k + bc_k + 1 + m];
+                            }
 
                             final var bCycle = new int[ab_k];
                             bCycle[0] = b;
-                            System.arraycopy(symbols, 1, bCycle, 1, ab_k - 1);
+                            // do not use System.arrayCopy to avoid JNI overhead
+                            for (int m = 0; m < ab_k - 1; m++) {
+                                bCycle[m + 1] = symbols[1 + m];
+                            }
 
                             final var cCycle = new int[bc_k];
                             cCycle[0] = c;
-                            System.arraycopy(symbols, ab_k + 1, cCycle, 1, bc_k - 1);
+                            // do not use System.arrayCopy to avoid JNI overhead
+                            for (int m = 0; m < bc_k - 1; m++) {
+                                cCycle[m + 1] = symbols[ab_k + 1 + m];
+                            }
 
                             stack.push(a, b, c);
 
