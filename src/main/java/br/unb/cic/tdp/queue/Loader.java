@@ -1,4 +1,4 @@
-package br.unb.cic.tdp;
+package br.unb.cic.tdp.queue;
 
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,12 +12,12 @@ import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 @Component
-public class Filler implements CommandLineRunner {
+public class Loader implements CommandLineRunner {
 
-    @Value("${loading}")
+    @Value("${loading:#{false}}")
     private boolean loading;
 
-    @Value("${file}")
+    @Value("${file:#{null}}")
     private String file;
 
     @Autowired

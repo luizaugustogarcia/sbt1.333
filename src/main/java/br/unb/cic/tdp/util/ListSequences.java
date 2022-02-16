@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 
-public class List_x_y_Sequences {
+public class ListSequences {
 
     public static void main(String[] args) {
         final var sequences = new ArrayList<String>();

@@ -148,24 +148,10 @@ public class ProofGenerator {
     public static final Move _12_9_SEQS = new Move(0, new Move[0], null);
     public static final Move _16_12_SEQS = new Move(0, new Move[0], null);
     public static final Move _20_15_SEQS = new Move(0, new Move[0], null);
-    //public static final Move _24_18_SEQS = new Move(0, new Move[0], null);
     public static final Move _19_14_SEQS = new Move(0, new Move[0], null);
 
     static {
-        final var _24_18 = new int[4389][];
         try {
-            final int[] j = {0};
-            final Path path = Paths.get(ProofGenerator.class.getClassLoader().getResource("24_18-seqs.txt").toURI());
-            Files.lines(path).forEach(s -> {
-                final var seq = new int[s.split(",").length];
-
-                for (int i = 0; i < s.split(",").length; i++) {
-                    seq[i] = Integer.parseInt(s.split(",")[i]);
-                }
-
-                _24_18[j[0]++] = seq;
-            });
-
             toTrie(_4_3, _4_3_SEQS);
             toTrie(_8_6, _8_6_SEQS);
             toTrie(_12_9, _12_9_SEQS);

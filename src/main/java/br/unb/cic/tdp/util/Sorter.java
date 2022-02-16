@@ -1,16 +1,18 @@
-package br.unb.cic.tdp;
+package br.unb.cic.tdp.util;
 
+import br.unb.cic.tdp.Application;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.proof.util.ListOfCycles;
 import br.unb.cic.tdp.proof.util.Move;
 import br.unb.cic.tdp.proof.util.Stack;
-import br.unb.cic.tdp.util.Triplet;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.ArrayUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -24,27 +26,32 @@ import static br.unb.cic.tdp.proof.util.ListOfCycles.EMPTY_LIST;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
-public class FinalPermutations {
+public class Sorter {
 
     public static Cache<String, Set<String>> UNSUCCESSFUL_VISITED_CONFIGS;
 
     public static final AtomicLong HITS = new AtomicLong();
     public static final AtomicLong MISSES = new AtomicLong();
 
+    private static Logger logger = LoggerFactory.getLogger(Application.class);
+
     public static void main(String[] args) {
+        final var cacheSize = (int) ((Runtime.getRuntime().maxMemory() * 0.85) / 429);
+        logger.info("Cache size:" + cacheSize);
+
         UNSUCCESSFUL_VISITED_CONFIGS = CacheBuilder.newBuilder()
-                .maximumSize(1_000_000)
+                .maximumSize(cacheSize)
                 .concurrencyLevel(Runtime.getRuntime().availableProcessors())
                 .build();
 
 //        Stream.of(
-//                new Configuration("(0 16 14)(1 35 15)(2 6 4)(3 7 5)(8 12 10)(9 13 11)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"), //----- NO SORTING - DOUBLE CHECKED
-//                new Configuration("(0 34 20)(1 5 3)(2 6 4)(7 11 9)(8 12 10)(13 35 33)(14 18 16)(15 19 17)(21 25 23)(22 26 24)(27 31 29)(28 32 30)"), //----- NO SORTING - DOUBLE CHECKED
-//                new Configuration("(0 4 2)(1 35 3)(5 9 7)(6 10 8)(11 15 13)(12 28 14)(16 20 18)(17 21 19)(22 26 24)(23 27 25)(29 33 31)(30 34 32)"), //----- NO SORTING - DOUBLE CHECKED
-//                new Configuration("(0 4 2)(1 5 3)(6 10 8)(7 11 9)(12 16 14)(13 17 15)(18 22 20)(19 23 21)(24 34 26)(25 35 33)(27 31 29)(28 32 30)"), //----- NO SORTING - DOUBLE CHECKED
-//                new Configuration("(0 34 26)(1 35 33)(2 6 4)(3 7 5)(8 12 10)(9 13 11)(14 18 16)(15 19 17)(20 24 22)(21 25 23)(27 31 29)(28 32 30)"), //----- NO SORTING - DOUBLE CHECKED
-//                new Configuration("(0 34 2)(1 35 33)(3 7 5)(4 8 6)(9 19 17)(10 14 12)(11 15 13)(16 26 18)(20 24 22)(21 25 23)(27 31 29)(28 32 30)"), //----- NO SORTING - DOUBLE CHECKED
-//                new Configuration("(0 34 32)(1 29 27)(2 30 28)(3 7 5)(4 8 6)(9 13 11)(10 14 12)(15 19 17)(16 20 18)(21 25 23)(22 26 24)(31 35 33)"), //----- NO SORTING - DOUBLE CHECKED
+//                new Configuration("(0 16 14)(1 35 15)(2 6 4)(3 7 5)(8 12 10)(9 13 11)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"), //----- NO SORTING
+//                new Configuration("(0 34 20)(1 5 3)(2 6 4)(7 11 9)(8 12 10)(13 35 33)(14 18 16)(15 19 17)(21 25 23)(22 26 24)(27 31 29)(28 32 30)"), //----- NO SORTING
+//                new Configuration("(0 4 2)(1 35 3)(5 9 7)(6 10 8)(11 15 13)(12 28 14)(16 20 18)(17 21 19)(22 26 24)(23 27 25)(29 33 31)(30 34 32)"), //----- NO SORTING
+//                new Configuration("(0 4 2)(1 5 3)(6 10 8)(7 11 9)(12 16 14)(13 17 15)(18 22 20)(19 23 21)(24 34 26)(25 35 33)(27 31 29)(28 32 30)"), //----- NO SORTING
+//                new Configuration("(0 34 26)(1 35 33)(2 6 4)(3 7 5)(8 12 10)(9 13 11)(14 18 16)(15 19 17)(20 24 22)(21 25 23)(27 31 29)(28 32 30)"), //----- NO SORTING
+//                new Configuration("(0 34 2)(1 35 33)(3 7 5)(4 8 6)(9 19 17)(10 14 12)(11 15 13)(16 26 18)(20 24 22)(21 25 23)(27 31 29)(28 32 30)"), //----- NO SORTING
+//                new Configuration("(0 34 32)(1 29 27)(2 30 28)(3 7 5)(4 8 6)(9 13 11)(10 14 12)(15 19 17)(16 20 18)(21 25 23)(22 26 24)(31 35 33)"), //----- NO SORTING
 //                new Configuration("(0 16 14)(1 5 3)(2 6 4)(7 11 9)(8 12 10)(13 35 15)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"), //----- NO SORTING
 //                new Configuration("(0 34 2)(1 35 33)(3 7 5)(4 8 6)(9 13 11)(10 14 12)(15 25 17)(16 32 18)(19 23 21)(20 24 22)(26 30 28)(27 31 29)"), //----- NO SORTING
 //                new Configuration("(0 34 32)(1 35 33)(2 6 4)(3 7 5)(8 12 10)(9 13 11)(14 18 16)(15 19 17)(20 24 22)(21 25 23)(26 30 28)(27 31 29)"), //----- NO SORTING
@@ -76,14 +83,14 @@ public class FinalPermutations {
 
     public static void sort(final Configuration configuration,
                             final String outputDir,
-                            final Move root) {
-        sort(configuration, outputDir, root, Runtime.getRuntime().availableProcessors());
+                            final Move rootMove) {
+        sort(configuration, outputDir, rootMove, Runtime.getRuntime().availableProcessors());
     }
 
     @SneakyThrows
     public static void sort(final Configuration configuration,
                             final String outputDir,
-                            final Move root,
+                            final Move rootMove,
                             final int numberOfProcessors) {
         HITS.set(0);
         MISSES.set(0);
@@ -103,7 +110,7 @@ public class FinalPermutations {
         final var forkJoinPool = new ForkJoinPool(numberOfProcessors);
         final var task = new Search(configuration, outputDir,
                 toListOfCycle(configuration.getSpi(), configuration.getPi()), configuration.getPi().getSymbols(),
-                new Stack(root.getHeight()), root, forkJoinPool, hasSorting);
+                new Stack(rootMove.getHeight()), rootMove, forkJoinPool, hasSorting);
         forkJoinPool.submit(task);
         forkJoinPool.shutdown();
         forkJoinPool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
@@ -118,19 +125,19 @@ public class FinalPermutations {
         final ListOfCycles spi;
         final int[] pi;
         final Stack stack;
-        final Move root;
+        final Move rootMove;
         final ForkJoinPool forkJoinPool;
         boolean[] hasSorting;
 
         public Search(final Configuration configuration, final String outputDir, final ListOfCycles spi,
-                      final int[] pi, final Stack stack, final Move root, final ForkJoinPool forkJoinPool,
+                      final int[] pi, final Stack stack, final Move rootMove, final ForkJoinPool forkJoinPool,
                       final boolean[] hasSorting) {
             this.configuration = configuration;
             this.outputDir = outputDir;
             this.spi = spi;
             this.pi = pi;
             this.stack = stack;
-            this.root = root;
+            this.rootMove = rootMove;
             this.forkJoinPool = forkJoinPool;
             this.hasSorting = hasSorting;
         }
@@ -161,8 +168,8 @@ public class FinalPermutations {
             removeTrivialCycles(spi);
 
             // if passed through three zeros moves, COMPUTE DIRECTLY
-            if (root.numberOfZeroMovesUntilTop() > 3) {
-                final var sorting = search(spi, parity, spiIndex, spiIndex.length, newPi, stack, root);
+            if (rootMove.numberOfZeroMovesUntilTop() > 3) {
+                final var sorting = search(spi, parity, spiIndex, spiIndex.length, newPi, stack, rootMove);
 
                 if (!sorting.isEmpty()) {
                     hasSorting[0] = true;
@@ -178,19 +185,19 @@ public class FinalPermutations {
                 }
             } else {
                 // else, FORK
-                if (root.mu == 0) {
+                if (rootMove.mu == 0) {
                     final var key = canonicalSignature(spi, pi, spiIndex, spiIndex.length);
                     final var paths = UNSUCCESSFUL_VISITED_CONFIGS.get(key, () -> new HashSet(1));
                     synchronized (paths) {
                         if (paths.isEmpty()) {
                             MISSES.incrementAndGet();
-                            paths.add(root.pathToRoot());
+                            paths.add(rootMove.pathToRoot());
                         } else {
-                            if (paths.contains(root.pathToRoot())) {
+                            if (paths.contains(rootMove.pathToRoot())) {
                                 HITS.incrementAndGet();
                                 return;
                             } else {
-                                paths.add(root.pathToRoot());
+                                paths.add(rootMove.pathToRoot());
                             }
                         }
                     }
@@ -267,7 +274,7 @@ public class FinalPermutations {
                                 update(spiIndex, parity, aCycle, bCycle, cCycle);
                                 // =======================
 
-                                for (final var nextMove : root.children) {
+                                for (final var nextMove : rootMove.children) {
                                     int[] newPi = applyTransposition(pi, a, b, c, pi.length - numberOfTrivialCycles, spiIndex);
                                     new Search(configuration, outputDir, spi.clone(), newPi, stack.clone(), nextMove, forkJoinPool, hasSorting).fork();
                                 }
@@ -334,7 +341,7 @@ public class FinalPermutations {
                         updateIndex(spiIndex, parity, triplet.second);
                         // ==============================
 
-                        for (final var nextMove : root.children) {
+                        for (final var nextMove : rootMove.children) {
                             int[] newPi = applyTransposition(pi, a, b, c, pi.length - numberOfTrivialCycles, spiIndex);
                             new Search(configuration, outputDir, spi.clone(), newPi, stack.clone(), nextMove, forkJoinPool, hasSorting).fork();
                         }
@@ -450,7 +457,7 @@ public class FinalPermutations {
                         int[] newPi = applyTransposition(pi, a, b, c, pi.length - numberOfTrivialCycles, spiIndex);
                         final var canonicalSignature = canonicalSignature(spi, newPi, spiIndex, spiIndex.length);
                         if (!canonicalSignatures.contains(canonicalSignature)) {
-                            for (final var nextMove : root.children) {
+                            for (final var nextMove : rootMove.children) {
                                 new Search(configuration, outputDir, spi.clone(), newPi, stack.clone(), nextMove, forkJoinPool, hasSorting).fork();
                             }
                             canonicalSignatures.add(canonicalSignature);
@@ -843,21 +850,21 @@ public class FinalPermutations {
                                 final int[] symbols = startingBy(cycle, a);
                                 final var aCycle = new int[ca_k];
                                 aCycle[0] = a;
-                                // do not use System.arrayCopy to avoid JNI overhead
+                                // ======= do not use System.arrayCopy to avoid JNI overhead
                                 for (int m = 0; m < ca_k - 1; m++) {
                                     aCycle[m + 1] = symbols[ab_k + bc_k + 1 + m];
                                 }
 
                                 final var bCycle = new int[ab_k];
                                 bCycle[0] = b;
-                                // do not use System.arrayCopy to avoid JNI overhead
+                                // ======= do not use System.arrayCopy to avoid JNI overhead
                                 for (int m = 0; m < ab_k - 1; m++) {
                                     bCycle[m + 1] = symbols[1 + m];
                                 }
 
                                 final var cCycle = new int[bc_k];
                                 cCycle[0] = c;
-                                // do not use System.arrayCopy to avoid JNI overhead
+                                // ======= do not use System.arrayCopy to avoid JNI overhead
                                 for (int m = 0; m < bc_k - 1; m++) {
                                     cCycle[m + 1] = symbols[ab_k + 1 + m];
                                 }

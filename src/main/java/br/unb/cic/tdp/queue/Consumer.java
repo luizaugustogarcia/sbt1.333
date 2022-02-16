@@ -1,4 +1,4 @@
-package br.unb.cic.tdp;
+package br.unb.cic.tdp.queue;
 
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.proof.ProofGenerator;
@@ -9,6 +9,7 @@ import lombok.SneakyThrows;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,25 +19,26 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
 
-import static br.unb.cic.tdp.FinalPermutations.search;
+import static br.unb.cic.tdp.util.Sorter.search;
 import static java.util.stream.Collectors.joining;
 
 @Component
 @ConditionalOnProperty(name = "consume")
 public class Consumer {
 
+    @Autowired
     private RabbitTemplate rabbitTemplate;
+
     private Map<String, Move> rootMap = new HashMap<>();
 
-    public Consumer(RabbitTemplate rabbitTemplate) {
-        this.rabbitTemplate = rabbitTemplate;
-        readMoves(ProofGenerator._19_14_SEQS, rootMap);
+    public Consumer() {
+        mapMoves(ProofGenerator._19_14_SEQS, rootMap);
     }
 
-    private void readMoves(final Move root, final Map<String, Move> rootMap) {
+    private void mapMoves(final Move root, final Map<String, Move> rootMap) {
         rootMap.put(root.pathToRootUnsorted(), root);
         for (final var child: root.children) {
-            readMoves(child, rootMap);
+            mapMoves(child, rootMap);
         }
     }
 
