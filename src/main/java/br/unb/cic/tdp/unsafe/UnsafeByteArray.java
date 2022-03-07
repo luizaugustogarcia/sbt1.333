@@ -1,25 +1,33 @@
 package br.unb.cic.tdp.unsafe;
 
 public class UnsafeByteArray {
-    private final static int BYTE = 1;
     private final byte size;
+
     private final long address;
 
-    public UnsafeByteArray(byte size) {
+    public UnsafeByteArray(final byte size) {
         this.size = size;
-        this.address = TheUnsafe.get().allocateMemory(size * BYTE);
+        this.address = TheUnsafe.get().allocateMemory(size);
     }
 
-    public void set(byte i, byte value) {
-        TheUnsafe.get().putByte(address + i * BYTE, value);
+    public void set(final byte i, final byte value) {
+        TheUnsafe.get().putByte(address + i, value);
     }
 
-    public byte get(byte i) {
-        return TheUnsafe.get().getByte(address + i * BYTE);
+    public static byte at(final long arrayAddress, final byte i) {
+        return TheUnsafe.get().getByte(arrayAddress + i);
+    }
+
+    public byte at(final byte i) {
+        return TheUnsafe.get().getByte(address + i);
     }
 
     public byte size() {
         return size;
+    }
+
+    public long getAddress() {
+        return this.address;
     }
 
     public void free() {

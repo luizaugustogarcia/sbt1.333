@@ -2,7 +2,6 @@ package br.unb.cic.tdp.unsafe;
 
 import cern.colt.list.LongArrayList;
 import lombok.SneakyThrows;
-import sun.misc.Unsafe;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -68,7 +67,7 @@ public class UnsafeListOfCycles {
 
     public boolean contains(final long cycleAddress) {
         for (byte i = 0; i < size; i++) {
-            if (elementData.get(i) == cycleAddress)
+            if (elementData.at(i) == cycleAddress)
                 return true;
         }
         return false;

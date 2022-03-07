@@ -163,7 +163,7 @@ public class Sorter {
                     newPi = ArrayUtils.removeElement(newPi, cycle[0]);
                 }
                 for (int s : cycle) {
-                    spiIndex[s] = cycle;
+                    spiIndex.get(s] = cycle;
                     parity[s] = (cycle.length & 1) == 1;
                 }
             }
@@ -311,12 +311,12 @@ public class Sorter {
                         int a = pi[i], b = pi[j], c = pi[k];
 
                         // if it's the same cycle, skip it
-                        if (spiIndex[a] == spiIndex[b] && spiIndex[b] == spiIndex[c])
+                        if (spiIndex.get(a] == spiIndex.get(b] && spiIndex.get(b] == spiIndex.get(c])
                             continue;
 
-                        final var is_2Move = spiIndex[a] != spiIndex[b] &&
-                                spiIndex[b] != spiIndex[c] &&
-                                spiIndex[a] != spiIndex[c];
+                        final var is_2Move = spiIndex.get(a] != spiIndex.get(b] &&
+                                spiIndex.get(b] != spiIndex.get(c] &&
+                                spiIndex.get(a] != spiIndex.get(c];
                         if (is_2Move)
                             continue;
 
@@ -376,16 +376,16 @@ public class Sorter {
 
                         int a = pi[i], b = pi[j], c = pi[k];
 
-                        final var is_2Move = spiIndex[a] != spiIndex[b] &&
-                                spiIndex[b] != spiIndex[c] &&
-                                spiIndex[a] != spiIndex[c];
+                        final var is_2Move = spiIndex.get(a] != spiIndex.get(b] &&
+                                spiIndex.get(b] != spiIndex.get(c] &&
+                                spiIndex.get(a] != spiIndex.get(c];
                         if (is_2Move)
                             continue;
 
                         final Triplet<ListOfCycles, ListOfCycles, Integer> triplet;
                         // if it's the same cycle
-                        if (spiIndex[a] == spiIndex[b] && spiIndex[b] == spiIndex[c]) {
-                            final var cycle = spiIndex[a];
+                        if (spiIndex.get(a] == spiIndex.get(b] && spiIndex.get(b] == spiIndex.get(c]) {
+                            final var cycle = spiIndex.get(a];
 
                             if (cycleIndexes[a] == null) {
                                 final var index = cycleIndex(cycle);
@@ -524,21 +524,21 @@ public class Sorter {
             final var cycleIndexes = new int[(int) pi.size()][];
 
             for (byte i = 0; i < pi.size() - 2; i++) {
-                for (byte j = (byte) (i + 1); j < pi.size() - 1; j++) {
-                    for (byte k = (byte) (j + 1); k < pi.size(); k++) {
+                for (byte j =  (i + 1); j < pi.size() - 1; j++) {
+                    for (byte k =  (j + 1); k < pi.size(); k++) {
 
-                        byte a = pi.get(i), b = pi.get(j), c = pi.get(k);
+                        byte a = pi.at(i), b = pi.at(j), c = pi.at(k);
 
-                        final var is_2Move = spiIndex.get(a) != spiIndex.get(b) &&
-                                spiIndex.get(b) != spiIndex.get(c) &&
-                                spiIndex.get(a) != spiIndex.get(c);
+                        final var is_2Move = spiIndex.at(a) != spiIndex.at(b) &&
+                                spiIndex.at(b) != spiIndex.at(c) &&
+                                spiIndex.at(a) != spiIndex.at(c);
                         if (is_2Move)
                             continue;
 
                         final Triplet<ListOfCycles, ListOfCycles, Integer> triplet;
                         // if it's the same cycle
-                        if (spiIndex.get(a) == spiIndex.get(b) && spiIndex.get(b) == spiIndex.get(c)) {
-                            final var cycle = spiIndex.get(a);
+                        if (spiIndex.at(a) == spiIndex.at(b) && spiIndex.at(b) == spiIndex.at(c)) {
+                            final var cycle = spiIndex.at(a);
 
                             if (cycleIndexes[a] == null) {
                                 final var index = cycleIndex(cycle);
@@ -645,7 +645,7 @@ public class Sorter {
             // ======= oriented cycles =======
             // ===============================
 
-            final var piInverseIndex = getPiInverseIndex(pi, maxSymbol);
+            final var piInverseIndex = getPiInverseIndex(pi);
 
             final var orientedCycles = orientedCycles(spi, piInverseIndex);
 
@@ -786,12 +786,12 @@ public class Sorter {
                         int a = pi[i], b = pi[j], c = pi[k];
 
                         // if it's the same cycle, skip it
-                        if (spiIndex[a] == spiIndex[b] && spiIndex[b] == spiIndex[c])
+                        if (spiIndex.at(a] == spiIndex.at(b] && spiIndex.at(b] == spiIndex.at(c])
                             continue;
 
-                        final var is_2Move = spiIndex[a] != spiIndex[b] &&
-                                spiIndex[b] != spiIndex[c] &&
-                                spiIndex[a] != spiIndex[c];
+                        final var is_2Move = spiIndex.at(a] != spiIndex.at(b] &&
+                                spiIndex.at(b] != spiIndex.at(c] &&
+                                spiIndex.at(a] != spiIndex.at(c];
                         if (is_2Move)
                             continue;
 
@@ -891,7 +891,7 @@ public class Sorter {
                 if (label % 1 > 0) {
                     if (orientedIndexMapping[newLabel] == null) {
                         final var index = Math.abs(j - shifting.length) - 1;
-                        var cycle = startingBy(spiIndex[shifting[index]], shifting[index]).clone();
+                        var cycle = startingBy(spiIndex.get(shifting[index]], shifting[index]).clone();
                         ArrayUtils.reverse(cycle);
                         orientedIndexMapping[newLabel] = cycleIndex(cycle);
                         final var delta = cycle.length - round((label % 1) * 100);
@@ -900,9 +900,9 @@ public class Sorter {
 
                     final var index = Math.abs(j - shifting.length) - 1;
                     final var orientationIndex = orientedIndexMapping[newLabel][shifting[index]] + 1;
-                    mirroredSignature[j] = newLabel + (((orientationIndex + deltas[newLabel]) % spiIndex[shifting[index]].length) / 100);
+                    mirroredSignature[j] = newLabel + (((orientationIndex + deltas[newLabel]) % spiIndex.get(shifting[index]].length) / 100);
                     if (mirroredSignature[j] % 1 == 0)
-                        mirroredSignature[j] = newLabel + (spiIndex[shifting[index]].length / 100f);
+                        mirroredSignature[j] = newLabel + (spiIndex.get(shifting[index]].length / 100f);
                 } else {
                     mirroredSignature[j] = newLabel;
                 }
@@ -963,7 +963,7 @@ public class Sorter {
 
         for (var i = 0; i < signature.length; i++) {
             final int symbol = pi[i];
-            final var cycle = spiIndex[symbol];
+            final var cycle = spiIndex.get(symbol];
 
             if (orientationByCycle[cycle[0]]) {
                 final var symbolIndex = new int[maxSymbol + 1];
@@ -1052,7 +1052,7 @@ public class Sorter {
     public static UnsafeByteArray getPiInverseIndex(final UnsafeByteArray pi) {
         final var piInverseIndex = new UnsafeByteArray(pi.size());
         for (byte i = 0; i < pi.size(); i++) {
-            piInverseIndex.set(pi.get((byte) (pi.size() - i - 1)), i);
+            piInverseIndex.set(pi.at( (pi.size() - i - 1)), i);
         }
         return piInverseIndex;
     }
@@ -1070,12 +1070,6 @@ public class Sorter {
     private static void updateIndex(final int[][] index, final boolean[] parity, final ListOfCycles cycles) {
         for (int i = 0; i < cycles.size; i++) {
             final var cycle = cycles.elementData[i];
-            updateIndex(index, parity, cycle);
-        }
-    }
-
-    private static void updateIndex(final int[][] index, final boolean[] parity, final int[]... cycles) {
-        for (int[] cycle : cycles) {
             if (cycle.length == 1) {
                 index[cycle[0]] = null;
                 parity[cycle[0]] = true;
@@ -1089,13 +1083,15 @@ public class Sorter {
         }
     }
 
-    public static boolean areSymbolsInCyclicOrder(final int[] index, int[] symbols) {
+    public static boolean areSymbolsInCyclicOrder(final long indexAddress, final long cycleAddress) {
         boolean leap = false;
-        for (int i = 0; i < symbols.length; i++) {
+        final var len = len(cycleAddress);
+        for (int i = 0; i < len; i++) {
             int nextIndex = i + 1;
-            if (nextIndex >= symbols.length)
-                nextIndex = (i + 1) % symbols.length;
-            if (index[symbols[i]] > index[symbols[nextIndex]]) {
+            if (nextIndex >= len)
+                nextIndex = (i + 1) % len;
+            if (UnsafeByteArray.at(indexAddress, at(cycleAddress, i)) >
+                UnsafeByteArray.at(indexAddress, at(cycleAddress, nextIndex))) {
                 if (!leap) {
                     leap = true;
                 } else {
@@ -1107,139 +1103,171 @@ public class Sorter {
         return true;
     }
 
-    private static Triplet<ListOfCycles, ListOfCycles, Integer> simulate0MoveTwoCycles(final int[][] spiIndex,
-                                                                                       final int a,
-                                                                                       final int b,
-                                                                                       final int c) {
+    private static Triplet<UnsafeListOfCycles, UnsafeListOfCycles, Integer> simulate0MoveTwoCycles(final UnsafeLongArray spiIndex,
+                                                                                                   final int a,
+                                                                                                   final int b,
+                                                                                                   final int c) {
         int numberOfEvenCycles = 0;
         int a_, b_, c_;
-        if (spiIndex[a] == spiIndex[c]) {
+        if (spiIndex.at(a) == spiIndex.at(c)) {
             a_ = a;
             b_ = c;
             c_ = b;
-            numberOfEvenCycles += spiIndex[a].length & 1;
-            numberOfEvenCycles += spiIndex[b].length & 1;
-        } else if (spiIndex[a] == spiIndex[b]) {
+            numberOfEvenCycles += len(spiIndex.at(a)) & 1;
+            numberOfEvenCycles += len(spiIndex.at(b)) & 1;
+        } else if (spiIndex.at(a) == spiIndex.at(b)) {
             a_ = b;
             b_ = a;
             c_ = c;
-            numberOfEvenCycles += spiIndex[a].length & 1;
-            numberOfEvenCycles += spiIndex[c].length & 1;
+            numberOfEvenCycles += len(spiIndex.at(a)) & 1;
+            numberOfEvenCycles += len(spiIndex.at(c)) & 1;
         } else {
             // spi.getCycle(b) == spi.getCycle(c)
             a_ = c;
             b_ = b;
             c_ = a;
-            numberOfEvenCycles += spiIndex[a].length & 1;
-            numberOfEvenCycles += spiIndex[c].length & 1;
+            numberOfEvenCycles += len(spiIndex.at(a)) & 1;
+            numberOfEvenCycles += len(spiIndex.at(c)) & 1;
         }
 
-        final var index = cycleIndex(spiIndex[c_]);
-        final var cImage = image(index, spiIndex[c_], c_);
-        final var abCycle = startingBy(spiIndex[a_], a_);
-        final var cCycle = startingBy(spiIndex[c_], cImage);
+        final var index = cycleIndex(spiIndex.at(c_));
+        final var cImage = image(index, spiIndex.at(c_), c_);
+        final var abCycle = startingBy(spiIndex.at(a_), a_);
+        final var cCycle = startingBy(spiIndex.at(c_), cImage);
 
         final var abCycleIndex = cycleIndex(abCycle);
 
-        final var ba_k = getK(abCycleIndex, abCycle, b_, a_);
-        final var newaCycle = new int[1 + ba_k - 1];
-        newaCycle[0] = a_;
-        final var ab_k = getK(abCycleIndex, abCycle, a_, b_);
-        System.arraycopy(abCycle, ab_k + 1, newaCycle, 1, ba_k - 1);
+        final var ba_k = getK(abCycleIndex, b_, a_);
+        final var newaCycle = create(ba_k);
+        set(newaCycle, 0, (byte) a_);
+        final var ab_k = getK(abCycleIndex, a_, b_);
+        cyclecopy(abCycle, ab_k + 1, newaCycle, 1, ba_k - 1);
 
-        final var newbCycle = new int[1 + cCycle.length + (ab_k - 1)];
-        newbCycle[0] = b_;
-        System.arraycopy(cCycle, 0, newbCycle, 1, cCycle.length);
-        System.arraycopy(abCycle, 1, newbCycle, 1 + cCycle.length, ab_k - 1);
+        final var cCycleLen = len(cCycle);
+        final var newbCycle = create(cCycleLen + ab_k);
+        set(newbCycle, 0, (byte) b_);
+        cyclecopy(cCycle, 0, newbCycle, 1, cCycleLen);
+        cyclecopy(abCycle, 1, newbCycle, 1 + cCycleLen, ab_k - 1);
 
         var newNumberOfEvenCycles = 0;
-        newNumberOfEvenCycles += newaCycle.length & 1;
-        newNumberOfEvenCycles += newbCycle.length & 1;
+        newNumberOfEvenCycles += ba_k & 1;
+        newNumberOfEvenCycles += ba_k & 1;
 
-        final var oldCycles = new ListOfCycles(2);
-        oldCycles.add(spiIndex[a]);
-        if (!oldCycles.contains(spiIndex[b]))
-            oldCycles.add(spiIndex[b]);
-        if (!oldCycles.contains(spiIndex[c]))
-            oldCycles.add(spiIndex[c]);
+        final var oldCycles = new UnsafeListOfCycles(2);
+        oldCycles.add(spiIndex.at(a));
+        if (!oldCycles.contains(spiIndex.at(b)))
+            oldCycles.add(spiIndex.at(b));
+        if (!oldCycles.contains(spiIndex.at(c)))
+            oldCycles.add(spiIndex.at(c));
 
-        final var newCycles = new ListOfCycles(2);
+        final var newCycles = new UnsafeListOfCycles(2);
         newCycles.add(newaCycle);
         newCycles.add(newbCycle);
+
+        free(index);
 
         return new Triplet<>(oldCycles, newCycles, newNumberOfEvenCycles - numberOfEvenCycles);
     }
 
-    private static int image(int[] index, int[] cycle, int a) {
-        return cycle[(index[a] + 1) % cycle.length];
+    private static int image(final long indexAddress, final long cycleAddress, final int a) {
+        return at(cycleAddress, ((at(indexAddress, a) + 1) % len(cycleAddress)));
     }
 
-    private static Triplet<ListOfCycles, ListOfCycles, Integer> simulate0MoveSameCycle(final int[][] cycleIndex,
-                                                                                       final int a,
-                                                                                       final int b,
-                                                                                       final int c) {
-        final var oldCycle = cycleIndex[a];
+    private static Triplet<UnsafeListOfCycles, UnsafeListOfCycles, Integer> simulate0MoveSameCycle(final UnsafeLongArray cycleIndex,
+                                                                                                   final byte a,
+                                                                                                   final byte b,
+                                                                                                   final byte c) {
+        final var oldCycle = cycleIndex.at(a);
 
-        final int[] symbols = startingBy(oldCycle, b);
-        final var newCycle = new int[oldCycle.length];
+        final var alignedCycle = startingBy(oldCycle, b);
+        final var newCycle = create(len(oldCycle));
 
-        final int[] oldCycleIndex = cycleIndex(oldCycle);
+        final long oldCycleIndex = cycleIndex(oldCycle);
 
-        newCycle[0] = b;
-        final var ab_k = getK(oldCycleIndex, oldCycle, b, a);
-        final var bc_k = getK(oldCycleIndex, oldCycle, a, c);
-        System.arraycopy(symbols, ab_k + 1, newCycle, 1, bc_k - 1);
-        newCycle[bc_k] = c;
+        set(newCycle,  0, b);
+        final var ab_k = getK(oldCycleIndex, b, a);
+        final var bc_k = getK(oldCycleIndex, a, c);
+        cyclecopy(alignedCycle, ab_k + 1, newCycle, 1, bc_k - 1);
+        set(newCycle,  bc_k, c);
 
-        System.arraycopy(symbols, 1, newCycle, 1 + bc_k, ab_k - 1);
-        newCycle[ab_k + bc_k] = a;
+        cyclecopy(alignedCycle, 1, newCycle, 1 + bc_k, ab_k - 1);
+        set(newCycle,  (ab_k + bc_k), a);
 
-        final var ca_k = getK(oldCycleIndex, oldCycle, c, b);
-        System.arraycopy(symbols, ab_k + bc_k + 1,
+        final var ca_k = getK(oldCycleIndex, c, b);
+        cyclecopy(alignedCycle, ab_k + bc_k + 1,
                 newCycle, ab_k + bc_k + 1, ca_k - 1);
 
-        return new Triplet<>(ListOfCycles.singleton(oldCycle), ListOfCycles.singleton(newCycle), 0);
+        free(oldCycleIndex);
+        free(alignedCycle);
+
+        return new Triplet<>(UnsafeListOfCycles.singleton(oldCycle), UnsafeListOfCycles.singleton(newCycle), 0);
     }
 
-    private static int[] cycleIndex(int[] cycle) {
-        final var index = new int[max(cycle) + 1];
+    // returns a reference to a "cycle", meaning that the first position is the length
+    private static long cycleIndex(final long cycleAddress) {
+        final var indexAddress = create((max(cycleAddress) + 1));
 
-        for (int i = 0; i < cycle.length; i++) {
-            index[cycle[i]] = i;
+        for (byte i = 0; i < len(cycleAddress); i++) {
+            set(indexAddress, at(cycleAddress, i), i);
         }
 
-        return index;
+        return indexAddress;
     }
 
-    public static int max(final int[] array) {
-        int max = array[0];
-        for (int i = 1; i < array.length; i++) {
-            if (array[i] > max) {
-                max = array[i];
+    public static byte max(final long cycleAddress) {
+        byte max = at(cycleAddress,  0);
+        for (byte i = 1; i < len(cycleAddress); i++) {
+            if (at(cycleAddress,i) > max) {
+                max = at(cycleAddress, i);
             }
         }
         return max;
     }
 
-    private static int getK(int[] cycleIndex, int[] cycle, int a, int b) {
-        final var aIndex = cycleIndex[a];
-        final var bIndex = cycleIndex[b];
+    private static int getK(final long cycleIndexAddress, int a, int b) {
+        final var aIndex = at(cycleIndexAddress, a);
+        final var bIndex = at(cycleIndexAddress, b);
 
         if (bIndex >= aIndex)
             return bIndex - aIndex;
 
-        return (cycle.length - aIndex) + bIndex;
+        return (len(cycleIndexAddress) - aIndex) + bIndex;
     }
 
-    private static long startingBy(long cycle, int a) {
-        if (cycle[0] == a)
-            return cycle;
+    private static long create(final int length) {
+        final var cycleAddress = TheUnsafe.get().allocateMemory(length + 1);
+        TheUnsafe.get().putByte(cycleAddress, (byte) length);
+        return cycleAddress;
+    }
 
-        final var result = new int[cycle.length];
-        for (int i = 0; i < cycle.length; i++) {
-            if (cycle[i] == a) {
-                System.arraycopy(cycle, i, result, 0, cycle.length - i);
-                System.arraycopy(cycle, 0, result, cycle.length - i, i);
+    private static void set(final long cycleAddress, final int i, final byte value) {
+        TheUnsafe.get().putByte(cycleAddress + i + 1, value);
+    }
+
+    private static byte at(final long cycleAddress, int i) {
+        return TheUnsafe.get().getByte(cycleAddress + i + 1);
+    }
+
+    private static byte len(final long cycleAddress) {
+        return TheUnsafe.get().getByte(cycleAddress);
+    }
+
+    private static void free(final long address) {
+        TheUnsafe.get().freeMemory(address);
+    }
+
+    private static long startingBy(long cycleAddress, int a) {
+        if (at(cycleAddress,  0) == a)
+            return cloneCycle(cycleAddress);
+
+        final var length = len(cycleAddress);
+
+        final var result = create(length);
+
+        for (byte i = 0; i < length; i++) {
+            if (at(cycleAddress, i) == a) {
+                cyclecopy(cycleAddress, i, result, 0, length - i);
+                cyclecopy(cycleAddress, 0, result, length - i, i);
                 break;
             }
         }
@@ -1247,18 +1275,25 @@ public class Sorter {
         return result;
     }
 
-    private static UnsafeByteArray applyTransposition(final int[] pi,
-                                            final int a,
-                                            final int b,
-                                            final int c) {
-        int index0 = -1, index1 = -1, index2 = -1;
+    private static long cloneCycle(final long cycleAddress) {
+        byte length = len(cycleAddress);
+        final var clone = create(length);
+        cyclecopy(cycleAddress, 0, clone, 0, length);
+        return clone;
+    }
 
-        for (var i = 0; i < pi.length; i++) {
-            if (pi[i] == a)
+    private static UnsafeByteArray applyTransposition(final UnsafeByteArray pi,
+                                                      final int a,
+                                                      final int b,
+                                                      final int c) {
+        byte index0 = -1, index1 = -1, index2 = -1;
+
+        for (byte i = 0; i < pi.size(); i++) {
+            if (pi.at(i) == a)
                 index0 = i;
-            if (pi[i] == b)
+            if (pi.at(i) == b)
                 index1 = i;
-            if (pi[i] == c)
+            if (pi.at(i) == c)
                 index2 = i;
 
             if (index0 != -1 && index1 != -1 && index2 != -1)
@@ -1284,34 +1319,22 @@ public class Sorter {
             index2 = temp;
         }
 
-        final var result = new int[numberOfSymbols];
+        final var result = new UnsafeByteArray(pi.size());
 
-        int counter = 0;
-        for (int i = 0; i < index0; i++) {
-            if (spiIndex[pi[i]] == null) continue;
-            result[counter] = pi[i];
-            counter++;
-        }
-
-        for (int i = 0; i < index2 - index1; i++) {
-            if (spiIndex[pi[index1 + i]] == null) continue;
-            result[counter] = pi[index1 + i];
-            counter++;
-        }
-
-        for (int i = 0; i < index1 - index0; i++) {
-            if (spiIndex[pi[index0 + i]] == null) continue;
-            result[counter] = pi[index0 + i];
-            counter++;
-        }
-
-        for (int i = 0; i < pi.length - index2; i++) {
-            if (spiIndex[pi[index2 + i]] == null) continue;
-            result[counter] = pi[index2 + i];
-            counter++;
-        }
+        arraycopy(pi.getAddress(), 0, result.getAddress(), 0, index0);
+        arraycopy(pi.getAddress(), index1, result.getAddress(), index0, index2 - index1);
+        arraycopy(pi.getAddress(), index0, result.getAddress(), index0 + (index2 - index1), index1 - index0);
+        arraycopy(pi.getAddress(), index2, result.getAddress(), index2, pi.size() - index2);
 
         return result;
+    }
+
+    private static void cyclecopy(final long srcAddress, int srcPos, long destAddress, int destPost, int length) {
+        TheUnsafe.get().copyMemory(srcAddress + srcPos + 1, destAddress + destPost + 1, length);
+    }
+
+    private static void arraycopy(final long srcAddress, int srcPos, long destAddress, int destPost, int length) {
+        TheUnsafe.get().copyMemory(srcAddress + srcPos, destAddress + destPost, length);
     }
 
     private static void removeTrivialCycles(final ListOfCycles spi) {
