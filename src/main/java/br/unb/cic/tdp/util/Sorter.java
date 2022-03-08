@@ -905,9 +905,9 @@ public class Sorter {
             hashCode = Arrays.hashCode(mirroredSignature);
             if (hashCode < leastHashCode) {
                 leastHashCode = hashCode;
-                canonical = signature;
+                canonical = mirroredSignature;
             } else if (hashCode == leastHashCode) {
-                canonical = least(signature, canonical);
+                canonical = least(mirroredSignature, canonical);
             }
         }
 
