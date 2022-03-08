@@ -7,10 +7,7 @@ import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.proof.util.ListOfCycles;
 import br.unb.cic.tdp.proof.util.Move;
 import br.unb.cic.tdp.proof.util.Stack;
-import br.unb.cic.tdp.unsafe.TheUnsafe;
-import br.unb.cic.tdp.unsafe.UnsafeByteArray;
-import br.unb.cic.tdp.unsafe.UnsafeListOfCycles;
-import br.unb.cic.tdp.unsafe.UnsafeLongArray;
+import br.unb.cic.tdp.unsafe.*;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import lombok.SneakyThrows;
@@ -47,41 +44,43 @@ public class Sorter {
                 .concurrencyLevel(Runtime.getRuntime().availableProcessors())
                 .build();
 
-//        Stream.of(
-//                new Configuration("(0 16 14)(1 35 15)(2 6 4)(3 7 5)(8 12 10)(9 13 11)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"), //----- NO SORTING
-//                new Configuration("(0 34 20)(1 5 3)(2 6 4)(7 11 9)(8 12 10)(13 35 33)(14 18 16)(15 19 17)(21 25 23)(22 26 24)(27 31 29)(28 32 30)"), //----- NO SORTING
-//                new Configuration("(0 4 2)(1 35 3)(5 9 7)(6 10 8)(11 15 13)(12 28 14)(16 20 18)(17 21 19)(22 26 24)(23 27 25)(29 33 31)(30 34 32)"), //----- NO SORTING
-//                new Configuration("(0 4 2)(1 5 3)(6 10 8)(7 11 9)(12 16 14)(13 17 15)(18 22 20)(19 23 21)(24 34 26)(25 35 33)(27 31 29)(28 32 30)"), //----- NO SORTING
-//                new Configuration("(0 34 26)(1 35 33)(2 6 4)(3 7 5)(8 12 10)(9 13 11)(14 18 16)(15 19 17)(20 24 22)(21 25 23)(27 31 29)(28 32 30)"), //----- NO SORTING
-//                new Configuration("(0 34 2)(1 35 33)(3 7 5)(4 8 6)(9 19 17)(10 14 12)(11 15 13)(16 26 18)(20 24 22)(21 25 23)(27 31 29)(28 32 30)"), //----- NO SORTING
-//                new Configuration("(0 34 32)(1 29 27)(2 30 28)(3 7 5)(4 8 6)(9 13 11)(10 14 12)(15 19 17)(16 20 18)(21 25 23)(22 26 24)(31 35 33)"), //----- NO SORTING
-//                new Configuration("(0 16 14)(1 5 3)(2 6 4)(7 11 9)(8 12 10)(13 35 15)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"), //----- NO SORTING
-//                new Configuration("(0 34 2)(1 35 33)(3 7 5)(4 8 6)(9 13 11)(10 14 12)(15 25 17)(16 32 18)(19 23 21)(20 24 22)(26 30 28)(27 31 29)"), //----- NO SORTING
-//                new Configuration("(0 34 32)(1 35 33)(2 6 4)(3 7 5)(8 12 10)(9 13 11)(14 18 16)(15 19 17)(20 24 22)(21 25 23)(26 30 28)(27 31 29)"), //----- NO SORTING
-//                new Configuration("(0 34 32)(1 29 27)(2 6 4)(3 7 5)(8 12 10)(9 13 11)(14 30 28)(15 19 17)(16 20 18)(21 25 23)(22 26 24)(31 35 33)") //----- NO SORTING
-//        ).forEach(conf -> {
-//            sort(conf, "C:/Users/Luiz/Temp/sbt1.333proof", _16_12_SEQS);
-//        });
+        Stream.of(
+                new Configuration("(0 16 14)(1 35 15)(2 6 4)(3 7 5)(8 12 10)(9 13 11)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"),
+                new Configuration("(0 34 20)(1 5 3)(2 6 4)(7 11 9)(8 12 10)(13 35 33)(14 18 16)(15 19 17)(21 25 23)(22 26 24)(27 31 29)(28 32 30)"),
+                new Configuration("(0 4 2)(1 35 3)(5 9 7)(6 10 8)(11 15 13)(12 28 14)(16 20 18)(17 21 19)(22 26 24)(23 27 25)(29 33 31)(30 34 32)"),
+                new Configuration("(0 4 2)(1 5 3)(6 10 8)(7 11 9)(12 16 14)(13 17 15)(18 22 20)(19 23 21)(24 34 26)(25 35 33)(27 31 29)(28 32 30)"),
+                new Configuration("(0 34 26)(1 35 33)(2 6 4)(3 7 5)(8 12 10)(9 13 11)(14 18 16)(15 19 17)(20 24 22)(21 25 23)(27 31 29)(28 32 30)"),
+                new Configuration("(0 34 2)(1 35 33)(3 7 5)(4 8 6)(9 19 17)(10 14 12)(11 15 13)(16 26 18)(20 24 22)(21 25 23)(27 31 29)(28 32 30)"),
+                new Configuration("(0 34 32)(1 29 27)(2 30 28)(3 7 5)(4 8 6)(9 13 11)(10 14 12)(15 19 17)(16 20 18)(21 25 23)(22 26 24)(31 35 33)"),
+                new Configuration("(0 16 14)(1 5 3)(2 6 4)(7 11 9)(8 12 10)(13 35 15)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"),
+                new Configuration("(0 34 2)(1 35 33)(3 7 5)(4 8 6)(9 13 11)(10 14 12)(15 25 17)(16 32 18)(19 23 21)(20 24 22)(26 30 28)(27 31 29)"),
+                new Configuration("(0 34 32)(1 35 33)(2 6 4)(3 7 5)(8 12 10)(9 13 11)(14 18 16)(15 19 17)(20 24 22)(21 25 23)(26 30 28)(27 31 29)"),
+                new Configuration("(0 34 32)(1 29 27)(2 6 4)(3 7 5)(8 12 10)(9 13 11)(14 30 28)(15 19 17)(16 20 18)(21 25 23)(22 26 24)(31 35 33)")
+        ).forEach(conf -> {
+            sort(conf, "C:/Users/Luiz/Temp/sbt1.333proof", _16_12_SEQS);
+        });
 
-//        System.out.println("7 interleaving (16,12)");
-//        sort(new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)"),
-//                "C:/Users/Luiz/Temp/sbt1.333proof", _16_12_SEQS); //----- NO SORTING
+        System.out.println("7 interleaving (16,12)");
+        sort(new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)"),
+                "C:/Users/Luiz/Temp/sbt1.333proof", _16_12_SEQS);
 
-        System.out.println("7 interleaving (19,14) - 37881237 computes");
+        System.out.println("7 interleaving (19,14)");
         sort(new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)"),
                 "C:/Users/Luiz/Temp/sbt1.333proof", _19_14_SEQS);
 
-//        System.out.println("(16,12)");
-//        sort(new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)"),
-//                args[3], _16_12_SEQS, Integer.parseInt(args[2])); //----- NO SORTING
+        System.out.println("8 interleaving");
 
-//        System.out.println("(19,14)");
-//        sort(new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)"),
-//                args[3], _19_14_SEQS, Integer.parseInt(args[2]));
+        System.out.println("(16,12)");
+        sort(new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)"),
+                args[3], _16_12_SEQS, Integer.parseInt(args[2]));
 
-//        System.out.println("(20,15)");
-//        sort(new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)"),
-//                args[3], _20_15_SEQS, Integer.parseInt(args[2]));
+        System.out.println("(19,14)");
+        sort(new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)"),
+                args[3], _19_14_SEQS, Integer.parseInt(args[2]));
+
+        System.out.println("(20,15)");
+        sort(new Configuration("(0,4,2)(1,5,3)(6,10,8)(7,11,9)(12,16,14)(13,17,15)(18,22,20)(19,23,21)(24,28,26)(25,29,27)(30,34,32)(31,35,33)(36,40,38)(37,41,39)(42,46,44)(43,47,45)"),
+                args[3], _20_15_SEQS, Integer.parseInt(args[2]));
     }
 
     public static void sort(final Configuration configuration,
@@ -491,7 +490,7 @@ public class Sorter {
 
     @SneakyThrows
     public static UnsafeListOfCycles search(final UnsafeListOfCycles spi,
-                                            final UnsafeByteArray parity,
+                                            final UnsafeBooleanArray parity,
                                             final UnsafeLongArray spiIndex,
                                             final UnsafeByteArray pi,
                                             final Stack stack,
@@ -521,11 +520,11 @@ public class Sorter {
             // ======= 0 Moves =======
             // =======================
 
-            final var cycleIndexes = new int[(int) pi.size()][];
+            final var cycleIndexes = new int[(int) pi.len()][];
 
-            for (byte i = 0; i < pi.size() - 2; i++) {
-                for (byte j =  (i + 1); j < pi.size() - 1; j++) {
-                    for (byte k =  (j + 1); k < pi.size(); k++) {
+            for (byte i = 0; i < pi.len() - 2; i++) {
+                for (byte j = (i + 1); j < pi.len() - 1; j++) {
+                    for (byte k = (j + 1); k < pi.len(); k++) {
 
                         byte a = pi.at(i), b = pi.at(j), c = pi.at(k);
 
@@ -617,12 +616,12 @@ public class Sorter {
                             return stack.toListOfCycles();
                         } else {
                             for (final var m : root.children) {
-                                final var newPi = applyTransposition(pi, a, b, c, pi.size(), spiIndex);
+                                final var newPi = applyTransposition(pi, a, b, c);
                                 final var sorting = search(spi, parity, spiIndex, newPi, stack, m);
+                                newPi.free();
                                 if (!sorting.isEmpty()) {
                                     return stack.toListOfCycles();
                                 }
-                                newPi.free();
                             }
                         }
 
@@ -645,15 +644,17 @@ public class Sorter {
             // ======= oriented cycles =======
             // ===============================
 
-            final var piInverseIndex = getPiInverseIndex(pi);
+            final var piInverseIndex = getPiInverseIndex(pi.getAddress());
 
             final var orientedCycles = orientedCycles(spi, piInverseIndex);
 
-            for (int l = 0; l < orientedCycles.size; l++) {
-                final var cycle = orientedCycles.elementData[l];
+            free(piInverseIndex);
 
-                if (cycle.length == 3) {
-                    int a = cycle[0], b = cycle[1], c = cycle[2];
+            for (int l = 0; l < orientedCycles.len(); l++) {
+                final var cycle = orientedCycles.at(l);
+
+                if (len(cycle) == 3) {
+                    byte a = at(cycle, 0), b = at(cycle, 1), c = at(cycle, 2);
 
                     stack.push(a, b, c);
 
@@ -666,8 +667,9 @@ public class Sorter {
                         return stack.toListOfCycles();
                     } else {
                         for (final var m : root.children) {
-                            int[] newPi = applyTransposition(pi, a, b, c, pi.length - 3, spiIndex);
+                            final var newPi = applyTransposition(pi, a, b, c);
                             final var sorting = search(spi, parity, spiIndex, maxSymbol, newPi, stack, m);
+                            newPi.free();
                             if (!sorting.isEmpty()) {
                                 return stack.toListOfCycles();
                             }
@@ -850,17 +852,16 @@ public class Sorter {
         return EMPTY_LIST;
     }
 
-    public static String canonicalSignature(final ListOfCycles spi,
-                                            final int[] pi,
-                                            final int[][] spiIndex,
-                                            final int maxSymbol) {
+    public static String canonicalSignature(final UnsafeListOfCycles spi,
+                                            final UnsafeByteArray pi,
+                                            final UnsafeLongArray spiIndex) {
         var leastHashCode = Integer.MAX_VALUE;
-        float[] canonical = null;
+        long canonical = -1;
 
         for (int symbol : pi) {
-            final var shifting = startingBy(pi, symbol);
+            final var shifting = startingBy(pi.getAddress(), symbol);
 
-            var signature = signature(spi, shifting, spiIndex, maxSymbol);
+            var signature = signature(spi, shifting, spiIndex);
 
             var hashCode = Arrays.hashCode(signature);
 
@@ -868,15 +869,19 @@ public class Sorter {
                 leastHashCode = hashCode;
                 canonical = signature;
             } else if (hashCode == leastHashCode) {
-                canonical = least(signature, canonical);
+                canonical = least(signature, pi.len(), canonical);
+            }
+
+            if (canonical != signature) {
+                free(signature);
             }
 
             final var mirroredSignature = signature.clone();
             ArrayUtils.reverse(mirroredSignature);
 
-            final var labelLabelMapping = new int[spi.size + 1];
-            final var orientedIndexMapping = new int[spi.size + 1][];
-            final var deltas = new float[spi.size + 1];
+            final var labelLabelMapping = TheUnsafe.get().allocateMemory(spi.len());
+            final var orientedIndexMapping = TheUnsafe.get().allocateMemory((long) spi.len() * 8);;
+            final var deltas = TheUnsafe.get().allocateMemory((long) spi.len() * 4);
 
             var nextLabel = 1;
             for (int j = 0; j < mirroredSignature.length; j++) {
@@ -908,101 +913,136 @@ public class Sorter {
                 }
             }
 
+            free(orientedIndexMapping);
+            free(deltas);
+            free(labelLabelMapping);
+
             hashCode = Arrays.hashCode(mirroredSignature);
             if (hashCode < leastHashCode) {
                 leastHashCode = hashCode;
-                canonical = signature;
+                canonical = mirroredSignature;
             } else if (hashCode == leastHashCode) {
-                canonical = least(signature, canonical);
+                canonical = least(mirroredSignature, canonical);
             }
+
+            if (canonical != mirroredSignature) {
+                free(mirroredSignature);
+            }
+
+            free(shifting);
         }
 
-        return toString(canonical);
+        try {
+            return toString(canonical, pi.len());
+        } finally {
+            free(canonical);
+        }
     }
 
     private static float round(final float value) {
         return (float) Math.round(value * 100) / 100;
     }
 
-    private static float[] least(final float[] signature, final float[] canonical) {
-        for (int i = 0; i < signature.length; i++) {
-            if (signature[i] != canonical[i]) {
-                if (signature[i] < canonical[i])
-                    return signature;
+    private static long least(final long signatureAddress, final byte len, final long canonicalAddress) {
+        for (int i = 0; i < len; i++) {
+            if (UnsafeFloatArray.at(signatureAddress, i) != UnsafeFloatArray.at(canonicalAddress, i)) {
+                if (UnsafeFloatArray.at(signatureAddress, i) < UnsafeFloatArray.at(canonicalAddress, i))
+                    return signatureAddress;
                 else
-                    return canonical;
+                    return canonicalAddress;
             }
         }
-        return canonical;
+        return canonicalAddress;
     }
 
-    public static float[] signature(final ListOfCycles spi, final int[] pi, final int[][] spiIndex, final int maxSymbol) {
-        final var piInverseIndex = getPiInverseIndex(pi, maxSymbol);
+    public static long signature(final UnsafeListOfCycles spi, final long pi, final UnsafeLongArray spiIndex) {
+        final var piInverseIndex = getPiInverseIndex(pi);
         final var orientedCycles = orientedCycles(spi, piInverseIndex);
 
-        final var orientationByCycle = new boolean[maxSymbol + 1];
+        byte len = len(pi);
+        final var orientationByCycle = TheUnsafe.get().allocateMemory(len);
 
-        for (int l = 0; l < orientedCycles.size; l++) {
-            orientationByCycle[orientedCycles.elementData[l][0]] = true;
+        for (int l = 0; l < orientedCycles.len(); l++) {
+            UnsafeBooleanArray.set(orientationByCycle, at(UnsafeLongArray.at(orientedCycles.getAddress(), l),0), true);
         }
 
-        final var labelByCycle = new float[maxSymbol + 1];
-        Arrays.fill(labelByCycle, -1);
+        free(piInverseIndex);
+        free(orientedCycles.getAddress());
 
-        final var symbolIndexByOrientedCycle = new int[maxSymbol + 1][];
+        // Array of floats
+        final var labelByCycle = TheUnsafe.get().allocateMemory(len * 4);
+        for (int i = 0; i < len; i++) {
+            TheUnsafe.get().putFloat(labelByCycle + (i * 4), -1);
+        }
 
-        final var signature = new float[pi.length];
+        // Array of floats
+        final var symbolIndexByOrientedCycle = TheUnsafe.get().allocateMemory(len * 8);
+
+        final var signatureAddress = TheUnsafe.get().allocateMemory(len * 4);
 
         // Pi index
-        final var piIndex = new int[maxSymbol + 1];
-        for (var i = 0; i < pi.length; i++) {
-            piIndex[pi[i]] = i;
+        final var piIndex = TheUnsafe.get().allocateMemory(len);
+        for (byte i = 0; i < len; i++) {
+            UnsafeByteArray.set(piIndex, at(pi, i), i);
         }
 
         var currentLabel = 1f;
 
-        for (var i = 0; i < signature.length; i++) {
-            final int symbol = pi[i];
-            final var cycle = spiIndex.get(symbol];
+        for (var i = 0; i < len; i++) {
+            final int symbol = at(pi, i);
+            final var cycleAddress = spiIndex.at(symbol);
 
-            if (orientationByCycle[cycle[0]]) {
-                final var symbolIndex = new int[maxSymbol + 1];
+            if (UnsafeBooleanArray.at(orientationByCycle, at(cycleAddress, 0))) {
+                final var symbolIndex = TheUnsafe.get().allocateMemory(len);
 
-                var minIndex = Integer.MAX_VALUE;
+                var minIndex = Byte.MAX_VALUE;
                 var symbolMinIndex = 0;
-                for (int s : cycle) {
-                    if (piIndex[s] < minIndex) {
-                        minIndex = piIndex[s];
+                byte cycleLen = len(cycleAddress);
+                for (int s = 0; s < cycleLen; s++) {
+                    if (UnsafeByteArray.at(piIndex, (byte) s) < minIndex) {
+                        minIndex = UnsafeByteArray.at(piIndex, (byte) s);
                         symbolMinIndex = s;
                     }
                 }
 
-                for (int j = 0; j < cycle.length; j++) {
-                    if (cycle[j] == symbolMinIndex) {
-                        for (int k = 0; k < cycle.length; k++) {
-                            symbolIndex[cycle[(j + k) % cycle.length]] = k + 1;
+                for (int j = 0; j < cycleLen; j++) {
+                    if (at(cycleAddress, j) == symbolMinIndex) {
+                        for (int k = 0; k < cycleLen; k++) {
+                            UnsafeByteArray.set(symbolIndex, at(cycleAddress, (j + k) % cycleLen), (byte)(k + 1));
                         }
                         break;
                     }
                 }
-                symbolIndexByOrientedCycle[cycle[0]] = symbolIndex;
+                UnsafeLongArray.set(symbolIndexByOrientedCycle, at(cycleAddress, 0), symbolIndex);
             }
 
-            if (labelByCycle[cycle[0]] == -1) {
-                labelByCycle[cycle[0]] = currentLabel;
+            final var label = UnsafeFloatArray.at(labelByCycle, at(cycleAddress, 0));
+
+            if (label == -1) {
+                UnsafeFloatArray.set(labelByCycle, at(cycleAddress, 0), currentLabel);
                 currentLabel++;
             }
 
-            signature[i] = orientationByCycle[cycle[0]] ?
-                    labelByCycle[cycle[0]] + (float) symbolIndexByOrientedCycle[cycle[0]][symbol] / 100 : labelByCycle[cycle[0]];
+            UnsafeFloatArray.set(signatureAddress, at(cycleAddress, i), UnsafeBooleanArray.at(orientationByCycle, at(cycleAddress, 0)) ?
+                    label + (float) UnsafeByteArray.at(UnsafeLongArray.at(symbolIndexByOrientedCycle, at(cycleAddress, 0)), symbol) / 100 :
+                    label);
         }
 
-        return signature;
+        free(labelByCycle);
+        free(orientationByCycle);
+        free(piIndex);
+        for (int i = 0; i < UnsafeLongArray.len(symbolIndexByOrientedCycle); i++) {
+            free(UnsafeLongArray.at(symbolIndexByOrientedCycle, i));
+        }
+        free(symbolIndexByOrientedCycle);
+
+        return signatureAddress;
     }
 
-    private static String toString(final float[] signature) {
+    private static String toString(final long signature, final byte len) {
         final var builder = new StringBuilder();
-        for (float v : signature) {
+        for (int i = 0; i < len; i++) {
+            final var v = UnsafeFloatArray.at(signature, i);
             if (v % 1 == 0) {
                 builder.append((int) v);
             } else {
@@ -1013,71 +1053,66 @@ public class Sorter {
         return builder.toString();
     }
 
-    public static boolean areSymbolsInCyclicOrder(final int[] piInverseIndex, final int a, final int b, final int c) {
-        return (piInverseIndex[a] < piInverseIndex[b] && piInverseIndex[b] < piInverseIndex[c]) ||
-                (piInverseIndex[b] < piInverseIndex[c] && piInverseIndex[c] < piInverseIndex[a]) ||
-                (piInverseIndex[c] < piInverseIndex[a] && piInverseIndex[a] < piInverseIndex[b]);
+    public static boolean areSymbolsInCyclicOrder(final long piInverseIndex, final byte a, final byte b, final byte c) {
+        return (UnsafeByteArray.at(piInverseIndex, a) < UnsafeByteArray.at(piInverseIndex, b) && UnsafeByteArray.at(piInverseIndex, b) < UnsafeByteArray.at(piInverseIndex, c)) ||
+                (UnsafeByteArray.at(piInverseIndex, b) < UnsafeByteArray.at(piInverseIndex, c) && UnsafeByteArray.at(piInverseIndex, c) < UnsafeByteArray.at(piInverseIndex, a)) ||
+                (UnsafeByteArray.at(piInverseIndex, c) < UnsafeByteArray.at(piInverseIndex, a) && UnsafeByteArray.at(piInverseIndex, a) < UnsafeByteArray.at(piInverseIndex, b));
     }
 
-    private static void update(final int[][] index, final boolean[] parity, final int a, final int b, final int c) {
-        index[a] = null;
-        parity[a] = true;
-
-        index[b] = null;
-        parity[b] = true;
-
-        index[c] = null;
-        parity[c] = true;
-    }
-
-    private static void update(final int[][] index, final boolean[] parity, final int[] cycle) {
-        if (cycle.length == 1) {
-            index[cycle[0]] = null;
-            parity[cycle[0]] = true;
+    private static void update(final UnsafeLongArray spiIndex, final UnsafeBooleanArray parity, final long cycleAddress) {
+        byte len = len(cycleAddress);
+        if (len == 1) {
+            spiIndex.set(at(cycleAddress, 0), -1);
+            parity.set(at(cycleAddress, 0), true);
         } else {
-            final var p = (cycle.length & 1) == 1;
-            for (int k : cycle) {
-                index[k] = cycle;
-                parity[k] = p;
+            final var p = (len & 1) == 1;
+            for (byte k = 0; k < len; k++) {
+                spiIndex.set(k, cycleAddress);
+                parity.set(k, p);
             }
         }
     }
 
-    private static void update(final int[][] index, final UnsafeByteArray parity, final int[] aCycle, final int[] bCycle, final int[] cCycle) {
-        update(index, parity, aCycle);
-        update(index, parity, bCycle);
-        update(index, parity, cCycle);
+    private static void update(final UnsafeLongArray spiIndex,
+                               final UnsafeBooleanArray parity,
+                               final long aCycle,
+                               final long bCycle,
+                               final long cCycle) {
+        update(spiIndex, parity, aCycle);
+        update(spiIndex, parity, bCycle);
+        update(spiIndex, parity, cCycle);
     }
 
-    public static UnsafeByteArray getPiInverseIndex(final UnsafeByteArray pi) {
-        final var piInverseIndex = new UnsafeByteArray(pi.size());
-        for (byte i = 0; i < pi.size(); i++) {
-            piInverseIndex.set(pi.at( (pi.size() - i - 1)), i);
+    public static long getPiInverseIndex(final long pi) {
+        final byte len = len(pi);
+        final var piInverseIndex = TheUnsafe.get().allocateMemory(len);
+        for (byte i = 0; i < len; i++) {
+            UnsafeByteArray.set(piInverseIndex, at(pi, len - i - 1), i);
         }
         return piInverseIndex;
     }
 
-    private static ListOfCycles orientedCycles(final ListOfCycles spi, final int[] piInverseIndex) {
-        final var orientedCycles = new ListOfCycles(2);
-        for (int i = 0; i < spi.size; i++) {
-            final int[] cycle = spi.elementData[i];
-            if (!areSymbolsInCyclicOrder(piInverseIndex, cycle))
-                orientedCycles.add(cycle);
+    private static UnsafeListOfCycles orientedCycles(final UnsafeListOfCycles spi, final long piInverseIndex) {
+        final var orientedCycles = new UnsafeListOfCycles(2);
+        for (int i = 0; i < spi.len(); i++) {
+            final long cycleAddress = spi.at(i);
+            if (!areSymbolsInCyclicOrder(piInverseIndex, cycleAddress))
+                orientedCycles.add(cycleAddress);
         }
         return orientedCycles;
     }
 
-    private static void updateIndex(final int[][] index, final boolean[] parity, final ListOfCycles cycles) {
-        for (int i = 0; i < cycles.size; i++) {
-            final var cycle = cycles.elementData[i];
-            if (cycle.length == 1) {
-                index[cycle[0]] = null;
-                parity[cycle[0]] = true;
+    private static void updateIndex(final UnsafeLongArray spiIndex, final UnsafeBooleanArray parity, final UnsafeListOfCycles cycles) {
+        for (int i = 0; i < cycles.len(); i++) {
+            final var cycleAddress = cycles.at(i);
+            if (len(cycleAddress) == 1) {
+                spiIndex.set(at(cycleAddress, 0), -1);
+                parity.set(at(cycleAddress, 0), true);
             } else {
-                final var p = (cycle.length & 1) == 1;
-                for (int k : cycle) {
-                    index[k] = cycle;
-                    parity[k] = p;
+                final var p = (len(cycleAddress) & 1) == 1;
+                for (byte k = 0; k < len(cycleAddress); k++) {
+                    spiIndex.set(k, cycleAddress);
+                    parity.set(k, p);
                 }
             }
         }
@@ -1288,7 +1323,7 @@ public class Sorter {
                                                       final int c) {
         byte index0 = -1, index1 = -1, index2 = -1;
 
-        for (byte i = 0; i < pi.size(); i++) {
+        for (byte i = 0; i < pi.len(); i++) {
             if (pi.at(i) == a)
                 index0 = i;
             if (pi.at(i) == b)
@@ -1319,12 +1354,12 @@ public class Sorter {
             index2 = temp;
         }
 
-        final var result = new UnsafeByteArray(pi.size());
+        final var result = new UnsafeByteArray(pi.len());
 
         arraycopy(pi.getAddress(), 0, result.getAddress(), 0, index0);
         arraycopy(pi.getAddress(), index1, result.getAddress(), index0, index2 - index1);
         arraycopy(pi.getAddress(), index0, result.getAddress(), index0 + (index2 - index1), index1 - index0);
-        arraycopy(pi.getAddress(), index2, result.getAddress(), index2, pi.size() - index2);
+        arraycopy(pi.getAddress(), index2, result.getAddress(), index2, pi.len() - index2);
 
         return result;
     }

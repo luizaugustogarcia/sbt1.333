@@ -2,21 +2,21 @@ package br.unb.cic.tdp.unsafe;
 
 import org.apache.commons.lang.NotImplementedException;
 
-public class UnsafeLongArray {
-    private final static byte LONG = 8;
+public class UnsafeFloatArray {
+    private final static byte FLOAT = 4;
     private final byte size;
     private final long address;
 
-    public UnsafeLongArray(byte size) {
+    public UnsafeFloatArray(byte size) {
         this.size = size;
-        this.address = TheUnsafe.get().allocateMemory(size * LONG);
+        this.address = TheUnsafe.get().allocateMemory(size * FLOAT);
     }
 
     public static long at(long address, int l) {
         throw new NotImplementedException();
     }
 
-    public static void set(long symbolIndexByOrientedCycle, byte at, long symbolIndex) {
+    public static void set(long symbolIndexByOrientedCycle, byte at, float symbolIndex) {
         throw new NotImplementedException();
     }
 
@@ -25,11 +25,11 @@ public class UnsafeLongArray {
     }
 
     public void set(int i, long value) {
-        TheUnsafe.get().putLong(address + ((long) i * LONG), value);
+        TheUnsafe.get().putLong(address + ((long) i * FLOAT), value);
     }
 
     public long at(int i) {
-        return TheUnsafe.get().getLong(address + ((long) i * LONG));
+        return TheUnsafe.get().getLong(address + ((long) i * FLOAT));
     }
 
     public byte size() {

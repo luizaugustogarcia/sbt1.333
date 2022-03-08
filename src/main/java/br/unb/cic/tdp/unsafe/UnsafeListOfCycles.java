@@ -2,6 +2,7 @@ package br.unb.cic.tdp.unsafe;
 
 import cern.colt.list.LongArrayList;
 import lombok.SneakyThrows;
+import org.apache.commons.lang.NotImplementedException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -9,7 +10,7 @@ import java.util.List;
 
 public class UnsafeListOfCycles {
     public static final UnsafeListOfCycles EMPTY_LIST = new UnsafeListOfCycles(0);
-    public int size;
+    private int len;
     public UnsafeLongArray elementData;
 
     @SneakyThrows
@@ -32,18 +33,18 @@ public class UnsafeListOfCycles {
     }
 
     public void add(long data) {
-        add(data, elementData, size);
+        add(data, elementData, len);
     }
 
     private void add(long e, long[] elementData, int s) {
         if (s == elementData.length)
             elementData = grow();
         elementData[s] = e;
-        size = s + 1;
+        len = s + 1;
     }
 
     private long[] grow() {
-        return grow(size + 1);
+        return grow(len + 1);
     }
 
     private long[] grow(int minCapacity) {
@@ -51,7 +52,7 @@ public class UnsafeListOfCycles {
     }
 
     public void remove(long data) {
-        int i = size - 1;
+        int i = len - 1;
         for (; i >= 0; i--)
             if (data == elementData[i])
                 break;
@@ -60,13 +61,13 @@ public class UnsafeListOfCycles {
 
     private void fastRemove(long[] es, int i) {
         final int newSize;
-        if ((newSize = size - 1) > i)
+        if ((newSize = len - 1) > i)
             System.arraycopy(es, i + 1, es, i, newSize - i);
-        es[size = newSize] = -1;
+        es[len = newSize] = -1;
     }
 
     public boolean contains(final long cycleAddress) {
-        for (byte i = 0; i < size; i++) {
+        for (byte i = 0; i < len; i++) {
             if (elementData.at(i) == cycleAddress)
                 return true;
         }
@@ -85,7 +86,7 @@ public class UnsafeListOfCycles {
         final var str = new StringBuilder();
         str.append("[");
 
-        for (int i = 0; i < size; i++) {
+        for (int i = 0; i < len; i++) {
             byte length = TheUnsafe.get().getByte(elementData[i]);
             for (int j = 0; j < length; j++) {
                 str.append(TheUnsafe.get().getByte(elementData[i] + j + 1));
@@ -99,25 +100,25 @@ public class UnsafeListOfCycles {
     }
 
     public void removeAll(final UnsafeListOfCycles other) {
-        for (int i = 0; i < other.size; i++) {
+        for (int i = 0; i < other.len; i++) {
             this.remove(other.elementData[i]);
         }
     }
 
     public void addAll(final UnsafeListOfCycles other) {
-        for (int i = 0; i < other.size; i++) {
+        for (int i = 0; i < other.len; i++) {
             this.add(other.elementData[i]);
         }
     }
 
     public boolean isEmpty() {
-        return size == 0;
+        return len == 0;
     }
 
     public List<byte[]> toList() {
         final var list = new ArrayList<byte[]>();
 
-        for (int i = 0; i < size; i++) {
+        for (int i = 0; i < len; i++) {
             byte length = TheUnsafe.get().getByte(elementData[i]);
             byte[] array = new byte[length];
             for (int j = 0; j < length; j++) {
@@ -131,16 +132,27 @@ public class UnsafeListOfCycles {
     }
 
     public UnsafeListOfCycles clone() {
-        final var clone = new UnsafeListOfCycles(size);
+        final var clone = new UnsafeListOfCycles(len);
 
-        for (int i = 0; i < size; i++) {
+        for (int i = 0; i < len; i++) {
             clone.add(elementData[i]);
         }
 
         return clone;
     }
 
+    public int len() {
+        return len;
+    }
+
     public void clear() {
-        size = 0;
+        len = 0;
+    }
+
+    public long at(int i) {
+    }
+
+    public long getAddress() {
+        throw new NotImplementedException();
     }
 }
