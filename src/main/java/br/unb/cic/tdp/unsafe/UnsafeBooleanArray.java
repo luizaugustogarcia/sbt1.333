@@ -26,6 +26,21 @@ public class UnsafeBooleanArray {
         return TheUnsafe.get().getByte(address + i) == 1;
     }
 
+    public String toString() {
+        final var str = new StringBuilder();
+        str.append("[");
+
+        for (int i = 0; i < size; i++) {
+            str.append(getBool(i) ? 1 : 0);
+            if (i != size - 1)
+                str.append(" ");
+        }
+
+        str.append("]");
+
+        return str.toString();
+    }
+
     public byte len() {
         return size;
     }

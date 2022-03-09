@@ -167,5 +167,6 @@ public class UnsafeListOfCycles {
         for (int i = 0; i < cycleSymbols.length; i++) {
             set(cycleAddress, i, (byte) cycleSymbols[i]);
         }
+        add(cycleAddress);
     }
 }

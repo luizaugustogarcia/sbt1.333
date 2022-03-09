@@ -1,5 +1,7 @@
 package br.unb.cic.tdp.unsafe;
 
+import br.unb.cic.tdp.util.Sorter;
+
 public class UnsafeLongArray {
     private final static byte LONG = 8;
     private final byte size;
@@ -22,6 +24,22 @@ public class UnsafeLongArray {
         for (byte i = 0; i < len; i++) {
             setLong(address, i, value);
         }
+    }
+
+    @Override
+    public String toString() {
+        final var str = new StringBuilder();
+        str.append("[");
+
+        for (int i = 0; i < size; i++) {
+            str.append(i + "=" + getLong(i));
+            if (i != size - 1)
+                str.append(" ");
+        }
+
+        str.append("]");
+
+        return str.toString();
     }
 
     public void setLong(int i, long value) {

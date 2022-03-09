@@ -43,6 +43,21 @@ public class UnsafeFloatArray {
         return result;
     }
 
+    public static String toString(final long address, final byte size) {
+        final var str = new StringBuilder();
+        str.append("[");
+
+        for (int i = 0; i < size; i++) {
+            str.append(getFloat(address, i));
+            if (i != size - 1)
+                str.append(" ");
+        }
+
+        str.append("]");
+
+        return str.toString();
+    }
+
     public void setFloat(final int i, final float value) {
         TheUnsafe.get().putFloat(address + ((long) i * FLOAT), value);
     }
