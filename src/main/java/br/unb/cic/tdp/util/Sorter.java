@@ -392,7 +392,7 @@ public class Sorter {
                                 final UnsafeByteArray pi,
                                 final Stack stack) {
             final var cycleIndexes = TheUnsafe.get().allocateMemory(pi.len() * 8);
-            fill(cycleIndexes, pi.len(),0);
+            fill(cycleIndexes, pi.len(), 0);
 
             final var canonicalSignatures = new HashSet<String>();
 
@@ -838,7 +838,7 @@ public class Sorter {
         // =======================
 
         final var cycleIndexes = TheUnsafe.get().allocateMemory(pi.len() * 8);
-        fill(cycleIndexes, pi.len(),0);
+        fill(cycleIndexes, pi.len(), 0);
 
         for (int i = 0; i < pi.len() - 2; i++) {
             for (int j = (i + 1); j < pi.len() - 1; j++) {
@@ -984,9 +984,11 @@ public class Sorter {
 
         final byte len = pi.len();
 
+        System.out.println(">>>> spi  " + spi.toString());
+
         for (int i = 0; i < len; i++) {
             final var symbol = pi.getByte(i);
-            
+
             final var shifting = startingByArray(pi.getAddress(), len, symbol);
 
             // float
@@ -1009,11 +1011,13 @@ public class Sorter {
                 free(signature);
             }
 
-            final var labelLabelMapping = TheUnsafe.get().allocateMemory(spi.len());
-            fill(labelLabelMapping, spi.len(), (byte) 0);
-            final var orientedIndexMapping = TheUnsafe.get().allocateMemory((long) spi.len() * 8);
-            fill(orientedIndexMapping, spi.len(), 0);
-            final var deltas = TheUnsafe.get().allocateMemory((long) spi.len() * 4);
+            final var labelLabelMapping = TheUnsafe.get().allocateMemory(spi.len() + 1);
+            fill(labelLabelMapping, spi.len() + 1, (byte) 0);
+
+            final var orientedIndexMapping = TheUnsafe.get().allocateMemory((spi.len() + 1) * 8);
+            fill(orientedIndexMapping, spi.len() + 1, 0);
+
+            final var deltas = TheUnsafe.get().allocateMemory((spi.len() + 1) * 4);
 
             byte nextLabel = 1;
             for (byte j = 0; j < len; j++) {
@@ -1024,23 +1028,23 @@ public class Sorter {
                     setByte(labelLabelMapping, (int) label, nextLabel++);
                 }
 
-                final var newLabel = getByte(labelLabelMapping, (int) label);
+                final var newLabel = (float) getByte(labelLabelMapping, (int) label);
 
                 if (label % 1 > 0) {
-                    if (getLong(orientedIndexMapping, newLabel) == 0) {
+                    if (getLong(orientedIndexMapping, (byte) newLabel) == 0) {
                         final var index = Math.abs(j - len) - 1;
                         var alignedCycleAddress = startingBy(spiIndex.getLong(getByte(shifting, index)), getByte(shifting, index));
                         reverse(alignedCycleAddress);
-                        setLong(orientedIndexMapping, newLabel, cycleIndex(alignedCycleAddress));
+                        setLong(orientedIndexMapping, (byte) newLabel, cycleIndex(alignedCycleAddress));
                         final var delta = len(alignedCycleAddress) - round((label % 1) * 100);
-                        setFloat(deltas, newLabel, delta);
+                        setFloat(deltas, (byte) newLabel, delta);
 
                         free(alignedCycleAddress);
                     }
 
                     final var index = Math.abs(j - len) - 1;
-                    final var orientationIndex = getByte(getLong(orientedIndexMapping, newLabel), index) + 1;
-                    setFloat(mirroredSignature, j, newLabel + (((orientationIndex + getFloat(deltas, newLabel)) % len(spiIndex.getLong((getByte(shifting, index))))) / 100));
+                    final var orientationIndex = getByte(getLong(orientedIndexMapping, (byte) newLabel), index) + 1;
+                    setFloat(mirroredSignature, j, newLabel + (((orientationIndex + getFloat(deltas, (byte) newLabel)) % len(spiIndex.getLong((getByte(shifting, index))))) / 100));
                     if (getFloat(mirroredSignature, j) % 1 == 0)
                         setFloat(mirroredSignature, j, newLabel + len(spiIndex.getLong(getByte(shifting, index))) / 100f);
                 } else {
@@ -1071,8 +1075,6 @@ public class Sorter {
             }
 
             free(shifting);
-
-            System.out.println(UnsafeFloatArray.toString(canonical, len));
         }
 
         try {
@@ -1128,7 +1130,7 @@ public class Sorter {
         fill(orientationByCycle, len, false);
 
         for (int l = 0; l < orientedCycles.len(); l++) {
-            UnsafeBooleanArray.set(orientationByCycle, at(orientedCycles.at(l),0), true);
+            UnsafeBooleanArray.set(orientationByCycle, at(orientedCycles.at(l), 0), true);
         }
 
         free(piInverseIndex);
@@ -1142,7 +1144,7 @@ public class Sorter {
 
         // Array of longs
         final var symbolIndexByOrientedCycle = TheUnsafe.get().allocateMemory(len * 8);
-        fill(symbolIndexByOrientedCycle, len,0);
+        fill(symbolIndexByOrientedCycle, len, 0);
 
         final var signatureAddress = TheUnsafe.get().allocateMemory(len * 4);
 
@@ -1175,7 +1177,7 @@ public class Sorter {
                 for (int j = 0; j < cycleLen; j++) {
                     if (at(cycleAddress, j) == symbolMinIndex) {
                         for (int k = 0; k < cycleLen; k++) {
-                            setByte(cycleIndex, at(cycleAddress, (j + k) % cycleLen), (byte)(k + 1));
+                            setByte(cycleIndex, at(cycleAddress, (j + k) % cycleLen), (byte) (k + 1));
                         }
                         break;
                     }
@@ -1226,6 +1228,12 @@ public class Sorter {
     private static void fill(final long address, final int len, final long value) {
         for (byte i = 0; i < len; i++) {
             setLong(address, i, value);
+        }
+    }
+
+    private static void fill(final long address, final int len, final byte value) {
+        for (byte i = 0; i < len; i++) {
+            setByte(address, i, value);
         }
     }
 
@@ -1315,7 +1323,7 @@ public class Sorter {
             if (nextIndex >= len)
                 nextIndex = (i + 1) % len;
             if (getByte(indexAddress, at(cycleAddress, i)) >
-                getByte(indexAddress, at(cycleAddress, nextIndex))) {
+                    getByte(indexAddress, at(cycleAddress, nextIndex))) {
                 if (!leap) {
                     leap = true;
                 } else {
@@ -1408,14 +1416,14 @@ public class Sorter {
 
         final long oldCycleIndex = cycleIndex(oldCycle);
 
-        set(newCycle,  0, b);
+        set(newCycle, 0, b);
         final var ab_k = getK(oldCycleIndex, b, a);
         final var bc_k = getK(oldCycleIndex, a, c);
         cyclecopy(alignedCycle, ab_k + 1, newCycle, 1, bc_k - 1);
-        set(newCycle,  bc_k, c);
+        set(newCycle, bc_k, c);
 
         cyclecopy(alignedCycle, 1, newCycle, 1 + bc_k, ab_k - 1);
-        set(newCycle,  (ab_k + bc_k), a);
+        set(newCycle, (ab_k + bc_k), a);
 
         final var ca_k = getK(oldCycleIndex, c, b);
         cyclecopy(alignedCycle, ab_k + bc_k + 1,
@@ -1439,9 +1447,9 @@ public class Sorter {
     }
 
     public static byte max(final long cycleAddress) {
-        byte max = at(cycleAddress,  0);
+        byte max = at(cycleAddress, 0);
         for (byte i = 1; i < len(cycleAddress); i++) {
-            if (at(cycleAddress,i) > max) {
+            if (at(cycleAddress, i) > max) {
                 max = at(cycleAddress, i);
             }
         }
@@ -1500,7 +1508,7 @@ public class Sorter {
     }
 
     private static long startingBy(final long cycleAddress, final int a) {
-        if (at(cycleAddress,  0) == a)
+        if (at(cycleAddress, 0) == a)
             return cloneCycle(cycleAddress);
 
         final var len = len(cycleAddress);
