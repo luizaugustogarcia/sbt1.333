@@ -20,12 +20,6 @@ public class UnsafeLongArray {
         TheUnsafe.get().putLong(address + (i * LONG), value);
     }
 
-    public static void fill(final long address, final int len, final long value) {
-        for (byte i = 0; i < len; i++) {
-            setLong(address, i, value);
-        }
-    }
-
     @Override
     public String toString() {
         final var str = new StringBuilder();
