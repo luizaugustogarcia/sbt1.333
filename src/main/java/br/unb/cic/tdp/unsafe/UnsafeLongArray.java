@@ -1,35 +1,27 @@
 package br.unb.cic.tdp.unsafe;
 
-import org.apache.commons.lang.NotImplementedException;
-
 public class UnsafeLongArray {
     private final static byte LONG = 8;
     private final byte size;
     private final long address;
 
-    public UnsafeLongArray(byte size) {
+    public UnsafeLongArray(final byte size) {
         this.size = size;
         this.address = TheUnsafe.get().allocateMemory(size * LONG);
     }
 
-    public static long getLong(long address, int l) {
-        // TODO
-throw new NotImplementedException();
+    public static long getLong(final long address, final int i) {
+        return TheUnsafe.get().getLong(address + (i * LONG));
     }
 
-    public static void setLong(long symbolIndexByOrientedCycle, byte at, long symbolIndex) {
-        // TODO
-throw new NotImplementedException();
+    public static void setLong(final long address, final byte i, final long value) {
+        TheUnsafe.get().putLong(address + (i * LONG), value);
     }
 
-    public static int len(long symbolIndexByOrientedCycle) {
-        // TODO
-throw new NotImplementedException();
-    }
-
-    public static void fill(long orientedIndexMapping, int len, long value) {
-        // TODO
-throw new NotImplementedException();
+    public static void fill(final long address, final int len, final long value) {
+        for (byte i = 0; i < len; i++) {
+            setLong(address, i, value);
+        }
     }
 
     public void setLong(int i, long value) {
@@ -46,5 +38,9 @@ throw new NotImplementedException();
 
     public void free() {
         TheUnsafe.get().freeMemory(this.address);
+    }
+
+    public long getAddress() {
+        return this.address;
     }
 }

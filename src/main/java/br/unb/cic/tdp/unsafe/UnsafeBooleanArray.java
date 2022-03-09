@@ -1,7 +1,5 @@
 package br.unb.cic.tdp.unsafe;
 
-import org.apache.commons.lang3.NotImplementedException;
-
 public class UnsafeBooleanArray {
     private final byte size;
 
@@ -13,8 +11,7 @@ public class UnsafeBooleanArray {
     }
 
     public static void set(long address, int i, final boolean value) {
-        // TODO
-throw new NotImplementedException();
+        TheUnsafe.get().putByte(address + i, (byte) (value ? 1 : 0));
     }
 
     public void set(final byte i, final boolean value) {

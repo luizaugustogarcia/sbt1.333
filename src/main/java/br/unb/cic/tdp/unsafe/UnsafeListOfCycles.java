@@ -1,5 +1,6 @@
 package br.unb.cic.tdp.unsafe;
 
+import br.unb.cic.tdp.util.Sorter;
 import cern.colt.list.LongArrayList;
 import lombok.SneakyThrows;
 import org.apache.commons.lang.NotImplementedException;
@@ -8,23 +9,25 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import static br.unb.cic.tdp.util.Sorter.arraycopy;
+
 public class UnsafeListOfCycles {
     public static final UnsafeListOfCycles EMPTY_LIST = new UnsafeListOfCycles(0);
-    private int len;
+    private int size;
     public UnsafeLongArray elementData;
 
     @SneakyThrows
     public UnsafeListOfCycles(final int maxSize) {
-        this.elementData = new UnsafeLongArray(maxSize);
+        this.elementData = new UnsafeLongArray((byte) maxSize);
     }
 
-    public static UnsafeListOfCycles singleton(long cycleAddress) {
+    public static UnsafeListOfCycles singleton(final long cycleAddress) {
         final var singleton = new UnsafeListOfCycles(1);
         singleton.add(cycleAddress);
         return singleton;
     }
 
-    public static UnsafeListOfCycles asList(long cycleAddress1, long cycleAddress2, long cycleAddress3) {
+    public static UnsafeListOfCycles asList(final long cycleAddress1, final long cycleAddress2, final long cycleAddress3) {
         final var list = new UnsafeListOfCycles(3);
         list.add(cycleAddress1);
         list.add(cycleAddress2);
@@ -32,46 +35,45 @@ public class UnsafeListOfCycles {
         return list;
     }
 
-    public void add(long data) {
-        add(data, elementData, len);
+    public void add(final long data) {
+        add(data, elementData, size);
     }
 
-    private void add(long e, long[] elementData, int s) {
-        if (s == elementData.length)
+    private void add(final long e, UnsafeLongArray elementData, final int s) {
+        if (s == elementData.size())
             elementData = grow();
-        elementData[s] = e;
-        len = s + 1;
+        elementData.setLong(s, e);
+        size = s + 1;
     }
 
-    private long[] grow() {
-        return grow(len + 1);
+    private UnsafeLongArray grow() {
+        return grow(size + 1);
     }
 
-    private long[] grow(int minCapacity) {
-        try {
-            return elementData = Arrays.copyOf(elementData, minCapacity);
-        } finally {
-            elementData.free();
-        }
+    private UnsafeLongArray grow(final int minCapacity) {
+        final var copy = new UnsafeLongArray((byte) minCapacity);
+        arraycopy(elementData.getAddress(), 0, copy.getAddress(), 0, elementData.size());
+        elementData.free();
+        return elementData = copy;
     }
 
-    public void remove(long data) {
-        int i = len - 1;
+    public void remove(final long data) {
+        int i = size - 1;
         for (; i >= 0; i--)
-            if (data == elementData[i])
+            if (data == elementData.getLong(i))
                 break;
         fastRemove(elementData, i);
     }
 
-    private void fastRemove(long[] es, int i) {
+    private void fastRemove(final UnsafeLongArray es, final int i) {
         final int newSize;
-        if ((newSize = len - 1) > i)
-            System.arraycopy(es, i + 1, es, i, newSize - i);
-        es[len = newSize] = -1;
+        if ((newSize = size - 1) > i)
+            arraycopy(es.getAddress(), i + 1, es.getAddress(), i, newSize - i);
+        es.setLong(size = newSize, -1);
     }
 
     public boolean contains(final long cycleAddress) {
-        for (byte i = 0; i < len; i++) {
+        for (byte i = 0; i < size; i++) {
             if (elementData.getLong(i) == cycleAddress)
                 return true;
         }
@@ -90,12 +92,10 @@ public class UnsafeListOfCycles {
         final var str = new StringBuilder();
         str.append("[");
 
-        for (int i = 0; i < len; i++) {
-            byte length = TheUnsafe.get().getByte(elementData[i]);
-            for (int j = 0; j < length; j++) {
-                str.append(TheUnsafe.get().getByte(elementData[i] + j + 1));
-            }
-            str.append(" ");
+        for (int i = 0; i < size; i++) {
+            str.append(Sorter.toString(elementData.getLong(i)));
+            if (i != size - 1)
+                str.append(" ");
         }
 
         str.append("]");
@@ -104,29 +104,29 @@ public class UnsafeListOfCycles {
     }
 
     public void removeAll(final UnsafeListOfCycles other) {
-        for (int i = 0; i < other.len; i++) {
-            this.remove(other.elementData[i]);
+        for (int i = 0; i < other.size; i++) {
+            this.remove(other.elementData.getLong(i));
         }
     }
 
     public void addAll(final UnsafeListOfCycles other) {
-        for (int i = 0; i < other.len; i++) {
-            this.add(other.elementData[i]);
+        for (int i = 0; i < other.size; i++) {
+            this.add(other.elementData.getLong(i));
         }
     }
 
     public boolean isEmpty() {
-        return len == 0;
+        return size == 0;
     }
 
     public List<int[]> toList() {
         final var list = new ArrayList<int[]>();
 
-        for (int i = 0; i < len; i++) {
-            byte length = TheUnsafe.get().getByte(elementData[i]);
-            byte[] array = new byte[length];
+        for (int i = 0; i < size; i++) {
+            byte length = Sorter.len(elementData.getLong(i));
+            int[] array = new int[length];
             for (int j = 0; j < length; j++) {
-                array[j] = TheUnsafe.get().getByte(elementData[i] + j + 1);
+                array[j] = Sorter.at(elementData.getLong(i), j + 1);
             }
 
             list.add(array);
@@ -135,32 +135,16 @@ public class UnsafeListOfCycles {
         return list;
     }
 
-//    public UnsafeListOfCycles clone() {
-//        final var clone = new UnsafeListOfCycles(len);
-//
-//        for (int i = 0; i < len; i++) {
-//            clone.add(elementData[i]);
-//        }
-//
-//        return clone;
-//    }
-
     public int len() {
-        return len;
+        return size;
     }
 
     public void clear() {
-        len = 0;
+        size = 0;
     }
 
     public long at(int i) {
-        // TODO
-throw new NotImplementedException();
-    }
-
-    public long getAddress() {
-        // TODO
-throw new NotImplementedException();
+        return elementData.getLong(i);
     }
 
     public void free() {

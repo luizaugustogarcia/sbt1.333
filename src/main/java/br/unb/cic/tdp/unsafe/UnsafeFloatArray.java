@@ -2,6 +2,10 @@ package br.unb.cic.tdp.unsafe;
 
 import org.apache.commons.lang.NotImplementedException;
 
+import java.util.Arrays;
+
+import static br.unb.cic.tdp.util.Sorter.arraycopy;
+
 public class UnsafeFloatArray {
     private final static byte FLOAT = 4;
     private final byte size;
@@ -12,42 +16,43 @@ public class UnsafeFloatArray {
         this.address = TheUnsafe.get().allocateMemory(size * FLOAT);
     }
 
-    public static long getFloat(long address, int l) {
-        // TODO
-throw new NotImplementedException();
+    public static float getFloat(long address, int i) {
+        return TheUnsafe.get().getFloat(address + (i * FLOAT));
     }
 
-    public static void setFloat(long symbolIndexByOrientedCycle, byte at, float symbolIndex) {
-        // TODO
-throw new NotImplementedException();
+    public static void setFloat(final long address, final byte i, final float value) {
+        TheUnsafe.get().putFloat(address + (i * FLOAT), value);
     }
 
-    public static int len(long symbolIndexByOrientedCycle) {
-        // TODO
-throw new NotImplementedException();
+    public static long clone(final long address, final byte len) {
+        final var dest = TheUnsafe.get().allocateMemory(len * 4);
+        arraycopy(address, 0, dest, 0, len * 4);
+        return dest;
     }
 
-    public static long clone(long signature) {
-        // TODO
-throw new NotImplementedException();
+    public static void reverse(final long address, final byte len) {
+        for (byte i = 0; i < len / 2; i++) {
+            float t = getFloat(address, i);
+            setFloat(address, i, getFloat(address, len - i - 1));
+            setFloat(address, (byte) (len - i - 1), t);
+        }
     }
 
-    public static void reverse(long mirroredSignature) {
-        // TODO
-throw new NotImplementedException();
+    public static int hashCode(final long address, final byte len) {
+        int result = 1;
+        for (int i = 0; i < len; i++) {
+            final var element = getFloat(address, i);
+            result = 31 * result + Float.floatToIntBits(element);
+        }
+        return result;
     }
 
-    public static int hashCode(long mirroredSignature) {
-        // TODO
-throw new NotImplementedException();
+    public void setFloat(final int i, final float value) {
+        TheUnsafe.get().putFloat(address + ((long) i * FLOAT), value);
     }
 
-    public void setFloat(int i, long value) {
-        TheUnsafe.get().putLong(address + ((long) i * FLOAT), value);
-    }
-
-    public long getFloat(int i) {
-        return TheUnsafe.get().getLong(address + ((long) i * FLOAT));
+    public float getFloat(final int i) {
+        return TheUnsafe.get().getFloat(address + ((long) i * FLOAT));
     }
 
     public byte size() {
