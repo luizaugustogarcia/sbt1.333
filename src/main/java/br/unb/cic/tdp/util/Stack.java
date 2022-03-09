@@ -1,16 +1,22 @@
-package br.unb.cic.tdp.proof.util;
+package br.unb.cic.tdp.util;
+
+import br.unb.cic.tdp.unsafe.UnsafeListOfCycles;
+import org.apache.commons.lang.NotImplementedException;
+
+import static br.unb.cic.tdp.util.Sorter.create;
+import static br.unb.cic.tdp.util.Sorter.set;
 
 public class Stack {
-    int maxSize;
-    int[] content;
-    int size = 0;
+    private int maxSize;
+    private byte[] content;
+    private int size = 0;
 
     public Stack(int size) {
         this.maxSize = size;
-        this.content = new int[size * 3];
+        this.content = new byte[size * 3];
     }
 
-   public void push(final int a, final int b, final int c) {
+   public void push(final byte a, final byte b, final byte c) {
         this.content[(size * 3)] = a;
         this.content[(size * 3) + 1] = b;
         this.content[(size * 3) + 2] = c;
@@ -21,10 +27,15 @@ public class Stack {
         size--;
     }
 
-    public ListOfCycles toListOfCycles() {
-        final ListOfCycles list = new ListOfCycles(size);
+    public UnsafeListOfCycles toListOfCycles() {
+        final UnsafeListOfCycles list = new UnsafeListOfCycles(size);
         for (int i = 0; i < size; i++) {
-            list.add(new int[] {content[(i * 3)], content[(i * 3) + 1], content[(i * 3) + 2]});
+            final var cycleAddress = create(3);
+            set(cycleAddress, 0, content[(i * 3)]);
+            set(cycleAddress, 1, content[(i * 3) + 1]);
+            set(cycleAddress, 2, content[(i * 3) + 2]);
+
+            list.add(cycleAddress);
         }
         return list;
     }
@@ -39,5 +50,10 @@ public class Stack {
         clone.content = content.clone();
         clone.size = size;
         return clone;
+    }
+
+    public void free() {
+        // TODO
+throw new NotImplementedException();
     }
 }

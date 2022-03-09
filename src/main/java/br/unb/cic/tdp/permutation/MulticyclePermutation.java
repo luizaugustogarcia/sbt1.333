@@ -217,7 +217,8 @@ public class MulticyclePermutation implements Collection<Cycle>, Permutation {
 
     @Override
     public boolean retainAll(Collection<?> c) {
-        throw new NotImplementedException();
+        // TODO
+throw new NotImplementedException();
     }
 
     @Override

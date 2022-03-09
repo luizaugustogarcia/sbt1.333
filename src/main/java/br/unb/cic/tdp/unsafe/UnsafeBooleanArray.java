@@ -13,18 +13,19 @@ public class UnsafeBooleanArray {
     }
 
     public static void set(long address, int i, final boolean value) {
-        throw new NotImplementedException();
+        // TODO
+throw new NotImplementedException();
     }
 
     public void set(final byte i, final boolean value) {
         TheUnsafe.get().putByte(address + i, (byte) (value ? 1: 0));
     }
 
-    public static boolean at(final long arrayAddress, final byte i) {
+    public static boolean getBool(final long arrayAddress, final byte i) {
         return TheUnsafe.get().getByte(arrayAddress + i) == 1;
     }
 
-    public boolean at(final int i) {
+    public boolean getBool(final int i) {
         return TheUnsafe.get().getByte(address + i) == 1;
     }
 

@@ -48,7 +48,11 @@ public class UnsafeListOfCycles {
     }
 
     private long[] grow(int minCapacity) {
-        return elementData = Arrays.copyOf(elementData, minCapacity);
+        try {
+            return elementData = Arrays.copyOf(elementData, minCapacity);
+        } finally {
+            elementData.free();
+        }
     }
 
     public void remove(long data) {
@@ -68,7 +72,7 @@ public class UnsafeListOfCycles {
 
     public boolean contains(final long cycleAddress) {
         for (byte i = 0; i < len; i++) {
-            if (elementData.at(i) == cycleAddress)
+            if (elementData.getLong(i) == cycleAddress)
                 return true;
         }
         return false;
@@ -115,8 +119,8 @@ public class UnsafeListOfCycles {
         return len == 0;
     }
 
-    public List<byte[]> toList() {
-        final var list = new ArrayList<byte[]>();
+    public List<int[]> toList() {
+        final var list = new ArrayList<int[]>();
 
         for (int i = 0; i < len; i++) {
             byte length = TheUnsafe.get().getByte(elementData[i]);
@@ -131,15 +135,15 @@ public class UnsafeListOfCycles {
         return list;
     }
 
-    public UnsafeListOfCycles clone() {
-        final var clone = new UnsafeListOfCycles(len);
-
-        for (int i = 0; i < len; i++) {
-            clone.add(elementData[i]);
-        }
-
-        return clone;
-    }
+//    public UnsafeListOfCycles clone() {
+//        final var clone = new UnsafeListOfCycles(len);
+//
+//        for (int i = 0; i < len; i++) {
+//            clone.add(elementData[i]);
+//        }
+//
+//        return clone;
+//    }
 
     public int len() {
         return len;
@@ -150,9 +154,26 @@ public class UnsafeListOfCycles {
     }
 
     public long at(int i) {
+        // TODO
+throw new NotImplementedException();
     }
 
     public long getAddress() {
-        throw new NotImplementedException();
+        // TODO
+throw new NotImplementedException();
+    }
+
+    public void free() {
+        elementData.free();
+    }
+
+    public UnsafeListOfCycles clone() {
+        // TODO
+throw new NotImplementedException();
+    }
+
+    public void add(int[] cycleSymbols) {
+        // TODO
+throw new NotImplementedException();
     }
 }

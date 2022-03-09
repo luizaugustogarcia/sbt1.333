@@ -12,23 +12,41 @@ public class UnsafeFloatArray {
         this.address = TheUnsafe.get().allocateMemory(size * FLOAT);
     }
 
-    public static long at(long address, int l) {
-        throw new NotImplementedException();
+    public static long getFloat(long address, int l) {
+        // TODO
+throw new NotImplementedException();
     }
 
-    public static void set(long symbolIndexByOrientedCycle, byte at, float symbolIndex) {
-        throw new NotImplementedException();
+    public static void setFloat(long symbolIndexByOrientedCycle, byte at, float symbolIndex) {
+        // TODO
+throw new NotImplementedException();
     }
 
     public static int len(long symbolIndexByOrientedCycle) {
-        throw new NotImplementedException();
+        // TODO
+throw new NotImplementedException();
     }
 
-    public void set(int i, long value) {
+    public static long clone(long signature) {
+        // TODO
+throw new NotImplementedException();
+    }
+
+    public static void reverse(long mirroredSignature) {
+        // TODO
+throw new NotImplementedException();
+    }
+
+    public static int hashCode(long mirroredSignature) {
+        // TODO
+throw new NotImplementedException();
+    }
+
+    public void setFloat(int i, long value) {
         TheUnsafe.get().putLong(address + ((long) i * FLOAT), value);
     }
 
-    public long at(int i) {
+    public long getFloat(int i) {
         return TheUnsafe.get().getLong(address + ((long) i * FLOAT));
     }
 

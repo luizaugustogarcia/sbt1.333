@@ -4,8 +4,8 @@ import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.proof.seq12_9.Combinations;
-import br.unb.cic.tdp.proof.seq12_9.Extensions;
-import br.unb.cic.tdp.proof.util.*;
+import br.unb.cic.tdp.proof.util.Move;
+
 import cern.colt.list.IntArrayList;
 import com.google.common.base.Throwables;
 import com.google.common.primitives.Ints;

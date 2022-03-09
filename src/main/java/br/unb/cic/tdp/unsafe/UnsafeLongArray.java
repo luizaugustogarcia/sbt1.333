@@ -12,23 +12,31 @@ public class UnsafeLongArray {
         this.address = TheUnsafe.get().allocateMemory(size * LONG);
     }
 
-    public static long at(long address, int l) {
-        throw new NotImplementedException();
+    public static long getLong(long address, int l) {
+        // TODO
+throw new NotImplementedException();
     }
 
-    public static void set(long symbolIndexByOrientedCycle, byte at, long symbolIndex) {
-        throw new NotImplementedException();
+    public static void setLong(long symbolIndexByOrientedCycle, byte at, long symbolIndex) {
+        // TODO
+throw new NotImplementedException();
     }
 
     public static int len(long symbolIndexByOrientedCycle) {
-        throw new NotImplementedException();
+        // TODO
+throw new NotImplementedException();
     }
 
-    public void set(int i, long value) {
+    public static void fill(long orientedIndexMapping, int len, long value) {
+        // TODO
+throw new NotImplementedException();
+    }
+
+    public void setLong(int i, long value) {
         TheUnsafe.get().putLong(address + ((long) i * LONG), value);
     }
 
-    public long at(int i) {
+    public long getLong(int i) {
         return TheUnsafe.get().getLong(address + ((long) i * LONG));
     }
 

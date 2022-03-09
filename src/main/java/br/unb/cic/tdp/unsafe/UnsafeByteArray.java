@@ -1,5 +1,7 @@
 package br.unb.cic.tdp.unsafe;
 
+import cc.redberry.core.transformations.factor.jasfactor.edu.jas.structure.NotInvertibleException;
+
 public class UnsafeByteArray {
     private final byte size;
 
@@ -10,18 +12,23 @@ public class UnsafeByteArray {
         this.address = TheUnsafe.get().allocateMemory(size);
     }
 
-    public static void set(long address, int i, final byte value) {
+    public UnsafeByteArray(final int[] symbols) {
+        throw new NotInvertibleException();
     }
 
-    public void set(final byte i, final byte value) {
+    public static void setByte(long address, int i, final byte value) {
+        throw new NotInvertibleException();
+    }
+
+    public void setByte(final byte i, final byte value) {
         TheUnsafe.get().putByte(address + i, value);
     }
 
-    public static byte at(final long arrayAddress, final int i) {
+    public static byte getByte(final long arrayAddress, final int i) {
         return TheUnsafe.get().getByte(arrayAddress + i);
     }
 
-    public byte at(final int i) {
+    public byte getByte(final int i) {
         return TheUnsafe.get().getByte(address + i);
     }
 
