@@ -1,24 +1,18 @@
 package br.unb.cic.tdp.unsafe;
 
+import lombok.SneakyThrows;
 import sun.misc.Unsafe;
 
-import java.lang.reflect.Field;
-
 public class TheUnsafe {
-    private static Unsafe unsafe;
+    private static Unsafe unsafe = null;
 
-    {
-        final Field f;
-        try {
-            f = Unsafe.class.getDeclaredField("theUnsafe");
+    @SneakyThrows
+    public static Unsafe get() {
+        if (unsafe == null) {
+            final var f = Unsafe.class.getDeclaredField("theUnsafe");
             f.setAccessible(true);
             unsafe = (Unsafe) f.get(null);
-        } catch (Exception e) {
-            e.printStackTrace();
         }
-    }
-
-    public static Unsafe get() {
         return unsafe;
     }
 }

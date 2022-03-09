@@ -1,4 +1,4 @@
-package br.unb.cic.tdp.proof.util;
+package br.unb.cic.tdp.util;
 
 import br.unb.cic.tdp.util.Triplet;
 import com.google.common.cache.Cache;
@@ -93,7 +93,7 @@ public class SequenceSearcher {
                     if (triplet.third != 2)
                         continue;
 
-                    moves.push(a, b, c);
+                    moves.push((byte) a, (byte) b, (byte) c);
 
                     // == APPLY THE MOVE ===
                     spi.removeAll(triplet.first);
@@ -111,18 +111,18 @@ public class SequenceSearcher {
 
                     updateIndex(spiIndex, parity, triplet.second);
                     // ==============================
-
-                    if (root.children.length == 0) {
-                        return moves.toListOfCycles();
-                    } else {
-                        for (final var m : root.children) {
-                            int[] newPi = applyTransposition(pi, a, b, c, pi.length - numberOfTrivialCycles, spiIndex);
-                            final var sorting = search(unsuccessfulConfigs, spi, parity, spiIndex, maxSymbol, newPi, moves, m);
-                            if (!sorting.isEmpty()) {
-                                return moves.toListOfCycles();
-                            }
-                        }
-                    }
+// TODO
+//                    if (root.children.length == 0) {
+//                        return moves.toListOfCycles();
+//                    } else {
+//                        for (final var m : root.children) {
+//                            int[] newPi = applyTransposition(pi, a, b, c, pi.length - numberOfTrivialCycles, spiIndex);
+//                            final var sorting = search(unsuccessfulConfigs, spi, parity, spiIndex, maxSymbol, newPi, moves, m);
+//                            if (!sorting.isEmpty()) {
+//                                return moves.toListOfCycles();
+//                            }
+//                        }
+//                    }
 
                     // ==== ROLLBACK ====
                     for (int l = 0; l < triplet.second.size; l++) {
@@ -197,7 +197,7 @@ public class SequenceSearcher {
                             cCycle[0] = c;
                             System.arraycopy(symbols, ab_k + 1, cCycle, 1, bc_k - 1);
 
-                            moves.push(a, b, c);
+                            moves.push((byte) a, (byte) b, (byte) c);
 
                             // == APPLY THE MOVE ===
                             spi.remove(cycle);
@@ -208,17 +208,18 @@ public class SequenceSearcher {
                             update(spiIndex, parity, aCycle, bCycle, cCycle);
                             // =======================
 
-                            if (root.children.length == 0) {
-                                return moves.toListOfCycles();
-                            } else {
-                                for (final var m : root.children) {
-                                    int[] newPi = applyTransposition(pi, a, b, c, pi.length - numberOfTrivialCycles, spiIndex);
-                                    final var sorting = search(unsuccessfulConfigs, spi, parity, spiIndex, maxSymbol, newPi, moves, m);
-                                    if (!sorting.isEmpty()) {
-                                        return moves.toListOfCycles();
-                                    }
-                                }
-                            }
+// TODO
+//                            if (root.children.length == 0) {
+//                                return moves.toListOfCycles();
+//                            } else {
+//                                for (final var m : root.children) {
+//                                    int[] newPi = applyTransposition(pi, a, b, c, pi.length - numberOfTrivialCycles, spiIndex);
+//                                    final var sorting = search(unsuccessfulConfigs, spi, parity, spiIndex, maxSymbol, newPi, moves, m);
+//                                    if (!sorting.isEmpty()) {
+//                                        return moves.toListOfCycles();
+//                                    }
+//                                }
+//                            }
 
                             moves.pop();
 
@@ -327,7 +328,7 @@ public class SequenceSearcher {
                     if (triplet.third != 0)
                         continue;
 
-                    moves.push(a, b, c);
+                    moves.push((byte) a, (byte) b, (byte) c);
 
                     // == APPLY THE MOVE ===
                     var numberOfTrivialCycles = 0;
@@ -345,17 +346,18 @@ public class SequenceSearcher {
                     updateIndex(spiIndex, parity, triplet.second);
                     // ==============================
 
-                    if (root.children.length == 0) {
-                        return moves.toListOfCycles();
-                    } else {
-                        for (final var m : root.children) {
-                            int[] newPi = applyTransposition(pi, a, b, c, pi.length - numberOfTrivialCycles, spiIndex);
-                            final var sorting = search(unsuccessfulConfigs, spi, parity, spiIndex, maxSymbol, newPi, moves, m);
-                            if (!sorting.isEmpty()) {
-                                return moves.toListOfCycles();
-                            }
-                        }
-                    }
+// TODO
+//                    if (root.children.length == 0) {
+//                        return moves.toListOfCycles();
+//                    } else {
+//                        for (final var m : root.children) {
+//                            int[] newPi = applyTransposition(pi, a, b, c, pi.length - numberOfTrivialCycles, spiIndex);
+//                            final var sorting = search(unsuccessfulConfigs, spi, parity, spiIndex, maxSymbol, newPi, moves, m);
+//                            if (!sorting.isEmpty()) {
+//                                return moves.toListOfCycles();
+//                            }
+//                        }
+//                    }
 
                     // ==== ROLLBACK ====
                     for (int l = 0; l < triplet.second.size; l++) {
@@ -386,19 +388,20 @@ public class SequenceSearcher {
         final var searchParams = collectSearchParams(spi, parity, spiIndex, maxSymbol, pi);
 
         for (SearchParams searchParam : searchParams) {
-            moves.push(searchParam.move[0], searchParam.move[1], searchParam.move[2]);
+            moves.push((byte) searchParam.move[0], (byte) searchParam.move[1], (byte) searchParam.move[2]);
 
-            if (root.children.length == 0) {
-                return moves.toListOfCycles();
-            } else {
-                for (final var move : root.children) {
-                    final var sorting = search(unsuccessfulConfigs, searchParam.spi,
-                            searchParam.parity, searchParam.spiIndex, maxSymbol, searchParam.pi, moves, move);
-                    if (!sorting.isEmpty()) {
-                        return moves.toListOfCycles();
-                    }
-                }
-            }
+// TODO
+//            if (root.children.length == 0) {
+//                return moves.toListOfCycles();
+//            } else {
+//                for (final var move : root.children) {
+//                    final var sorting = search(unsuccessfulConfigs, searchParam.spi,
+//                            searchParam.parity, searchParam.spiIndex, maxSymbol, searchParam.pi, moves, move);
+//                    if (!sorting.isEmpty()) {
+//                        return moves.toListOfCycles();
+//                    }
+//                }
+//            }
 
             moves.pop();
         }

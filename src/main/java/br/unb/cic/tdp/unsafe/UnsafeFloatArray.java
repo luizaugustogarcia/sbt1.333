@@ -1,9 +1,5 @@
 package br.unb.cic.tdp.unsafe;
 
-import org.apache.commons.lang.NotImplementedException;
-
-import java.util.Arrays;
-
 import static br.unb.cic.tdp.util.Sorter.arraycopy;
 
 public class UnsafeFloatArray {

@@ -4,8 +4,7 @@ import br.unb.cic.tdp.base.CommonOperations;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
-import br.unb.cic.tdp.proof.util.*;
-import br.unb.cic.tdp.proof.util.Stack;
+import br.unb.cic.tdp.util.Stack;
 import br.unb.cic.tdp.util.Pair;
 import cern.colt.list.FloatArrayList;
 import com.google.common.cache.Cache;
@@ -15,6 +14,7 @@ import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.paukov.combinatorics.Factory;
 import org.paukov.combinatorics.Generator;
+import br.unb.cic.tdp.util.*;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -28,8 +28,8 @@ import static br.unb.cic.tdp.base.CommonOperations.getComponents;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 import static br.unb.cic.tdp.proof.ProofGenerator.*;
 import static br.unb.cic.tdp.proof.seq12_9.Extensions.cleanUpBadExtensionAndInvalidFiles;
-import static br.unb.cic.tdp.proof.util.SequenceSearcher.applyTransposition;
-import static br.unb.cic.tdp.proof.util.SequenceSearcher.canonicalSignature;
+import static br.unb.cic.tdp.util.SequenceSearcher.applyTransposition;
+import static br.unb.cic.tdp.util.SequenceSearcher.canonicalSignature;
 import static java.util.stream.Collectors.toList;
 
 public class Combinations {
@@ -337,7 +337,7 @@ public class Combinations {
                 if (!canonicalSignatures.contains(canonicalSignature)) {
                     for (final var root : rootMove.children) {
                         final var stack = new Stack(numberOfMoves);
-                        stack.push(move.getSymbols()[0], move.getSymbols()[1], move.getSymbols()[2]);
+                        stack.push((byte) move.getSymbols()[0], (byte) move.getSymbols()[1], (byte) move.getSymbols()[2]);
 
                         final Cache<String, Set<String>> unsuccessfulConfigs = CacheBuilder.newBuilder()
                                 .maximumSize(1_000_000)

@@ -1,5 +1,6 @@
 package br.unb.cic.tdp.util;
 
+import br.unb.cic.tdp.unsafe.UnsafeByteArray;
 import br.unb.cic.tdp.unsafe.UnsafeListOfCycles;
 import org.apache.commons.lang.NotImplementedException;
 
@@ -8,18 +9,18 @@ import static br.unb.cic.tdp.util.Sorter.set;
 
 public class Stack {
     private int maxSize;
-    private byte[] content;
+    private UnsafeByteArray content;
     private int size = 0;
 
     public Stack(int size) {
         this.maxSize = size;
-        this.content = new byte[size * 3];
+        this.content = new UnsafeByteArray((byte) (size * 3));
     }
 
    public void push(final byte a, final byte b, final byte c) {
-        this.content[(size * 3)] = a;
-        this.content[(size * 3) + 1] = b;
-        this.content[(size * 3) + 2] = c;
+        this.content.set(size * 3, a);
+        this.content.set((size * 3) + 1, b);
+        this.content.set((size * 3) + 2, c);
         size++;
    }
 
@@ -31,9 +32,9 @@ public class Stack {
         final UnsafeListOfCycles list = new UnsafeListOfCycles(size);
         for (int i = 0; i < size; i++) {
             final var cycleAddress = create(3);
-            set(cycleAddress, 0, content[(i * 3)]);
-            set(cycleAddress, 1, content[(i * 3) + 1]);
-            set(cycleAddress, 2, content[(i * 3) + 2]);
+            set(cycleAddress, 0, content.getByte(i * 3));
+            set(cycleAddress, 1, content.getByte((i * 3) + 1));
+            set(cycleAddress, 2, content.getByte((i * 3) + 2));
 
             list.add(cycleAddress);
         }
@@ -47,13 +48,12 @@ public class Stack {
     public Stack clone() {
         final var clone = new Stack(this.size);
         clone.maxSize = maxSize;
-        clone.content = content.clone();
+        clone.content = content.cloneArray();
         clone.size = size;
         return clone;
     }
 
     public void free() {
-        // TODO
-throw new NotImplementedException();
+        content.free();
     }
 }

@@ -1,5 +1,7 @@
 package br.unb.cic.tdp.unsafe;
 
+import static br.unb.cic.tdp.util.Sorter.arraycopy;
+
 public class UnsafeByteArray {
     private final byte size;
     private final long address;
@@ -38,5 +40,15 @@ public class UnsafeByteArray {
 
     public void free() {
         TheUnsafe.get().freeMemory(this.address);
+    }
+
+    public void set(int i, byte a) {
+        TheUnsafe.get().putByte(this.address + i, a);
+    }
+
+    public UnsafeByteArray cloneArray() {
+        final var dest = new UnsafeByteArray(size);
+        arraycopy(address, 0, dest.address, 0, size);
+        return dest;
     }
 }

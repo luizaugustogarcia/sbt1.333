@@ -2,9 +2,9 @@ package br.unb.cic.tdp.queue;
 
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.proof.ProofGenerator;
-import br.unb.cic.tdp.proof.util.ListOfCycles;
-import br.unb.cic.tdp.proof.util.Move;
-import br.unb.cic.tdp.proof.util.Stack;
+import br.unb.cic.tdp.util.ListOfCycles;
+import br.unb.cic.tdp.util.Move;
+import br.unb.cic.tdp.util.Stack;
 import lombok.SneakyThrows;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
@@ -64,9 +64,9 @@ public class Consumer {
             final var stack = new Stack(ProofGenerator._19_14_SEQS.getHeight());
             stackStr = stackStr.substring(1, stackStr.length() - 1);
             for (final var cycle: stackStr.split("]\\[")) {
-                stack.push(Integer.parseInt(cycle.split(",")[0]),
-                           Integer.parseInt(cycle.split(",")[1]),
-                           Integer.parseInt(cycle.split(",")[2]));
+                stack.push(Byte.parseByte(cycle.split(",")[0]),
+                           Byte.parseByte(cycle.split(",")[1]),
+                           Byte.parseByte(cycle.split(",")[2]));
             }
 
             final var parity = new boolean[configuration.getSpi().getMaxSymbol() + 1];
@@ -80,12 +80,12 @@ public class Consumer {
                 }
             }
 
-            final var sorting = search(spi, parity, spiIndex, spiIndex.length, pi, stack, rootMap.get(split[4]));
-
-            if (!sorting.isEmpty()) {
-                System.out.println("Sorted: " + configuration.getSpi() + ", sorting: " + sorting.toList().stream().map(Arrays::toString).collect(joining(",")) + "\n");
-                rabbitTemplate.convertAndSend("sbt_19_14_found", sorting.toList().stream().map(Arrays::toString).collect(joining(",")));
-            }
+// TODO
+//            final var sorting = search(spi, parity, spiIndex, pi, stack, rootMap.get(split[4]));
+//            if (!sorting.isEmpty()) {
+//                System.out.println("Sorted: " + configuration.getSpi() + ", sorting: " + sorting.toList().stream().map(Arrays::toString).collect(joining(",")) + "\n");
+//                rabbitTemplate.convertAndSend("sbt_19_14_found", sorting.toList().stream().map(Arrays::toString).collect(joining(",")));
+//            }
         }
     }
 }

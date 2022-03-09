@@ -4,13 +4,11 @@ import br.unb.cic.tdp.Application;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
-import br.unb.cic.tdp.proof.util.Move;
 import br.unb.cic.tdp.unsafe.*;
 import cern.colt.list.LongArrayList;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import lombok.SneakyThrows;
-import org.apache.commons.lang.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -221,7 +219,7 @@ public class Sorter {
             // ===========================
             // ===== ORIENTED CYCLES =====
             // ===========================
-            final var piInverseIndex = getPiInverseIndex(pi.getAddress());
+            final var piInverseIndex = getPiInverseIndex(pi.getAddress(), pi.len());
 
             final var orientedCycles = orientedCycles(spi, piInverseIndex);
 
@@ -688,7 +686,7 @@ public class Sorter {
         // ======= oriented cycles =======
         // ===============================
 
-        final var piInverseIndex = getPiInverseIndex(pi.getAddress());
+        final var piInverseIndex = getPiInverseIndex(pi.getAddress(), pi.len());
 
         final var orientedCycles = orientedCycles(spi, piInverseIndex);
 
@@ -1082,9 +1080,13 @@ public class Sorter {
         return sb.toString();
     }
 
-    private static void reverse(long cycleAddress) {
-        // TODO
-        throw new NotImplementedException();
+    private static void reverse(final long cycleAddress) {
+        final var len = len(cycleAddress);
+        for (byte i = 0; i < len / 2; i++) {
+            byte t = at(cycleAddress, i);
+            set(cycleAddress, i, at(cycleAddress, len - i - 1));
+            set(cycleAddress, (byte) (len - i - 1), t);
+        }
     }
 
     private static float round(final float value) {
@@ -1104,10 +1106,10 @@ public class Sorter {
     }
 
     public static long signature(final UnsafeListOfCycles spi, final long pi, final UnsafeLongArray spiIndex) {
-        final var piInverseIndex = getPiInverseIndex(pi);
+        final var piInverseIndex = getPiInverseIndex(pi, spiIndex.size());
         final var orientedCycles = orientedCycles(spi, piInverseIndex);
 
-        byte len = len(pi);
+        byte len = spiIndex.size();
         final var orientationByCycle = TheUnsafe.get().allocateMemory(len);
 
         for (int l = 0; l < orientedCycles.len(); l++) {
@@ -1231,8 +1233,7 @@ public class Sorter {
         update(spiIndex, parity, cCycle);
     }
 
-    public static long getPiInverseIndex(final long pi) {
-        final byte len = len(pi);
+    public static long getPiInverseIndex(final long pi, final byte len) {
         final var piInverseIndex = TheUnsafe.get().allocateMemory(len);
         for (byte i = 0; i < len; i++) {
             setByte(piInverseIndex, at(pi, len - i - 1), i);

@@ -9,16 +9,18 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static br.unb.cic.tdp.util.Sorter.arraycopy;
+import static br.unb.cic.tdp.util.Sorter.*;
 
 public class UnsafeListOfCycles {
-    public static final UnsafeListOfCycles EMPTY_LIST = new UnsafeListOfCycles(0);
+    public static final UnsafeListOfCycles EMPTY_LIST = new UnsafeListOfCycles(1);
+    private final int maxSize;
     private int size;
     public UnsafeLongArray elementData;
 
     @SneakyThrows
     public UnsafeListOfCycles(final int maxSize) {
         this.elementData = new UnsafeLongArray((byte) maxSize);
+        this.maxSize = maxSize;
     }
 
     public static UnsafeListOfCycles singleton(final long cycleAddress) {
@@ -152,12 +154,18 @@ public class UnsafeListOfCycles {
     }
 
     public UnsafeListOfCycles clone() {
-        // TODO
-throw new NotImplementedException();
+        final var clone = new UnsafeListOfCycles(maxSize);
+        clone.size = size;
+        final var elementData = new UnsafeLongArray(this.elementData.size());
+        arraycopy(this.elementData.getAddress(), 0, elementData.getAddress(), 0, this.elementData.size() * 8);
+        clone.elementData = elementData;
+        return clone;
     }
 
     public void add(int[] cycleSymbols) {
-        // TODO
-throw new NotImplementedException();
+        final var cycleAddress = create(cycleSymbols.length);
+        for (int i = 0; i < cycleSymbols.length; i++) {
+            set(cycleAddress, i, (byte) cycleSymbols[i]);
+        }
     }
 }

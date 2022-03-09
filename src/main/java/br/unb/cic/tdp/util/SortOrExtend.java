@@ -1,4 +1,4 @@
-package br.unb.cic.tdp.proof.util;
+package br.unb.cic.tdp.util;
 
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;

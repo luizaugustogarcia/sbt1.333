@@ -1,4 +1,4 @@
-package br.unb.cic.tdp.proof.util;
+package br.unb.cic.tdp.util;
 
 import java.util.Arrays;
 
