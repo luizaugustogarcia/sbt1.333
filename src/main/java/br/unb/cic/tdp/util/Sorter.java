@@ -317,7 +317,6 @@ public class Sorter {
                 }
             }
 
-            // TODO free the cycles inside ---- clear?
             free(orientedCycles.getElementDataAddress());
 
             // ======================
@@ -397,7 +396,6 @@ public class Sorter {
                                 final UnsafeByteArray pi,
                                 final Stack stack) {
             final var cycleIndexes = TheUnsafe.get().allocateMemory(pi.len() * 8);
-            UnsafeLongArray.fill(cycleIndexes, pi.len(), (byte) 0);
 
             final var canonicalSignatures = new HashSet<String>();
 
@@ -494,6 +492,7 @@ public class Sorter {
                         // ==============================
 
                         final var newPi = applyTransposition(pi, a, b, c);
+                        // TODO remove trivial symbols from pi
                         final var canonicalSignature = canonicalSignature(spi, newPi, spiIndex);
                         if (!canonicalSignatures.contains(canonicalSignature)) {
                             for (final var nextMove : rootMove.children) {
@@ -829,7 +828,6 @@ public class Sorter {
             }
         }
 
-        // TODO free the cycles inside ---- clear?
         free(orientedCycles.getElementDataAddress());
 
         return EMPTY_LIST;
@@ -1140,7 +1138,6 @@ public class Sorter {
         }
 
         free(piInverseIndex);
-        // TODO free the cycles inside ---- clear?
         free(orientedCycles.getElementDataAddress());
 
         // Array of floats
@@ -1278,7 +1275,6 @@ public class Sorter {
         for (int i = 0; i < spi.len(); i++) {
             final long cycleAddress = spi.at(i);
             if (!areSymbolsInCyclicOrder(piInverseIndex, cycleAddress))
-                // TODO clone the cycle
                 orientedCycles.add(cycleAddress);
         }
         return orientedCycles;

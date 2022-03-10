@@ -65,9 +65,12 @@ public class UnsafeListOfCycles {
 
     private void fastRemove(final UnsafeLongArray es, final int i) {
         final int newSize;
-        if ((newSize = size - 1) > i)
-            arraycopy(es.getAddress(), i + 1, es.getAddress(), i, newSize - i);
-        es.setLong(size = newSize, -1);
+        if ((newSize = size - 1) > i) {
+            for (int j = i + 1; j < this.size - i; j++) {
+                es.setLong(j - 1, es.getLong(j));
+            }
+        }
+        es.setLong(size = newSize, 0);
     }
 
     public boolean contains(final long cycleAddress) {
