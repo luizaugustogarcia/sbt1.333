@@ -1,5 +1,7 @@
 package br.unb.cic.tdp.unsafe;
 
+import org.apache.commons.lang3.ArrayUtils;
+
 import static br.unb.cic.tdp.util.Sorter.arraycopy;
 
 public class UnsafeByteArray {
@@ -80,5 +82,21 @@ public class UnsafeByteArray {
         str.append("]");
 
         return str.toString();
+    }
+
+    public UnsafeByteArray removeElement(byte element) {
+        final var newArray = new UnsafeByteArray((byte) (size - 1));
+        int i = 0;
+        for (; i < size; i++) {
+            if (getByte(i) == element) {
+                break;
+            }
+        }
+
+        arraycopy(this.address, 0, newArray.address, 0, i);
+        if (i < size - 1)
+            arraycopy(this.address, i + 1, newArray.address, i, size - i - 1);
+
+        return newArray;
     }
 }
