@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static br.unb.cic.tdp.proof.ProofGenerator.*;
@@ -317,6 +316,9 @@ public class Sorter {
                     }
                 }
             }
+
+            // TODO free the cycles inside ---- clear?
+            free(orientedCycles.getElementDataAddress());
 
             // ======================
             // ===== ODD CYCLES =====
@@ -827,6 +829,7 @@ public class Sorter {
             }
         }
 
+        // TODO free the cycles inside ---- clear?
         free(orientedCycles.getElementDataAddress());
 
         return EMPTY_LIST;
@@ -1137,6 +1140,7 @@ public class Sorter {
         }
 
         free(piInverseIndex);
+        // TODO free the cycles inside ---- clear?
         free(orientedCycles.getElementDataAddress());
 
         // Array of floats
@@ -1274,6 +1278,7 @@ public class Sorter {
         for (int i = 0; i < spi.len(); i++) {
             final long cycleAddress = spi.at(i);
             if (!areSymbolsInCyclicOrder(piInverseIndex, cycleAddress))
+                // TODO clone the cycle
                 orientedCycles.add(cycleAddress);
         }
         return orientedCycles;
