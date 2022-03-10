@@ -15,7 +15,11 @@ public class UnsafeBooleanArray {
     }
 
     public void set(final byte i, final boolean value) {
-        TheUnsafe.get().putByte(address + i, (byte) (value ? 1: 0));
+        TheUnsafe.get().putByte(address + i, (byte) (value ? 1 : 0));
+    }
+
+    public static void fill(final long address, final long len, final boolean value) {
+        TheUnsafe.get().setMemory(address, len, (byte) (value ? 1 : 0));
     }
 
     public static boolean getBool(final long arrayAddress, final byte i) {
@@ -47,9 +51,5 @@ public class UnsafeBooleanArray {
 
     public long getAddress() {
         return this.address;
-    }
-
-    public void free() {
-        TheUnsafe.get().freeMemory(this.address);
     }
 }

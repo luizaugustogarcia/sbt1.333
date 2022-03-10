@@ -69,8 +69,4 @@ public class UnsafeFloatArray {
     public byte size() {
         return size;
     }
-
-    public void free() {
-        TheUnsafe.get().freeMemory(this.address);
-    }
 }

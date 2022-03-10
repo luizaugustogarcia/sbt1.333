@@ -1,7 +1,5 @@
 package br.unb.cic.tdp.unsafe;
 
-import br.unb.cic.tdp.util.Sorter;
-
 public class UnsafeLongArray {
     private final static byte LONG = 8;
     private final byte size;
@@ -36,6 +34,10 @@ public class UnsafeLongArray {
         return str.toString();
     }
 
+    public static void fill(final long address, final long len, final byte value) {
+        TheUnsafe.get().setMemory(address, len * LONG, value);
+    }
+
     public void setLong(int i, long value) {
         TheUnsafe.get().putLong(address + ((long) i * LONG), value);
     }
@@ -46,10 +48,6 @@ public class UnsafeLongArray {
 
     public byte size() {
         return size;
-    }
-
-    public void free() {
-        TheUnsafe.get().freeMemory(this.address);
     }
 
     public long getAddress() {

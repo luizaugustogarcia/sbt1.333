@@ -1,7 +1,5 @@
 package br.unb.cic.tdp.unsafe;
 
-import br.unb.cic.tdp.util.Sorter;
-
 import static br.unb.cic.tdp.util.Sorter.arraycopy;
 
 public class UnsafeByteArray {
@@ -28,6 +26,10 @@ public class UnsafeByteArray {
         return TheUnsafe.get().getByte(arrayAddress + i);
     }
 
+    public static void fill(final long address, final long len, final byte value) {
+        TheUnsafe.get().setMemory(address, len, value);
+    }
+
     public byte getByte(final int i) {
         return TheUnsafe.get().getByte(address + i);
     }
@@ -38,10 +40,6 @@ public class UnsafeByteArray {
 
     public long getAddress() {
         return this.address;
-    }
-
-    public void free() {
-        TheUnsafe.get().freeMemory(this.address);
     }
 
     public void set(int i, byte a) {

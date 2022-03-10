@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static br.unb.cic.tdp.proof.ProofGenerator.*;
@@ -112,9 +113,10 @@ public class Sorter {
 
         final var hasSorting = new boolean[1];
         final var forkJoinPool = new ForkJoinPool(1);
-        final var task = new Search(configuration, outputDir,
-                toListOfCycle(configuration.getSpi(), configuration.getPi()), new UnsafeByteArray(configuration.getPi().getSymbols()),
-                new Stack(rootMove.getHeight()), rootMove, forkJoinPool, hasSorting);
+        final var spi = toUnsafeListOfCycle(configuration.getSpi(), configuration.getPi());
+        final var pi = new UnsafeByteArray(configuration.getPi().getSymbols());
+        final var stack = new Stack(rootMove.getHeight());
+        final var task = new Search(configuration, outputDir, spi, pi, stack, rootMove, forkJoinPool, hasSorting);
         forkJoinPool.submit(task);
         forkJoinPool.shutdown();
         forkJoinPool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
@@ -158,9 +160,9 @@ public class Sorter {
 
             for (int i = 0; i < spi.len(); i++) {
                 final var cycleAddress = spi.at(i);
-                byte len = len(cycleAddress);
+                byte len = cycleLen(cycleAddress);
                 for (int j = 0; j < len; j++) {
-                    final var s = at(cycleAddress, j);
+                    final var s = cycleAt(cycleAddress, j);
                     spiIndex.setLong(s, cycleAddress);
                     parity.set(s, (len & 1) == 1);
                 }
@@ -190,6 +192,7 @@ public class Sorter {
                 // else, FORK
                 if (rootMove.mu == 0) {
                     final var key = canonicalSignature(spi, pi, spiIndex);
+                    System.out.println("canonical=" + key);
                     final var paths = UNSUCCESSFUL_VISITED_CONFIGS.get(key, () -> new HashSet(1));
                     synchronized (paths) {
                         if (paths.isEmpty()) {
@@ -229,26 +232,26 @@ public class Sorter {
             for (int l = 0; l < orientedCycles.len(); l++) {
                 final var cycleAddress = orientedCycles.at(l);
 
-                final var before = parity.getBool(at(cycleAddress, 0)) ? 1 : 0;
+                final var before = parity.getBool(cycleAt(cycleAddress, 0)) ? 1 : 0;
 
-                for (var i = 0; i < len(cycleAddress) - 2; i++) {
-                    for (var j = i + 1; j < len(cycleAddress) - 1; j++) {
+                for (var i = 0; i < cycleLen(cycleAddress) - 2; i++) {
+                    for (var j = i + 1; j < cycleLen(cycleAddress) - 1; j++) {
                         final var ab_k = j - i;
 
                         if (before == 1 && (ab_k & 1) == 0) {
                             continue;
                         }
 
-                        for (var k = j + 1; k < len(cycleAddress); k++) {
+                        for (var k = j + 1; k < cycleLen(cycleAddress); k++) {
                             final var bc_k = k - j;
 
                             if (before == 1 && (bc_k & 1) == 0) {
                                 continue;
                             }
 
-                            final var ca_k = (len(cycleAddress) - k) + i;
+                            final var ca_k = (cycleLen(cycleAddress) - k) + i;
 
-                            byte a = at(cycleAddress, i), b = at(cycleAddress, j), c = at(cycleAddress, k);
+                            byte a = cycleAt(cycleAddress, i), b = cycleAt(cycleAddress, j), c = cycleAt(cycleAddress, k);
 
                             var after = ab_k & 1;
                             after += bc_k & 1;
@@ -258,24 +261,24 @@ public class Sorter {
                             if (after - before == 2 && areSymbolsInCyclicOrder(piInverseIndex, a, c, b)) {
                                 final var alignedCycleAddress = startingBy(cycleAddress, a);
                                 final var aCycle = create(ca_k);
-                                set(aCycle, 0, a);
+                                cycleSet(aCycle, 0, a);
                                 // ======= do not use System.arrayCopy to avoid JNI overhead
                                 for (int m = 0; m < ca_k - 1; m++) {
-                                    set(aCycle, m + 1, at(alignedCycleAddress, ab_k + bc_k + 1 + m));
+                                    cycleSet(aCycle, m + 1, cycleAt(alignedCycleAddress, ab_k + bc_k + 1 + m));
                                 }
 
                                 final var bCycle = create(ab_k);
-                                set(bCycle, 0, b);
+                                cycleSet(bCycle, 0, b);
                                 // ======= do not use System.arrayCopy to avoid JNI overhead
                                 for (int m = 0; m < ab_k - 1; m++) {
-                                    set(bCycle, m + 1, at(alignedCycleAddress, 1 + m));
+                                    cycleSet(bCycle, m + 1, cycleAt(alignedCycleAddress, 1 + m));
                                 }
 
                                 final var cCycle = create(bc_k);
-                                set(cCycle, 0, c);
+                                cycleSet(cCycle, 0, c);
                                 // ======= do not use System.arrayCopy to avoid JNI overhead
                                 for (int m = 0; m < bc_k - 1; m++) {
-                                    set(cCycle, m + 1, at(alignedCycleAddress, ab_k + 1 + m));
+                                    cycleSet(cCycle, m + 1, cycleAt(alignedCycleAddress, ab_k + 1 + m));
                                 }
 
                                 free(alignedCycleAddress);
@@ -284,9 +287,9 @@ public class Sorter {
 
                                 // == APPLY THE MOVE ===
                                 spi.remove(cycleAddress);
-                                if (len(aCycle) > 1) spi.add(aCycle);
-                                if (len(bCycle) > 1) spi.add(bCycle);
-                                if (len(cCycle) > 1) spi.add(cCycle);
+                                if (cycleLen(aCycle) > 1) spi.add(aCycle);
+                                if (cycleLen(bCycle) > 1) spi.add(bCycle);
+                                if (cycleLen(cCycle) > 1) spi.add(cCycle);
                                 update(spiIndex, parity, aCycle, bCycle, cCycle);
                                 // =======================
 
@@ -298,9 +301,9 @@ public class Sorter {
                                 stack.pop();
 
                                 // ==== ROLLBACK ====
-                                if (len(aCycle) > 1) spi.remove(aCycle);
-                                if (len(bCycle) > 1) spi.remove(bCycle);
-                                if (len(cCycle) > 1) spi.remove(cCycle);
+                                if (cycleLen(aCycle) > 1) spi.remove(aCycle);
+                                if (cycleLen(bCycle) > 1) spi.remove(bCycle);
+                                if (cycleLen(cCycle) > 1) spi.remove(cCycle);
 
                                 free(aCycle);
                                 free(bCycle);
@@ -351,7 +354,7 @@ public class Sorter {
                         for (int l = 0; l < triplet.second.len(); l++) {
                             final var cycleAddress = triplet.second.at(l);
 
-                            if (len(cycleAddress) > 1) {
+                            if (cycleLen(cycleAddress) > 1) {
                                 spi.add(cycleAddress);
                             }
                         }
@@ -367,7 +370,7 @@ public class Sorter {
                         // ==== ROLLBACK ====
                         for (int l = 0; l < triplet.second.len(); l++) {
                             final var cycleAddress = triplet.second.at(l);
-                            if (len(cycleAddress) > 1)
+                            if (cycleLen(cycleAddress) > 1)
                                 spi.remove(cycleAddress);
                             free(cycleAddress);
                         }
@@ -375,8 +378,8 @@ public class Sorter {
                         updateIndex(spiIndex, parity, triplet.first);
                         // ==============================
 
-                        triplet.first.free();
-                        triplet.second.free();
+                        free(triplet.first.getElementDataAddress());
+                        free(triplet.second.getElementDataAddress());
 
                         stack.pop();
                     }
@@ -392,7 +395,7 @@ public class Sorter {
                                 final UnsafeByteArray pi,
                                 final Stack stack) {
             final var cycleIndexes = TheUnsafe.get().allocateMemory(pi.len() * 8);
-            fill(cycleIndexes, pi.len(), 0);
+            UnsafeLongArray.fill(cycleIndexes, pi.len(), (byte) 0);
 
             final var canonicalSignatures = new HashSet<String>();
 
@@ -423,13 +426,13 @@ public class Sorter {
                             final var indexAddress = getLong(cycleIndexes, a);
 
                             if (areSymbolsInCyclicOrder(indexAddress, a, b, c)) {
-                                final var before = len(cycleAddress) & 1;
+                                final var before = cycleLen(cycleAddress) & 1;
 
-                                final var ab_k = getK(indexAddress, a, b);
+                                final var ab_k = getK(indexAddress, cycleAddress, a, b);
                                 var after = ab_k & 1;
-                                final var bc_k = getK(indexAddress, b, c);
+                                final var bc_k = getK(indexAddress, cycleAddress, b, c);
                                 after += bc_k & 1;
-                                final var ca_k = getK(indexAddress, c, a);
+                                final var ca_k = getK(indexAddress, cycleAddress, c, a);
                                 after += ca_k & 1;
 
                                 if (after - before == 2) {
@@ -441,17 +444,17 @@ public class Sorter {
 
                                 after = 0;
                                 final var aCycle = create(ca_k);
-                                set(aCycle, 0, a);
+                                cycleSet(aCycle, 0, a);
                                 arraycopy(alignedCycle, ab_k + bc_k + 1, aCycle, 1, ca_k - 1);
                                 after += ca_k & 1;
 
                                 final var bCycle = create(ab_k);
-                                set(bCycle, 0, b);
+                                cycleSet(bCycle, 0, b);
                                 arraycopy(alignedCycle, 1, bCycle, 1, ab_k - 1);
                                 after += ab_k & 1;
 
                                 final var cCycle = create(bc_k);
-                                set(cCycle, 0, c);
+                                cycleSet(cCycle, 0, c);
                                 arraycopy(alignedCycle, ab_k + 1, cCycle, 1, bc_k - 1);
                                 after += bc_k & 1;
 
@@ -481,7 +484,7 @@ public class Sorter {
                         for (int l = 0; l < triplet.second.len(); l++) {
                             final var cycleAddress = triplet.second.at(l);
 
-                            if (len(cycleAddress) > 1) {
+                            if (cycleLen(cycleAddress) > 1) {
                                 spi.add(cycleAddress);
                             }
                         }
@@ -500,7 +503,7 @@ public class Sorter {
                         // ==== ROLLBACK ====
                         for (int l = 0; l < triplet.second.len(); l++) {
                             final var cycleAddress = triplet.second.at(l);
-                            if (len(cycleAddress) > 1)
+                            if (cycleLen(cycleAddress) > 1)
                                 spi.remove(cycleAddress);
                             free(cycleAddress);
                         }
@@ -508,8 +511,8 @@ public class Sorter {
                         updateIndex(spiIndex, parity, triplet.first);
                         // ==============================
 
-                        triplet.first.free();
-                        triplet.second.free();
+                        free(triplet.first.getElementDataAddress());
+                        free(triplet.second.getElementDataAddress());
 
                         stack.pop();
                     }
@@ -531,16 +534,18 @@ public class Sorter {
             for (int i = 0; i < spi.len(); i++) {
                 free(spi.at(i));
             }
-            spi.free();
-            pi.free();
-            stack.free();
+            free(spi.getElementDataAddress());
+            free(pi.getAddress());
+            free(stack.getContentAddress());
         }
     }
 
 
-    private static UnsafeListOfCycles toListOfCycle(final MulticyclePermutation spi, final Cycle pi) {
+    private static UnsafeListOfCycles toUnsafeListOfCycle(final MulticyclePermutation spi, final Cycle pi) {
         final var list = new UnsafeListOfCycles(pi.size());
-        spi.stream().map(Cycle::getSymbols).forEach(list::add);
+        for (final var cycle: spi) {
+            list.add(cycle.getSymbols());
+        }
         return list;
     }
 
@@ -635,7 +640,7 @@ public class Sorter {
                     for (int l = 0; l < triplet.second.len(); l++) {
                         final var cycleAddress = triplet.second.at(l);
 
-                        if (len(cycleAddress) > 1) {
+                        if (cycleLen(cycleAddress) > 1) {
                             spi.add(cycleAddress);
                         }
                     }
@@ -649,7 +654,7 @@ public class Sorter {
                         for (final var m : root.children) {
                             final var newPi = applyTransposition(pi, a, b, c);
                             final var sorting = search(spi, parity, spiIndex, newPi, stack, m);
-                            newPi.free();
+                            free(newPi.getAddress());
                             if (!sorting.isEmpty()) {
                                 return stack.toListOfCycles();
                             }
@@ -659,7 +664,7 @@ public class Sorter {
                     // ==== ROLLBACK ====
                     for (int l = 0; l < triplet.second.len(); l++) {
                         final var cycleAddress = triplet.second.at(l);
-                        if (len(cycleAddress) > 1)
+                        if (cycleLen(cycleAddress) > 1)
                             spi.remove(cycleAddress);
                         free(cycleAddress);
                     }
@@ -667,8 +672,8 @@ public class Sorter {
                     updateIndex(spiIndex, parity, triplet.first);
                     // ==============================
 
-                    triplet.first.free();
-                    triplet.second.free();
+                    free(triplet.first.getElementDataAddress());
+                    free(triplet.second.getElementDataAddress());
 
                     stack.pop();
                 }
@@ -697,8 +702,8 @@ public class Sorter {
         for (int l = 0; l < orientedCycles.len(); l++) {
             final var cycleAddress = orientedCycles.at(l);
 
-            if (len(cycleAddress) == 3) {
-                byte a = at(cycleAddress, 0), b = at(cycleAddress, 1), c = at(cycleAddress, 2);
+            if (cycleLen(cycleAddress) == 3) {
+                byte a = cycleAt(cycleAddress, 0), b = cycleAt(cycleAddress, 1), c = cycleAt(cycleAddress, 2);
 
                 stack.push(a, b, c);
 
@@ -713,7 +718,7 @@ public class Sorter {
                     for (final var m : root.children) {
                         final var newPi = applyTransposition(pi, a, b, c);
                         final var sorting = search(spi, parity, spiIndex, newPi, stack, m);
-                        newPi.free();
+                        free(newPi.getAddress());
                         if (!sorting.isEmpty()) {
                             return stack.toListOfCycles();
                         }
@@ -727,26 +732,26 @@ public class Sorter {
                 update(spiIndex, parity, cycleAddress);
                 // ====================
             } else {
-                final var before = parity.getBool(at(cycleAddress, 0)) ? 1 : 0;
+                final var before = parity.getBool(cycleAt(cycleAddress, 0)) ? 1 : 0;
 
-                for (var i = 0; i < len(cycleAddress) - 2; i++) {
-                    for (var j = i + 1; j < len(cycleAddress) - 1; j++) {
+                for (var i = 0; i < cycleLen(cycleAddress) - 2; i++) {
+                    for (var j = i + 1; j < cycleLen(cycleAddress) - 1; j++) {
                         final var ab_k = j - i;
 
                         if (before == 1 && (ab_k & 1) == 0) {
                             continue;
                         }
 
-                        for (var k = j + 1; k < len(cycleAddress); k++) {
+                        for (var k = j + 1; k < cycleLen(cycleAddress); k++) {
                             final var bc_k = k - j;
 
                             if (before == 1 && (bc_k & 1) == 0) {
                                 continue;
                             }
 
-                            final var ca_k = (len(cycleAddress) - k) + i;
+                            final var ca_k = (cycleLen(cycleAddress) - k) + i;
 
-                            byte a = at(cycleAddress, i), b = at(cycleAddress, j), c = at(cycleAddress, k);
+                            byte a = cycleAt(cycleAddress, i), b = cycleAt(cycleAddress, j), c = cycleAt(cycleAddress, k);
 
                             var after = ab_k & 1;
                             after += bc_k & 1;
@@ -756,24 +761,24 @@ public class Sorter {
                             if (after - before == 2 && areSymbolsInCyclicOrder(piInverseIndex, a, c, b)) {
                                 final var alignedCycleAddress = startingBy(cycleAddress, a);
                                 final var aCycle = create(ca_k);
-                                set(aCycle, 0, a);
+                                cycleSet(aCycle, 0, a);
                                 // ======= do not use System.arrayCopy to avoid JNI overhead
                                 for (int m = 0; m < ca_k - 1; m++) {
-                                    set(aCycle, m + 1, at(alignedCycleAddress, ab_k + bc_k + 1 + m));
+                                    cycleSet(aCycle, m + 1, cycleAt(alignedCycleAddress, ab_k + bc_k + 1 + m));
                                 }
 
                                 final var bCycle = create(ab_k);
-                                set(bCycle, 0, b);
+                                cycleSet(bCycle, 0, b);
                                 // ======= do not use System.arrayCopy to avoid JNI overhead
                                 for (int m = 0; m < ab_k - 1; m++) {
-                                    set(bCycle, m + 1, at(alignedCycleAddress, 1 + m));
+                                    cycleSet(bCycle, m + 1, cycleAt(alignedCycleAddress, 1 + m));
                                 }
 
                                 final var cCycle = create(bc_k);
-                                set(cCycle, 0, c);
+                                cycleSet(cCycle, 0, c);
                                 // ======= do not use System.arrayCopy to avoid JNI overhead
                                 for (int m = 0; m < bc_k - 1; m++) {
-                                    set(cCycle, m + 1, at(alignedCycleAddress, ab_k + 1 + m));
+                                    cycleSet(cCycle, m + 1, cycleAt(alignedCycleAddress, ab_k + 1 + m));
                                 }
 
                                 free(alignedCycleAddress);
@@ -782,9 +787,9 @@ public class Sorter {
 
                                 // == APPLY THE MOVE ===
                                 spi.remove(cycleAddress);
-                                if (len(aCycle) > 1) spi.add(aCycle);
-                                if (len(bCycle) > 1) spi.add(bCycle);
-                                if (len(cCycle) > 1) spi.add(cCycle);
+                                if (cycleLen(aCycle) > 1) spi.add(aCycle);
+                                if (cycleLen(bCycle) > 1) spi.add(bCycle);
+                                if (cycleLen(cCycle) > 1) spi.add(cCycle);
                                 update(spiIndex, parity, aCycle, bCycle, cCycle);
                                 // =======================
 
@@ -794,7 +799,7 @@ public class Sorter {
                                     for (final var m : root.children) {
                                         final var newPi = applyTransposition(pi, a, b, c);
                                         final var sorting = search(spi, parity, spiIndex, newPi, stack, m);
-                                        newPi.free();
+                                        free(newPi.getAddress());
                                         if (!sorting.isEmpty()) {
                                             return stack.toListOfCycles();
                                         }
@@ -804,9 +809,9 @@ public class Sorter {
                                 stack.pop();
 
                                 // ==== ROLLBACK ====
-                                if (len(aCycle) > 1) spi.remove(aCycle);
-                                if (len(bCycle) > 1) spi.remove(bCycle);
-                                if (len(cCycle) > 1) spi.remove(cCycle);
+                                if (cycleLen(aCycle) > 1) spi.remove(aCycle);
+                                if (cycleLen(bCycle) > 1) spi.remove(bCycle);
+                                if (cycleLen(cCycle) > 1) spi.remove(cCycle);
 
                                 free(aCycle);
                                 free(bCycle);
@@ -822,7 +827,7 @@ public class Sorter {
             }
         }
 
-        orientedCycles.free();
+        free(orientedCycles.getElementDataAddress());
 
         return EMPTY_LIST;
     }
@@ -838,7 +843,7 @@ public class Sorter {
         // =======================
 
         final var cycleIndexes = TheUnsafe.get().allocateMemory(pi.len() * 8);
-        fill(cycleIndexes, pi.len(), 0);
+        UnsafeLongArray.fill(cycleIndexes, pi.len(), (byte) 0);
 
         for (int i = 0; i < pi.len() - 2; i++) {
             for (int j = (i + 1); j < pi.len() - 1; j++) {
@@ -867,13 +872,13 @@ public class Sorter {
                         final var indexAddress = getLong(cycleIndexes, a);
 
                         if (areSymbolsInCyclicOrder(indexAddress, a, b, c)) {
-                            final var before = len(cycleAddress) & 1;
+                            final var before = cycleLen(cycleAddress) & 1;
 
-                            final var ab_k = getK(indexAddress, a, b);
+                            final var ab_k = getK(indexAddress, cycleAddress, a, b);
                             var after = ab_k & 1;
-                            final var bc_k = getK(indexAddress, b, c);
+                            final var bc_k = getK(indexAddress, cycleAddress, b, c);
                             after += bc_k & 1;
-                            final var ca_k = getK(indexAddress, c, a);
+                            final var ca_k = getK(indexAddress, cycleAddress, c, a);
                             after += ca_k & 1;
 
                             if (after - before == 2) {
@@ -885,17 +890,17 @@ public class Sorter {
 
                             after = 0;
                             final var aCycle = create(ca_k);
-                            set(aCycle, 0, a);
+                            cycleSet(aCycle, 0, a);
                             arraycopy(alignedCycle, ab_k + bc_k + 1, aCycle, 1, ca_k - 1);
                             after += ca_k & 1;
 
                             final var bCycle = create(ab_k);
-                            set(bCycle, 0, b);
+                            cycleSet(bCycle, 0, b);
                             arraycopy(alignedCycle, 1, bCycle, 1, ab_k - 1);
                             after += ab_k & 1;
 
                             final var cCycle = create(bc_k);
-                            set(cCycle, 0, c);
+                            cycleSet(cCycle, 0, c);
                             arraycopy(alignedCycle, ab_k + 1, cCycle, 1, bc_k - 1);
                             after += bc_k & 1;
 
@@ -925,7 +930,7 @@ public class Sorter {
                     for (int l = 0; l < triplet.second.len(); l++) {
                         final var cycleAddress = triplet.second.at(l);
 
-                        if (len(cycleAddress) > 1) {
+                        if (cycleLen(cycleAddress) > 1) {
                             spi.add(cycleAddress);
                         }
                     }
@@ -938,7 +943,7 @@ public class Sorter {
                         for (final var m : root.children) {
                             final var newPi = applyTransposition(pi, a, b, c);
                             final var sorting = search(spi, parity, spiIndex, newPi, stack, m);
-                            newPi.free();
+                            free(newPi.getAddress());
                             if (!sorting.isEmpty()) {
                                 return stack.toListOfCycles();
                             }
@@ -948,7 +953,7 @@ public class Sorter {
                     // ==== ROLLBACK ====
                     for (int l = 0; l < triplet.second.len(); l++) {
                         final var cycleAddress = triplet.second.at(l);
-                        if (len(cycleAddress) > 1)
+                        if (cycleLen(cycleAddress) > 1)
                             spi.remove(cycleAddress);
                         free(cycleAddress);
                     }
@@ -956,8 +961,8 @@ public class Sorter {
                     updateIndex(spiIndex, parity, triplet.first);
                     // ==============================
 
-                    triplet.first.free();
-                    triplet.second.free();
+                    free(triplet.first.getElementDataAddress());
+                    free(triplet.second.getElementDataAddress());
 
                     stack.pop();
                 }
@@ -983,8 +988,6 @@ public class Sorter {
         long canonical = 0;
 
         final byte len = pi.len();
-
-        System.out.println(">>>> spi  " + spi.toString());
 
         for (int i = 0; i < len; i++) {
             final var symbol = pi.getByte(i);
@@ -1012,10 +1015,10 @@ public class Sorter {
             }
 
             final var labelLabelMapping = TheUnsafe.get().allocateMemory(spi.len() + 1);
-            fill(labelLabelMapping, spi.len() + 1, (byte) 0);
+            UnsafeByteArray.fill(labelLabelMapping, spi.len() + 1, (byte) 0);
 
             final var orientedIndexMapping = TheUnsafe.get().allocateMemory((spi.len() + 1) * 8);
-            fill(orientedIndexMapping, spi.len() + 1, 0);
+            UnsafeLongArray.fill(orientedIndexMapping, spi.len() + 1, (byte) 0);
 
             final var deltas = TheUnsafe.get().allocateMemory((spi.len() + 1) * 4);
 
@@ -1036,7 +1039,7 @@ public class Sorter {
                         var alignedCycleAddress = startingBy(spiIndex.getLong(getByte(shifting, index)), getByte(shifting, index));
                         reverse(alignedCycleAddress);
                         setLong(orientedIndexMapping, (byte) newLabel, cycleIndex(alignedCycleAddress));
-                        final var delta = len(alignedCycleAddress) - round((label % 1) * 100);
+                        final var delta = cycleLen(alignedCycleAddress) - round((label % 1) * 100);
                         setFloat(deltas, (byte) newLabel, delta);
 
                         free(alignedCycleAddress);
@@ -1044,9 +1047,9 @@ public class Sorter {
 
                     final var index = Math.abs(j - len) - 1;
                     final var orientationIndex = getByte(getLong(orientedIndexMapping, (byte) newLabel), index) + 1;
-                    setFloat(mirroredSignature, j, newLabel + (((orientationIndex + getFloat(deltas, (byte) newLabel)) % len(spiIndex.getLong((getByte(shifting, index))))) / 100));
+                    setFloat(mirroredSignature, j, newLabel + (((orientationIndex + getFloat(deltas, (byte) newLabel)) % cycleLen(spiIndex.getLong((getByte(shifting, index))))) / 100));
                     if (getFloat(mirroredSignature, j) % 1 == 0)
-                        setFloat(mirroredSignature, j, newLabel + len(spiIndex.getLong(getByte(shifting, index))) / 100f);
+                        setFloat(mirroredSignature, j, newLabel + cycleLen(spiIndex.getLong(getByte(shifting, index))) / 100f);
                 } else {
                     setFloat(mirroredSignature, j, newLabel);
                 }
@@ -1087,9 +1090,9 @@ public class Sorter {
     public static String toString(long cycleAddress) {
         final StringBuilder sb = new StringBuilder();
         sb.append("[");
-        for (int i = 0; i < len(cycleAddress); i++) {
-            sb.append(at(cycleAddress, i));
-            if (i != len(cycleAddress) - 1)
+        for (int i = 0; i < cycleLen(cycleAddress); i++) {
+            sb.append(cycleAt(cycleAddress, i));
+            if (i != cycleLen(cycleAddress) - 1)
                 sb.append(" ");
         }
         sb.append("]");
@@ -1097,11 +1100,11 @@ public class Sorter {
     }
 
     private static void reverse(final long cycleAddress) {
-        final var len = len(cycleAddress);
+        final var len = cycleLen(cycleAddress);
         for (byte i = 0; i < len / 2; i++) {
-            byte t = at(cycleAddress, i);
-            set(cycleAddress, i, at(cycleAddress, len - i - 1));
-            set(cycleAddress, (byte) (len - i - 1), t);
+            byte t = cycleAt(cycleAddress, i);
+            cycleSet(cycleAddress, i, cycleAt(cycleAddress, len - i - 1));
+            cycleSet(cycleAddress, (byte) (len - i - 1), t);
         }
     }
 
@@ -1127,14 +1130,14 @@ public class Sorter {
 
         byte len = spiIndex.size();
         final var orientationByCycle = TheUnsafe.get().allocateMemory(len);
-        fill(orientationByCycle, len, false);
+        UnsafeBooleanArray.fill(orientationByCycle, len, false);
 
         for (int l = 0; l < orientedCycles.len(); l++) {
-            UnsafeBooleanArray.set(orientationByCycle, at(orientedCycles.at(l), 0), true);
+            UnsafeBooleanArray.set(orientationByCycle, cycleAt(orientedCycles.at(l), 0), true);
         }
 
         free(piInverseIndex);
-        orientedCycles.free();
+        free(orientedCycles.getElementDataAddress());
 
         // Array of floats
         final var labelByCycle = TheUnsafe.get().allocateMemory(len * 4);
@@ -1144,7 +1147,7 @@ public class Sorter {
 
         // Array of longs
         final var symbolIndexByOrientedCycle = TheUnsafe.get().allocateMemory(len * 8);
-        fill(symbolIndexByOrientedCycle, len, 0);
+        UnsafeLongArray.fill(symbolIndexByOrientedCycle, len, (byte) 0);
 
         final var signatureAddress = TheUnsafe.get().allocateMemory(len * 4);
 
@@ -1160,13 +1163,13 @@ public class Sorter {
             final int symbol = getByte(pi, i);
             final var cycleAddress = spiIndex.getLong(symbol);
 
-            byte firstSymbol = at(cycleAddress, 0);
+            byte firstSymbol = cycleAt(cycleAddress, 0);
             if (UnsafeBooleanArray.getBool(orientationByCycle, firstSymbol)) {
                 final var cycleIndex = TheUnsafe.get().allocateMemory(len);
 
                 var minIndex = Byte.MAX_VALUE;
                 var symbolMinIndex = 0;
-                byte cycleLen = len(cycleAddress);
+                byte cycleLen = cycleLen(cycleAddress);
                 for (int s = 0; s < cycleLen; s++) {
                     if (getByte(piIndex, (byte) s) < minIndex) {
                         minIndex = getByte(piIndex, (byte) s);
@@ -1175,9 +1178,9 @@ public class Sorter {
                 }
 
                 for (int j = 0; j < cycleLen; j++) {
-                    if (at(cycleAddress, j) == symbolMinIndex) {
+                    if (cycleAt(cycleAddress, j) == symbolMinIndex) {
                         for (int k = 0; k < cycleLen; k++) {
-                            setByte(cycleIndex, at(cycleAddress, (j + k) % cycleLen), (byte) (k + 1));
+                            setByte(cycleIndex, cycleAt(cycleAddress, (j + k) % cycleLen), (byte) (k + 1));
                         }
                         break;
                     }
@@ -1213,30 +1216,6 @@ public class Sorter {
         return signatureAddress;
     }
 
-    private static void fill(final long address, final int len, final boolean value) {
-        for (byte i = 0; i < len; i++) {
-            setByte(address, i, (byte) (value ? 1 : 0));
-        }
-    }
-
-    private static void fill(final long address, final int len, final float value) {
-        for (byte i = 0; i < len; i++) {
-            setFloat(address, i, value);
-        }
-    }
-
-    private static void fill(final long address, final int len, final long value) {
-        for (byte i = 0; i < len; i++) {
-            setLong(address, i, value);
-        }
-    }
-
-    private static void fill(final long address, final int len, final byte value) {
-        for (byte i = 0; i < len; i++) {
-            setByte(address, i, value);
-        }
-    }
-
     private static String toString(final long signature, final byte len) {
         final var builder = new StringBuilder();
         for (int i = 0; i < len; i++) {
@@ -1246,7 +1225,8 @@ public class Sorter {
             } else {
                 builder.append(v);
             }
-            builder.append(',');
+            if (i < len -1)
+                builder.append(',');
         }
         return builder.toString();
     }
@@ -1258,10 +1238,10 @@ public class Sorter {
     }
 
     private static void update(final UnsafeLongArray spiIndex, final UnsafeBooleanArray parity, final long cycleAddress) {
-        byte len = len(cycleAddress);
+        byte len = cycleLen(cycleAddress);
         if (len == 1) {
-            spiIndex.setLong(at(cycleAddress, 0), 0);
-            parity.set(at(cycleAddress, 0), true);
+            spiIndex.setLong(cycleAt(cycleAddress, 0), 0);
+            parity.set(cycleAt(cycleAddress, 0), true);
         } else {
             final var p = (len & 1) == 1;
             for (byte k = 0; k < len; k++) {
@@ -1302,12 +1282,12 @@ public class Sorter {
     private static void updateIndex(final UnsafeLongArray spiIndex, final UnsafeBooleanArray parity, final UnsafeListOfCycles cycles) {
         for (int i = 0; i < cycles.len(); i++) {
             final var cycleAddress = cycles.at(i);
-            if (len(cycleAddress) == 1) {
-                spiIndex.setLong(at(cycleAddress, 0), 0);
-                parity.set(at(cycleAddress, 0), true);
+            if (cycleLen(cycleAddress) == 1) {
+                spiIndex.setLong(cycleAt(cycleAddress, 0), 0);
+                parity.set(cycleAt(cycleAddress, 0), true);
             } else {
-                final var p = (len(cycleAddress) & 1) == 1;
-                for (byte k = 0; k < len(cycleAddress); k++) {
+                final var p = (cycleLen(cycleAddress) & 1) == 1;
+                for (byte k = 0; k < cycleLen(cycleAddress); k++) {
                     spiIndex.setLong(k, cycleAddress);
                     parity.set(k, p);
                 }
@@ -1317,13 +1297,13 @@ public class Sorter {
 
     public static boolean areSymbolsInCyclicOrder(final long indexAddress, final long cycleAddress) {
         boolean leap = false;
-        final var len = len(cycleAddress);
+        final var len = cycleLen(cycleAddress);
         for (int i = 0; i < len; i++) {
             int nextIndex = i + 1;
             if (nextIndex >= len)
                 nextIndex = (i + 1) % len;
-            if (getByte(indexAddress, at(cycleAddress, i)) >
-                    getByte(indexAddress, at(cycleAddress, nextIndex))) {
+            if (getByte(indexAddress, cycleAt(cycleAddress, i)) >
+                    getByte(indexAddress, cycleAt(cycleAddress, nextIndex))) {
                 if (!leap) {
                     leap = true;
                 } else {
@@ -1345,21 +1325,21 @@ public class Sorter {
             a_ = a;
             b_ = c;
             c_ = b;
-            numberOfEvenCycles += len(spiIndex.getLong(a)) & 1;
-            numberOfEvenCycles += len(spiIndex.getLong(b)) & 1;
+            numberOfEvenCycles += cycleLen(spiIndex.getLong(a)) & 1;
+            numberOfEvenCycles += cycleLen(spiIndex.getLong(b)) & 1;
         } else if (spiIndex.getLong(a) == spiIndex.getLong(b)) {
             a_ = b;
             b_ = a;
             c_ = c;
-            numberOfEvenCycles += len(spiIndex.getLong(a)) & 1;
-            numberOfEvenCycles += len(spiIndex.getLong(c)) & 1;
+            numberOfEvenCycles += cycleLen(spiIndex.getLong(a)) & 1;
+            numberOfEvenCycles += cycleLen(spiIndex.getLong(c)) & 1;
         } else {
             // spi.getCycle(b) == spi.getCycle(c)
             a_ = c;
             b_ = b;
             c_ = a;
-            numberOfEvenCycles += len(spiIndex.getLong(a)) & 1;
-            numberOfEvenCycles += len(spiIndex.getLong(c)) & 1;
+            numberOfEvenCycles += cycleLen(spiIndex.getLong(a)) & 1;
+            numberOfEvenCycles += cycleLen(spiIndex.getLong(c)) & 1;
         }
 
         final var index = cycleIndex(spiIndex.getLong(c_));
@@ -1369,15 +1349,15 @@ public class Sorter {
 
         final var abCycleIndex = cycleIndex(abCycle);
 
-        final var ba_k = getK(abCycleIndex, b_, a_);
+        final var ba_k = getK(abCycleIndex, abCycle, b_, a_);
         final var newaCycle = create(ba_k);
-        set(newaCycle, 0, (byte) a_);
-        final var ab_k = getK(abCycleIndex, a_, b_);
+        cycleSet(newaCycle, 0, (byte) a_);
+        final var ab_k = getK(abCycleIndex, abCycle, a_, b_);
         cyclecopy(abCycle, ab_k + 1, newaCycle, 1, ba_k - 1);
 
-        final var cCycleLen = len(cCycle);
+        final var cCycleLen = cycleLen(cCycle);
         final var newbCycle = create(cCycleLen + ab_k);
-        set(newbCycle, 0, (byte) b_);
+        cycleSet(newbCycle, 0, (byte) b_);
         cyclecopy(cCycle, 0, newbCycle, 1, cCycleLen);
         cyclecopy(abCycle, 1, newbCycle, 1 + cCycleLen, ab_k - 1);
 
@@ -1396,13 +1376,18 @@ public class Sorter {
         newCycles.add(newaCycle);
         newCycles.add(newbCycle);
 
+        free(abCycleIndex);
         free(index);
 
         return new Triplet<>(oldCycles, newCycles, newNumberOfEvenCycles - numberOfEvenCycles);
     }
 
+    private static int image(int[] index, int[] cycle, int a) {
+        return cycle[(index[a] + 1) % cycle.length];
+    }
+
     private static int image(final long indexAddress, final long cycleAddress, final int a) {
-        return at(cycleAddress, ((at(indexAddress, a) + 1) % len(cycleAddress)));
+        return cycleAt(cycleAddress, ((getByte(indexAddress, a) + 1) % cycleLen(cycleAddress)));
     }
 
     private static Triplet<UnsafeListOfCycles, UnsafeListOfCycles, Integer> simulate0MoveSameCycle(final UnsafeLongArray cycleIndex,
@@ -1412,20 +1397,20 @@ public class Sorter {
         final var oldCycle = cycleIndex.getLong(a);
 
         final var alignedCycle = startingBy(oldCycle, b);
-        final var newCycle = create(len(oldCycle));
+        final var newCycle = create(cycleLen(oldCycle));
 
         final long oldCycleIndex = cycleIndex(oldCycle);
 
-        set(newCycle, 0, b);
-        final var ab_k = getK(oldCycleIndex, b, a);
-        final var bc_k = getK(oldCycleIndex, a, c);
+        cycleSet(newCycle, 0, b);
+        final var ab_k = getK(oldCycleIndex, oldCycle, b, a);
+        final var bc_k = getK(oldCycleIndex, oldCycle, a, c);
         cyclecopy(alignedCycle, ab_k + 1, newCycle, 1, bc_k - 1);
-        set(newCycle, bc_k, c);
+        cycleSet(newCycle, bc_k, c);
 
         cyclecopy(alignedCycle, 1, newCycle, 1 + bc_k, ab_k - 1);
-        set(newCycle, (ab_k + bc_k), a);
+        cycleSet(newCycle, (ab_k + bc_k), a);
 
-        final var ca_k = getK(oldCycleIndex, c, b);
+        final var ca_k = getK(oldCycleIndex, oldCycle, c, b);
         cyclecopy(alignedCycle, ab_k + bc_k + 1,
                 newCycle, ab_k + bc_k + 1, ca_k - 1);
 
@@ -1437,33 +1422,35 @@ public class Sorter {
 
     // returns a reference to a "cycle", meaning that the first position is the length
     private static long cycleIndex(final long cycleAddress) {
-        final var indexAddress = create((max(cycleAddress) + 1));
+        final var max = max(cycleAddress);
+        final var indexAddress = TheUnsafe.get().allocateMemory(max + 1);
+        UnsafeByteArray.fill(indexAddress, max + 1, (byte) -1);
 
-        for (byte i = 0; i < len(cycleAddress); i++) {
-            set(indexAddress, at(cycleAddress, i), i);
+        for (byte i = 0; i < cycleLen(cycleAddress); i++) {
+            setByte(indexAddress, cycleAt(cycleAddress, i), i);
         }
 
         return indexAddress;
     }
 
     public static byte max(final long cycleAddress) {
-        byte max = at(cycleAddress, 0);
-        for (byte i = 1; i < len(cycleAddress); i++) {
-            if (at(cycleAddress, i) > max) {
-                max = at(cycleAddress, i);
+        byte max = cycleAt(cycleAddress, 0);
+        for (byte i = 1; i < cycleLen(cycleAddress); i++) {
+            if (cycleAt(cycleAddress, i) > max) {
+                max = cycleAt(cycleAddress, i);
             }
         }
         return max;
     }
 
-    private static int getK(final long cycleIndexAddress, int a, int b) {
-        final var aIndex = at(cycleIndexAddress, a);
-        final var bIndex = at(cycleIndexAddress, b);
+    private static int getK(final long cycleIndexAddress, final long cycleAddress, int a, int b) {
+        final var aIndex = getByte(cycleIndexAddress, a);
+        final var bIndex = getByte(cycleIndexAddress, b);
 
         if (bIndex >= aIndex)
             return bIndex - aIndex;
 
-        return (len(cycleIndexAddress) - aIndex) + bIndex;
+        return (cycleLen(cycleAddress) - aIndex) + bIndex;
     }
 
     public static long create(final int length) {
@@ -1472,19 +1459,19 @@ public class Sorter {
         return cycleAddress;
     }
 
-    public static void set(final long cycleAddress, final int i, final byte value) {
+    public static void cycleSet(final long cycleAddress, final int i, final byte value) {
         TheUnsafe.get().putByte(cycleAddress + i + 1, value);
     }
 
-    public static byte at(final long cycleAddress, int i) {
+    public static byte cycleAt(final long cycleAddress, int i) {
         return TheUnsafe.get().getByte(cycleAddress + i + 1);
     }
 
-    public static byte len(final long cycleAddress) {
+    public static byte cycleLen(final long cycleAddress) {
         return TheUnsafe.get().getByte(cycleAddress);
     }
 
-    private static void free(final long address) {
+    public static void free(final long address) {
         TheUnsafe.get().freeMemory(address);
     }
 
@@ -1508,15 +1495,15 @@ public class Sorter {
     }
 
     private static long startingBy(final long cycleAddress, final int a) {
-        if (at(cycleAddress, 0) == a)
+        if (cycleAt(cycleAddress, 0) == a)
             return cloneCycle(cycleAddress);
 
-        final var len = len(cycleAddress);
+        final var len = cycleLen(cycleAddress);
 
         final var result = create(len);
 
         for (byte i = 0; i < len; i++) {
-            if (at(cycleAddress, i) == a) {
+            if (cycleAt(cycleAddress, i) == a) {
                 cyclecopy(cycleAddress, i, result, 0, len - i);
                 cyclecopy(cycleAddress, 0, result, len - i, i);
                 break;
@@ -1527,7 +1514,7 @@ public class Sorter {
     }
 
     private static long cloneCycle(final long cycleAddress) {
-        byte length = len(cycleAddress);
+        byte length = cycleLen(cycleAddress);
         final var clone = create(length);
         cyclecopy(cycleAddress, 0, clone, 0, length);
         return clone;
@@ -1593,7 +1580,7 @@ public class Sorter {
 
         for (int i = 0; i < spi.len(); i++) {
             final var cycleAddress = spi.at(i);
-            if (len(cycleAddress) == 1) {
+            if (cycleLen(cycleAddress) == 1) {
                 toRemove.add(cycleAddress);
                 free(cycleAddress);
             }

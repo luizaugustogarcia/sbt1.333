@@ -2,11 +2,8 @@ package br.unb.cic.tdp.unsafe;
 
 import br.unb.cic.tdp.util.Sorter;
 import cern.colt.list.LongArrayList;
-import lombok.SneakyThrows;
-import org.apache.commons.lang.NotImplementedException;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import static br.unb.cic.tdp.util.Sorter.*;
@@ -17,7 +14,6 @@ public class UnsafeListOfCycles {
     private int size;
     public UnsafeLongArray elementData;
 
-    @SneakyThrows
     public UnsafeListOfCycles(final int maxSize) {
         this.elementData = new UnsafeLongArray((byte) maxSize);
         this.maxSize = maxSize;
@@ -55,7 +51,7 @@ public class UnsafeListOfCycles {
     private UnsafeLongArray grow(final int minCapacity) {
         final var copy = new UnsafeLongArray((byte) minCapacity);
         arraycopy(elementData.getAddress(), 0, copy.getAddress(), 0, elementData.size());
-        elementData.free();
+        free(elementData.getAddress());
         return elementData = copy;
     }
 
@@ -125,10 +121,10 @@ public class UnsafeListOfCycles {
         final var list = new ArrayList<int[]>();
 
         for (int i = 0; i < size; i++) {
-            byte length = Sorter.len(elementData.getLong(i));
+            byte length = Sorter.cycleLen(elementData.getLong(i));
             int[] array = new int[length];
             for (int j = 0; j < length; j++) {
-                array[j] = Sorter.at(elementData.getLong(i), j + 1);
+                array[j] = Sorter.cycleAt(elementData.getLong(i), j + 1);
             }
 
             list.add(array);
@@ -149,10 +145,6 @@ public class UnsafeListOfCycles {
         return elementData.getLong(i);
     }
 
-    public void free() {
-        elementData.free();
-    }
-
     public UnsafeListOfCycles clone() {
         final var clone = new UnsafeListOfCycles(maxSize);
         clone.size = size;
@@ -165,8 +157,12 @@ public class UnsafeListOfCycles {
     public void add(int[] cycleSymbols) {
         final var cycleAddress = create(cycleSymbols.length);
         for (int i = 0; i < cycleSymbols.length; i++) {
-            set(cycleAddress, i, (byte) cycleSymbols[i]);
+            cycleSet(cycleAddress, i, (byte) cycleSymbols[i]);
         }
         add(cycleAddress);
+    }
+
+    public long getElementDataAddress() {
+        return elementData.getAddress();
     }
 }

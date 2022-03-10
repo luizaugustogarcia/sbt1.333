@@ -2,10 +2,9 @@ package br.unb.cic.tdp.util;
 
 import br.unb.cic.tdp.unsafe.UnsafeByteArray;
 import br.unb.cic.tdp.unsafe.UnsafeListOfCycles;
-import org.apache.commons.lang.NotImplementedException;
 
 import static br.unb.cic.tdp.util.Sorter.create;
-import static br.unb.cic.tdp.util.Sorter.set;
+import static br.unb.cic.tdp.util.Sorter.cycleSet;
 
 public class Stack {
     private int maxSize;
@@ -15,6 +14,7 @@ public class Stack {
     public Stack(int size) {
         this.maxSize = size;
         this.content = new UnsafeByteArray((byte) (size * 3));
+        UnsafeByteArray.fill(this.content.getAddress(), size * 3, (byte) -1);
     }
 
    public void push(final byte a, final byte b, final byte c) {
@@ -32,9 +32,9 @@ public class Stack {
         final UnsafeListOfCycles list = new UnsafeListOfCycles(size);
         for (int i = 0; i < size; i++) {
             final var cycleAddress = create(3);
-            set(cycleAddress, 0, content.getByte(i * 3));
-            set(cycleAddress, 1, content.getByte((i * 3) + 1));
-            set(cycleAddress, 2, content.getByte((i * 3) + 2));
+            cycleSet(cycleAddress, 0, content.getByte(i * 3));
+            cycleSet(cycleAddress, 1, content.getByte((i * 3) + 1));
+            cycleSet(cycleAddress, 2, content.getByte((i * 3) + 2));
 
             list.add(cycleAddress);
         }
@@ -53,7 +53,7 @@ public class Stack {
         return clone;
     }
 
-    public void free() {
-        content.free();
+    public long getContentAddress() {
+        return content.getAddress();
     }
 }
