@@ -18,6 +18,21 @@ public class UnsafeLongArray {
         TheUnsafe.get().putLong(address + (i * LONG), value);
     }
 
+    public static String toString(final long address, final byte len) {
+        final var str = new StringBuilder();
+        str.append("[");
+
+        for (int i = 0; i < len; i++) {
+            str.append(i + "=" + getLong(address, i));
+            if (i != len - 1)
+                str.append(" ");
+        }
+
+        str.append("]");
+
+        return str.toString();
+    }
+
     @Override
     public String toString() {
         final var str = new StringBuilder();

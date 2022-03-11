@@ -66,7 +66,7 @@ public class UnsafeListOfCycles {
     private void fastRemove(final UnsafeLongArray es, final int i) {
         final int newSize;
         if ((newSize = size - 1) > i) {
-            for (int j = i + 1; j < this.size - i; j++) {
+            for (int j = i + 1; j < this.size; j++) {
                 es.setLong(j - 1, es.getLong(j));
             }
         }
@@ -150,10 +150,15 @@ public class UnsafeListOfCycles {
 
     public UnsafeListOfCycles clone() {
         final var clone = new UnsafeListOfCycles(maxSize);
-        clone.size = size;
-        final var elementData = new UnsafeLongArray(this.elementData.size());
-        arraycopy(this.elementData.getAddress(), 0, elementData.getAddress(), 0, this.elementData.size() * 8);
-        clone.elementData = elementData;
+
+        for (int i = 0; i < size; i++) {
+            final var cycleAddress = elementData.getLong(i);
+            final var len = cycleLen(cycleAddress);
+            final var cycleClone = create(len);
+            arraycopy(cycleAddress, 0, cycleClone, 0, len + 1);
+            clone.add(cycleAddress);
+        }
+
         return clone;
     }
 
@@ -167,5 +172,13 @@ public class UnsafeListOfCycles {
 
     public long getElementDataAddress() {
         return elementData.getAddress();
+    }
+
+    public byte numberOfSymbols() {
+        var n = (byte) 0;
+        for (int i = 0; i < size; i++) {
+            n += cycleLen(this.elementData.getLong(i));
+        }
+        return n;
     }
 }
