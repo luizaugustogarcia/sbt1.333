@@ -9,6 +9,7 @@ import cern.colt.list.LongArrayList;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import lombok.SneakyThrows;
+import org.apache.commons.lang3.time.StopWatch;
 import org.eclipse.collections.impl.factory.primitive.LongLongMaps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +27,6 @@ import static br.unb.cic.tdp.unsafe.UnsafeFloatArray.getFloat;
 import static br.unb.cic.tdp.unsafe.UnsafeFloatArray.setFloat;
 import static br.unb.cic.tdp.unsafe.UnsafeListOfCycles.EMPTY_LIST;
 import static br.unb.cic.tdp.unsafe.UnsafeLongArray.*;
-import static br.unb.cic.tdp.util.Sorter.toString;
 
 public class Sorter {
     public static Cache<String, Set<String>> UNSUCCESSFUL_VISITED_CONFIGS;
@@ -577,12 +577,20 @@ public class Sorter {
     public static String canonicalSignature(final UnsafeListOfCycles spi,
                                             final UnsafeByteArray pi,
                                             final UnsafeLongArray spiIndex) {
+        final var s = new StopWatch();
+        s.start();
+//        System.out.println("canonicalSignature");
+//        System.out.println(spi + "-" + spi.numberOfSymbols());
+//        System.out.println(pi + "-" + pi.len());
+//        System.out.println(spiIndex);
+
         var leastHashCode = Integer.MAX_VALUE;
         long canonical = 0;
 
         final byte len = pi.len();
 
         for (int i = 0; i < len; i++) {
+            //System.out.printf(i + " ");
             final var symbol = pi.getByte(i);
 
             final var shifting = startingByArray(pi.getAddress(), len, symbol);
@@ -614,9 +622,14 @@ public class Sorter {
             UnsafeLongArray.fill(orientedIndexMapping, spi.len() + 1, (byte) 0);
 
             final var deltas = TheUnsafe.get().allocateMemory((long) (spi.len() + 1) * 4);
+            UnsafeFloatArray.fill(deltas, spi.len() + 1, (byte) 0);
 
             byte nextLabel = 1;
+            //System.out.printf("mirror ");
             for (byte j = 0; j < len; j++) {
+
+              //  System.out.printf(j + " ");
+
                 final var label = getFloat(mirroredSignature, j);
 
                 byte mappedLabel = getByte(labelLabelMapping, (int) label);
@@ -644,11 +657,6 @@ public class Sorter {
                     final var index = Math.abs(j - len) - 1;
                     byte shiftingSymbol = getByte(shifting, index);
 
-                    System.out.println(spi.toString());
-                    System.out.println("getting orientedIndexMapping at position " + (byte) newLabel);
-                    System.out.println("address = " + getLong(orientedIndexMapping, (byte) newLabel));
-                    System.out.println("bytes = " + UnsafeByteArray.toString(getLong(orientedIndexMapping, (byte) newLabel), (byte) 35));
-                    System.out.println("shiftingSymbol = " + shiftingSymbol);
                     final var orientationIndex = cycleAt(getLong(orientedIndexMapping, (byte) newLabel), shiftingSymbol) + 1;
 
                     setFloat(mirroredSignature, j, newLabel + (((orientationIndex + getFloat(deltas, (byte) newLabel)) % cycleLen(spiIndex.getLong(shiftingSymbol))) / 100));
@@ -684,6 +692,9 @@ public class Sorter {
 
             free(shifting);
         }
+
+        s.stop();
+        System.out.println("end canonicalSignature " + s.getNanoTime());
 
         try {
             return toString(canonical, len);

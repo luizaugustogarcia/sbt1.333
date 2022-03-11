@@ -58,6 +58,10 @@ public class UnsafeFloatArray {
         return str.toString();
     }
 
+    public static void fill(final long address, final long len, final byte value) {
+        TheUnsafe.get().setMemory(address, len * FLOAT, value);
+    }
+
     public void setFloat(final int i, final float value) {
         TheUnsafe.get().putFloat(address + ((long) i * FLOAT), value);
     }
