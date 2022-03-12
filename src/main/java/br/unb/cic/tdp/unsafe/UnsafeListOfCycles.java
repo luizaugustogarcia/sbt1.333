@@ -19,6 +19,13 @@ public class UnsafeListOfCycles {
         this.maxSize = maxSize;
     }
 
+    public UnsafeListOfCycles(int[][] cycles) {
+        this(cycles.length);
+        for (int[] cycle: cycles) {
+            this.add(cycle);
+        }
+    }
+
     public static UnsafeListOfCycles singleton(final long cycleAddress) {
         final var singleton = new UnsafeListOfCycles(1);
         singleton.add(cycleAddress);
@@ -50,7 +57,7 @@ public class UnsafeListOfCycles {
 
     private UnsafeLongArray grow(final int minCapacity) {
         final var copy = new UnsafeLongArray((byte) minCapacity);
-        arraycopy(elementData.getAddress(), 0, copy.getAddress(), 0, elementData.size());
+        UnsafeLongArray.copy(elementData.getAddress(), 0, copy.getAddress(), 0, elementData.size());
         free(elementData.getAddress());
         return elementData = copy;
     }
@@ -149,17 +156,17 @@ public class UnsafeListOfCycles {
     }
 
     public UnsafeListOfCycles clone() {
-        final var clone = new UnsafeListOfCycles(maxSize);
+        final var clonedList = new UnsafeListOfCycles(maxSize);
 
         for (int i = 0; i < size; i++) {
             final var cycleAddress = elementData.getLong(i);
             final var len = cycleLen(cycleAddress);
-            final var cycleClone = create(len);
-            arraycopy(cycleAddress, 0, cycleClone, 0, len + 1);
-            clone.add(cycleAddress);
+            final var clonedCycle = create(len);
+            arraycopy(cycleAddress, 0, clonedCycle, 0, len + 1);
+            clonedList.add(clonedCycle);
         }
 
-        return clone;
+        return clonedList;
     }
 
     public void add(int[] cycleSymbols) {

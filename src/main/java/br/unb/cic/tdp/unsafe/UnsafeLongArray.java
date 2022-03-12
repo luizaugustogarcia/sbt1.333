@@ -1,11 +1,13 @@
 package br.unb.cic.tdp.unsafe;
 
+import br.unb.cic.tdp.util.Sorter;
+
 public class UnsafeLongArray {
     private final static byte LONG = 8;
-    private final byte size;
+    private final int size;
     private final long address;
 
-    public UnsafeLongArray(final byte size) {
+    public UnsafeLongArray(final int size) {
         this.size = size;
         this.address = TheUnsafe.get().allocateMemory(size * LONG);
     }
@@ -31,6 +33,10 @@ public class UnsafeLongArray {
         str.append("]");
 
         return str.toString();
+    }
+
+    public static void copy(long src, int srcPos, long dest, int destPos, long size) {
+        Sorter.arraycopy(src, srcPos, dest, destPos, (int) (size * LONG));
     }
 
     @Override
@@ -61,7 +67,7 @@ public class UnsafeLongArray {
         return TheUnsafe.get().getLong(address + ((long) i * LONG));
     }
 
-    public byte size() {
+    public int size() {
         return size;
     }
 

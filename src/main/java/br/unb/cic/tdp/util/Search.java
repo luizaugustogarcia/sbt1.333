@@ -4,7 +4,6 @@ import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.unsafe.*;
 import lombok.SneakyThrows;
-import org.eclipse.collections.api.map.primitive.MutableLongLongMap;
 import org.eclipse.collections.impl.factory.primitive.LongLongMaps;
 
 import java.io.FileWriter;
@@ -44,14 +43,14 @@ public class Search extends RecursiveAction {
     @SneakyThrows({IOException.class, ExecutionException.class})
     @Override
     protected void compute() {
-        System.out.println("compute");
+        System.out.println("compute " + this);
 
         if (Thread.currentThread().isInterrupted()) {
             return;
         }
 
-        final var parity = new UnsafeBooleanArray(pi.len());
-        final var spiIndex = new UnsafeLongArray(pi.len());
+        final var parity = new UnsafeBooleanArray(configuration.getSpi().getMaxSymbol() + 1);
+        final var spiIndex = new UnsafeLongArray(configuration.getSpi().getMaxSymbol() + 1);
 
         var newPi = pi;
 
@@ -69,12 +68,6 @@ public class Search extends RecursiveAction {
                 parity.set(s, (len & 1) == 1);
             }
         }
-
-        System.out.println("newPi_n = " + newPi.len());
-        System.out.println("newPi = " + newPi);
-
-        System.out.println("spi_n = " + spi.numberOfSymbols());
-        System.out.println("spi = " + spi);
 
         removeTrivialCycles(spi);
 
@@ -114,9 +107,9 @@ public class Search extends RecursiveAction {
                     }
                 }
 
-                fork0Moves(spi, parity, spiIndex, newPi, stack);
+                fork0Moves(parity, spiIndex, newPi);
             } else {
-                fork2Moves(spi, parity, spiIndex, newPi, stack);
+                fork2Moves(parity, spiIndex, newPi);
             }
         }
 
@@ -124,10 +117,10 @@ public class Search extends RecursiveAction {
         free(parity.getAddress());
         free(newPi.getAddress());
 
-//        for (int i = 0; i < spi.len(); i++) {
-//            free(spi.at(i));
-//        }
-//        free(spi.getElementDataAddress());
+        for (int i = 0; i < spi.len(); i++) {
+            free(spi.at(i));
+        }
+        free(spi.getElementDataAddress());
 
         if (pi.getAddress() != newPi.getAddress()) {
             free(pi.getAddress());
@@ -136,17 +129,15 @@ public class Search extends RecursiveAction {
         free(stack.getContentAddress());
     }
 
-    private void fork2Moves(final UnsafeListOfCycles spi,
-                            final UnsafeBooleanArray parity,
+    private void fork2Moves(final UnsafeBooleanArray parity,
                             final UnsafeLongArray spiIndex,
-                            final UnsafeByteArray pi,
-                            final Stack stack) {
+                            final UnsafeByteArray pi) {
         System.out.println("fork2");
 
         // ===========================
         // ===== ORIENTED CYCLES =====
         // ===========================
-        final var piInverseIndex = getPiInverseIndex(pi.getAddress(), pi.len(), spiIndex.size());
+        final var piInverseIndex = getPiInverseIndex(pi.getAddress(), pi.len(), (byte) spiIndex.size());
 
         final var orientedCycles = orientedCycles(spi, piInverseIndex);
 
@@ -244,7 +235,7 @@ public class Search extends RecursiveAction {
         }
 
         free(piInverseIndex);
-        free(orientedCycles.getElementDataAddress());
+        free(orientedCycles);
 
         // ======================
         // ===== ODD CYCLES =====
@@ -318,11 +309,9 @@ public class Search extends RecursiveAction {
         }
     }
 
-    private void fork0Moves(final UnsafeListOfCycles spi,
-                            final UnsafeBooleanArray parity,
+    private void fork0Moves(final UnsafeBooleanArray parity,
                             final UnsafeLongArray spiIndex,
-                            final UnsafeByteArray pi,
-                            final Stack stack) {
+                            final UnsafeByteArray pi) {
         final var piLen = pi.len();
 
         final var cycleIndexes = TheUnsafe.get().allocateMemory(piLen * 8);

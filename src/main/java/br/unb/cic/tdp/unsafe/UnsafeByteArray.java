@@ -70,18 +70,7 @@ public class UnsafeByteArray {
     }
 
     public String toString() {
-        final var str = new StringBuilder();
-        str.append("[");
-
-        for (int i = 0; i < size; i++) {
-            str.append(getByte(i));
-            if (i != size - 1)
-                str.append(" ");
-        }
-
-        str.append("]");
-
-        return str.toString();
+        return toString(this.address, this.size);
     }
 
     public UnsafeByteArray removeElement(byte element) {

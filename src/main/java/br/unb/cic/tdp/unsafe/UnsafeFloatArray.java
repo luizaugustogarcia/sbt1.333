@@ -22,7 +22,7 @@ public class UnsafeFloatArray {
 
     public static long clone(final long address, final byte len) {
         final var dest = TheUnsafe.get().allocateMemory(len * 4);
-        arraycopy(address, 0, dest, 0, len * 4);
+        arraycopy(address, 0, dest, 0, len * FLOAT);
         return dest;
     }
 

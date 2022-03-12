@@ -1,11 +1,11 @@
 package br.unb.cic.tdp.unsafe;
 
 public class UnsafeBooleanArray {
-    private final byte size;
+    private final int size;
 
     private final long address;
 
-    public UnsafeBooleanArray(final byte size) {
+    public UnsafeBooleanArray(final int size) {
         this.size = size;
         this.address = TheUnsafe.get().allocateMemory(size);
     }
@@ -45,7 +45,7 @@ public class UnsafeBooleanArray {
         return str.toString();
     }
 
-    public byte len() {
+    public int len() {
         return size;
     }
 
