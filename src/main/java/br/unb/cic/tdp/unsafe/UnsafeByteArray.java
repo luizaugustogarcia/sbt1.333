@@ -1,14 +1,12 @@
 package br.unb.cic.tdp.unsafe;
 
-import org.apache.commons.lang3.ArrayUtils;
-
 import static br.unb.cic.tdp.util.Sorter.arraycopy;
 
 public class UnsafeByteArray {
-    private final byte size;
+    private final int size;
     private final long address;
 
-    public UnsafeByteArray(final byte size) {
+    public UnsafeByteArray(final int size) {
         this.size = size;
         this.address = TheUnsafe.get().allocateMemory(size);
     }
@@ -18,6 +16,10 @@ public class UnsafeByteArray {
         for (byte i = 0; i < symbols.length; i++) {
             TheUnsafe.get().putByte(this.address + i, (byte) symbols[i]);
         }
+    }
+
+    public void setByte(int i, final byte value) {
+        TheUnsafe.get().putByte(this.address + i, value);
     }
 
     public static void setByte(long address, int i, final byte value) {
@@ -36,7 +38,7 @@ public class UnsafeByteArray {
         return TheUnsafe.get().getByte(address + i);
     }
 
-    public byte len() {
+    public int len() {
         return size;
     }
 
@@ -54,7 +56,7 @@ public class UnsafeByteArray {
         return dest;
     }
 
-    public static String toString(final long address, final byte size) {
+    public static String toString(final long address, final int size) {
         final var str = new StringBuilder();
         str.append("[");
 
