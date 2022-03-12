@@ -776,12 +776,12 @@ public class Sorter {
     public static long signature(final UnsafeListOfCycles spi, final long pi,
                                  final long piIndex, final long piInverseIndex, byte len,
                                  final UnsafeLongArray spiIndex) {
-        final var spiIndexSizePlusOne = spiIndex.size() + 1;
+        final var spiIndexSize = spiIndex.size();
 
         final var orientedCycles = orientedCycles(spi, piInverseIndex);
 
-        final var orientationByCycle = TheUnsafe.get().allocateMemory(spiIndexSizePlusOne);
-        UnsafeBooleanArray.fill(orientationByCycle, len, false);
+        final var orientationByCycle = TheUnsafe.get().allocateMemory(spiIndexSize);
+        UnsafeBooleanArray.fill(orientationByCycle, spiIndexSize, false);
 
         System.out.println("1.signature");
         for (int l = 0; l < orientedCycles.len(); l++) {
@@ -790,19 +790,19 @@ public class Sorter {
 
         System.out.println("2.signature");
         // Array of floats
-        final var labelByCycle = TheUnsafe.get().allocateMemory(spiIndexSizePlusOne * 4);
-        for (int i = 0; i < spiIndexSizePlusOne; i++) {
-            TheUnsafe.get().putFloat(labelByCycle + (i * 4), -1);
+        final var labelByCycle = TheUnsafe.get().allocateMemory(spiIndexSize * 4);
+        for (int i = 0; i < spiIndexSize; i++) {
+            TheUnsafe.get().putFloat(labelByCycle + (i * 4), 0);
         }
 
         System.out.println("3.signature");
         // Array of longs
-        final var symbolIndexByOrientedCycle = TheUnsafe.get().allocateMemory(spiIndexSizePlusOne * 8);
-        UnsafeLongArray.fill(symbolIndexByOrientedCycle, spiIndexSizePlusOne, (byte) 0);
+        final var symbolIndexByOrientedCycle = TheUnsafe.get().allocateMemory(spiIndexSize * 8);
+        UnsafeLongArray.fill(symbolIndexByOrientedCycle, spiIndexSize, (byte) 0);
 
         System.out.println("4.signature");
         final var signatureAddress = TheUnsafe.get().allocateMemory(len * 4);
-        for (int i = 0; i < spiIndexSizePlusOne; i++) {
+        for (int i = 0; i < spiIndexSize; i++) {
             TheUnsafe.get().putFloat(signatureAddress + (i * 4), 0);
         }
 
@@ -819,10 +819,10 @@ public class Sorter {
             if (UnsafeBooleanArray.getBool(orientationByCycle, firstSymbol)) {
                 System.out.println("8.oriented, i=" + i);
 
-                final var symbolIndex = TheUnsafe.get().allocateMemory(spiIndexSizePlusOne);
+                final var symbolIndex = TheUnsafe.get().allocateMemory(spiIndexSize);
                 System.out.println("9.oriented, i=" + i);
-                UnsafeByteArray.fill(symbolIndex, spiIndexSizePlusOne, (byte) 0);
-
+                UnsafeByteArray.fill(symbolIndex, spiIndexSize, (byte) 0);
+                System.out.println("10.oriented, i=" + i);
                 var minIndex = Byte.MAX_VALUE;
                 var symbolMinIndex = 0;
                 byte cycleLen = cycleLen(cycleAddress);
@@ -833,7 +833,7 @@ public class Sorter {
                         symbolMinIndex = s;
                     }
                 }
-
+                System.out.println("11.oriented, i=" + i);
                 for (int j = 0; j < cycleLen; j++) {
                     if (cycleAt(cycleAddress, j) == symbolMinIndex) {
                         for (int k = 0; k < cycleLen; k++) {
@@ -842,20 +842,24 @@ public class Sorter {
                         break;
                     }
                 }
+                System.out.println("12.oriented, i=" + i);
                 setLong(symbolIndexByOrientedCycle, firstSymbol, symbolIndex);
+                System.out.println("13.oriented, i=" + i);
             }
 
             var label = getFloat(labelByCycle, firstSymbol);
-
-            if (label == -1) {
+            System.out.println("14.oriented, i=" + i);
+            if (label == 0) {
                 setFloat(labelByCycle, firstSymbol, currentLabel);
                 currentLabel++;
             }
+            System.out.println("15.oriented, i=" + i);
 
             label = getFloat(labelByCycle, firstSymbol);
             setFloat(signatureAddress, i, UnsafeBooleanArray.getBool(orientationByCycle, firstSymbol) ?
                     label + (float) getByte(getLong(symbolIndexByOrientedCycle, firstSymbol), symbol) / 100 :
                     label);
+            System.out.println("16.oriented, i=" + i);
         }
 
         free(labelByCycle);
