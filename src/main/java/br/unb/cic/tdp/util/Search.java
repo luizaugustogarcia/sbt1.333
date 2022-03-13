@@ -4,6 +4,7 @@ import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.unsafe.*;
 import lombok.SneakyThrows;
+import org.apache.commons.lang3.time.StopWatch;
 import org.eclipse.collections.impl.factory.primitive.LongLongMaps;
 
 import java.io.FileWriter;
@@ -43,6 +44,8 @@ public class Search extends RecursiveAction {
     @SneakyThrows({IOException.class, ExecutionException.class})
     @Override
     protected void compute() {
+        final var stopWatch = new StopWatch();
+        stopWatch.start();
         System.out.println("compute " + this);
 
         if (Thread.currentThread().isInterrupted()) {
@@ -127,6 +130,9 @@ public class Search extends RecursiveAction {
         }
 
         free(stack.getContentAddress());
+
+        stopWatch.stop();
+        System.out.println("end compute " + stopWatch.getTime());
     }
 
     private void fork2Moves(final UnsafeBooleanArray parity,
