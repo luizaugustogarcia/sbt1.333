@@ -35,6 +35,7 @@ public class UnsafeBooleanArray {
         str.append("[");
 
         for (int i = 0; i < size; i++) {
+            str.append(i + "=");
             str.append(getBool(i) ? 1 : 0);
             if (i != size - 1)
                 str.append(" ");

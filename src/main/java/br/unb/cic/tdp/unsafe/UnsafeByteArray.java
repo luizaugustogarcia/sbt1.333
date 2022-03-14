@@ -18,10 +18,6 @@ public class UnsafeByteArray {
         }
     }
 
-    public void setByte(int i, final byte value) {
-        TheUnsafe.get().putByte(this.address + i, value);
-    }
-
     public static void setByte(long address, int i, final byte value) {
         TheUnsafe.get().putByte(address + i, value);
     }
@@ -35,7 +31,7 @@ public class UnsafeByteArray {
     }
 
     public byte getByte(final int i) {
-        return TheUnsafe.get().getByte(address + i);
+        return getByte(address, i);
     }
 
     public int len() {

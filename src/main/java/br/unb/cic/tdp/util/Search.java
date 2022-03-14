@@ -138,10 +138,6 @@ public class Search extends RecursiveAction {
     private void fork2Moves(final UnsafeBooleanArray parity,
                             final UnsafeLongArray spiIndex,
                             final UnsafeByteArray pi) {
-        System.out.println("fork2 oriented - " + parity);
-        System.out.println("fork2 oriented - " + spi);
-        System.out.println("fork2 oriented - " + spiIndex);
-
         // ===========================
         // ===== ORIENTED CYCLES =====
         // ===========================
@@ -247,11 +243,6 @@ public class Search extends RecursiveAction {
         // ======================
 
         update(spiIndex, parity, spi);
-
-        System.out.println("fork2 odd - " + parity);
-        System.out.println("fork2 odd - " + spi);
-        System.out.println("fork2 odd - " + spiIndex);
-
 
         for (int i = 0; i < pi.len() - 2; i++) {
             if (parity.getBool(pi.getByte(i))) continue;
@@ -430,7 +421,7 @@ public class Search extends RecursiveAction {
                     final var canonicalSignature = canonicalSignature(spi, newPi, spiIndex);
                     if (!canonicalSignatures.contains(canonicalSignature)) {
                         for (final var nextMove : rootMove.children) {
-                            new Search(configuration, outputDir, spi.clone(), newPi, stack.clone(), nextMove, forkJoinPool, hasSorting).fork();
+                            new Search(configuration, outputDir, spi.clone(), newPi.cloneArray(), stack.clone(), nextMove, forkJoinPool, hasSorting).fork();
                         }
                         canonicalSignatures.add(canonicalSignature);
                     }
