@@ -6,6 +6,7 @@ import br.unb.cic.tdp.unsafe.*;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.time.StopWatch;
 import org.eclipse.collections.impl.factory.primitive.LongLongMaps;
+import sun.misc.Unsafe;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -27,6 +28,18 @@ public class Search extends RecursiveAction {
     final Move rootMove;
     final ForkJoinPool forkJoinPool;
     boolean[] hasSorting;
+
+    private static Unsafe unsafe;
+
+    static {
+        try {
+            final var f = Unsafe.class.getDeclaredField("theUnsafe");
+            f.setAccessible(true);
+            unsafe = (Unsafe) f.get(null);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
     public Search(final Configuration configuration, final String outputDir, final UnsafeListOfCycles spi,
                   final UnsafeByteArray pi, final Stack stack, final Move rootMove, final ForkJoinPool forkJoinPool,
@@ -317,7 +330,7 @@ public class Search extends RecursiveAction {
                             final UnsafeByteArray pi) {
         final var piLen = pi.len();
 
-        final var cycleIndexes = TheUnsafe.get().allocateMemory(piLen * 8);
+        final var cycleIndexes = unsafe.allocateMemory(piLen * 8);
         UnsafeLongArray.fill(cycleIndexes, piLen, (byte) 0);
 
         final var canonicalSignatures = new HashSet<String>();
@@ -380,7 +393,7 @@ public class Search extends RecursiveAction {
                             cyclecopy(alignedCycle, ab_k + 1, cCycle, 1, bc_k - 1);
                             after += bc_k & 1;
 
-                            TheUnsafe.get().freeMemory(alignedCycle);
+                            unsafe.freeMemory(alignedCycle);
 
                             final var second = new UnsafeListOfCycles(3);
                             second.add(aCycle);

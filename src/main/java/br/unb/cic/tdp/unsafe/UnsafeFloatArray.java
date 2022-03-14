@@ -1,5 +1,7 @@
 package br.unb.cic.tdp.unsafe;
 
+import sun.misc.Unsafe;
+
 import static br.unb.cic.tdp.util.Sorter.arraycopy;
 
 public class UnsafeFloatArray {
@@ -7,21 +9,33 @@ public class UnsafeFloatArray {
     private final byte size;
     private final long address;
 
+    private static Unsafe unsafe;
+
+    static {
+        try {
+            final var f = Unsafe.class.getDeclaredField("theUnsafe");
+            f.setAccessible(true);
+            unsafe = (Unsafe) f.get(null);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     public UnsafeFloatArray(byte size) {
         this.size = size;
-        this.address = TheUnsafe.get().allocateMemory(size * FLOAT);
+        this.address = unsafe.allocateMemory(size * FLOAT);
     }
 
     public static float getFloat(long address, int i) {
-        return TheUnsafe.get().getFloat(address + (i * FLOAT));
+        return unsafe.getFloat(address + (i * FLOAT));
     }
 
     public static void setFloat(final long address, final byte i, final float value) {
-        TheUnsafe.get().putFloat(address + (i * FLOAT), value);
+        unsafe.putFloat(address + (i * FLOAT), value);
     }
 
     public static long clone(final long address, final byte len) {
-        final var dest = TheUnsafe.get().allocateMemory(len * 4);
+        final var dest = unsafe.allocateMemory(len * 4);
         arraycopy(address, 0, dest, 0, len * FLOAT);
         return dest;
     }
@@ -59,15 +73,15 @@ public class UnsafeFloatArray {
     }
 
     public static void fill(final long address, final long len, final byte value) {
-        TheUnsafe.get().setMemory(address, len * FLOAT, value);
+        unsafe.setMemory(address, len * FLOAT, value);
     }
 
     public void setFloat(final int i, final float value) {
-        TheUnsafe.get().putFloat(address + ((long) i * FLOAT), value);
+        unsafe.putFloat(address + ((long) i * FLOAT), value);
     }
 
     public float getFloat(final int i) {
-        return TheUnsafe.get().getFloat(address + ((long) i * FLOAT));
+        return unsafe.getFloat(address + ((long) i * FLOAT));
     }
 
     public byte size() {

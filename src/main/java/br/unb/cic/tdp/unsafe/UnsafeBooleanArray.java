@@ -1,33 +1,47 @@
 package br.unb.cic.tdp.unsafe;
 
+import sun.misc.Unsafe;
+
 public class UnsafeBooleanArray {
     private final int size;
 
     private final long address;
 
+    private static Unsafe unsafe;
+
+    static {
+        try {
+            final var f = Unsafe.class.getDeclaredField("theUnsafe");
+            f.setAccessible(true);
+            unsafe = (Unsafe) f.get(null);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     public UnsafeBooleanArray(final int size) {
         this.size = size;
-        this.address = TheUnsafe.get().allocateMemory(size);
+        this.address = unsafe.allocateMemory(size);
     }
 
     public static void set(long address, int i, final boolean value) {
-        TheUnsafe.get().putByte(address + i, (byte) (value ? 1 : 0));
+        unsafe.putByte(address + i, (byte) (value ? 1 : 0));
     }
 
     public void set(final byte i, final boolean value) {
-        TheUnsafe.get().putByte(address + i, (byte) (value ? 1 : 0));
+        unsafe.putByte(address + i, (byte) (value ? 1 : 0));
     }
 
     public static void fill(final long address, final long len, final boolean value) {
-        TheUnsafe.get().setMemory(address, len, (byte) (value ? 1 : 0));
+        unsafe.setMemory(address, len, (byte) (value ? 1 : 0));
     }
 
     public static boolean getBool(final long arrayAddress, final byte i) {
-        return TheUnsafe.get().getByte(arrayAddress + i) == 1;
+        return unsafe.getByte(arrayAddress + i) == 1;
     }
 
     public boolean getBool(final int i) {
-        return TheUnsafe.get().getByte(address + i) == 1;
+        return unsafe.getByte(address + i) == 1;
     }
 
     public String toString() {

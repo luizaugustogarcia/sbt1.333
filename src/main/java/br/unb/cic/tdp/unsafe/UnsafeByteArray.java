@@ -1,33 +1,47 @@
 package br.unb.cic.tdp.unsafe;
 
+import sun.misc.Unsafe;
+
 import static br.unb.cic.tdp.util.Sorter.arraycopy;
 
 public class UnsafeByteArray {
     private final int size;
     private final long address;
 
+    private static Unsafe unsafe;
+
+    static {
+        try {
+            final var f = Unsafe.class.getDeclaredField("theUnsafe");
+            f.setAccessible(true);
+            unsafe = (Unsafe) f.get(null);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     public UnsafeByteArray(final int size) {
         this.size = size;
-        this.address = TheUnsafe.get().allocateMemory(size);
+        this.address = unsafe.allocateMemory(size);
     }
 
     public UnsafeByteArray(final int[] symbols) {
         this((byte) symbols.length);
         for (byte i = 0; i < symbols.length; i++) {
-            TheUnsafe.get().putByte(this.address + i, (byte) symbols[i]);
+            unsafe.putByte(this.address + i, (byte) symbols[i]);
         }
     }
 
     public static void setByte(long address, int i, final byte value) {
-        TheUnsafe.get().putByte(address + i, value);
+        unsafe.putByte(address + i, value);
     }
 
     public static byte getByte(final long arrayAddress, final int i) {
-        return TheUnsafe.get().getByte(arrayAddress + i);
+        return unsafe.getByte(arrayAddress + i);
     }
 
     public static void fill(final long address, final long len, final byte value) {
-        TheUnsafe.get().setMemory(address, len, value);
+        unsafe.setMemory(address, len, value);
     }
 
     public byte getByte(final int i) {
@@ -43,7 +57,7 @@ public class UnsafeByteArray {
     }
 
     public void set(int i, byte a) {
-        TheUnsafe.get().putByte(this.address + i, a);
+        unsafe.putByte(this.address + i, a);
     }
 
     public UnsafeByteArray cloneArray() {
