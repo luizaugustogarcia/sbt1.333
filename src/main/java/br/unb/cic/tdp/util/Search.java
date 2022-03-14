@@ -138,7 +138,9 @@ public class Search extends RecursiveAction {
     private void fork2Moves(final UnsafeBooleanArray parity,
                             final UnsafeLongArray spiIndex,
                             final UnsafeByteArray pi) {
-        System.out.println("fork2");
+        System.out.println("fork2 oriented - " + parity);
+        System.out.println("fork2 oriented - " + spi);
+        System.out.println("fork2 oriented - " + spiIndex);
 
         // ===========================
         // ===== ORIENTED CYCLES =====
@@ -180,21 +182,18 @@ public class Search extends RecursiveAction {
                             final var alignedCycleAddress = startingBy(cycleAddress, a);
                             final var aCycle = create(ca_k);
                             cycleSet(aCycle, 0, a);
-                            // ======= do not use System.arrayCopy to avoid JNI overhead
                             for (int m = 0; m < ca_k - 1; m++) {
                                 cycleSet(aCycle, m + 1, cycleAt(alignedCycleAddress, ab_k + bc_k + 1 + m));
                             }
 
                             final var bCycle = create(ab_k);
                             cycleSet(bCycle, 0, b);
-                            // ======= do not use System.arrayCopy to avoid JNI overhead
                             for (int m = 0; m < ab_k - 1; m++) {
                                 cycleSet(bCycle, m + 1, cycleAt(alignedCycleAddress, 1 + m));
                             }
 
                             final var cCycle = create(bc_k);
                             cycleSet(cCycle, 0, c);
-                            // ======= do not use System.arrayCopy to avoid JNI overhead
                             for (int m = 0; m < bc_k - 1; m++) {
                                 cycleSet(cCycle, m + 1, cycleAt(alignedCycleAddress, ab_k + 1 + m));
                             }
@@ -247,6 +246,13 @@ public class Search extends RecursiveAction {
         // ===== ODD CYCLES =====
         // ======================
 
+        update(spiIndex, parity, spi);
+
+        System.out.println("fork2 odd - " + parity);
+        System.out.println("fork2 odd - " + spi);
+        System.out.println("fork2 odd - " + spiIndex);
+
+
         for (int i = 0; i < pi.len() - 2; i++) {
             if (parity.getBool(pi.getByte(i))) continue;
             for (int j = i + 1; j < pi.len() - 1; j++) {
@@ -287,7 +293,7 @@ public class Search extends RecursiveAction {
                         }
                     }
 
-                    updateIndex(spiIndex, parity, triplet.second);
+                    Sorter.update(spiIndex, parity, triplet.second);
                     // ==============================
 
                     for (final var nextMove : rootMove.children) {
@@ -303,7 +309,7 @@ public class Search extends RecursiveAction {
                         free(cycleAddress);
                     }
                     spi.addAll(triplet.first);
-                    updateIndex(spiIndex, parity, triplet.first);
+                    Sorter.update(spiIndex, parity, triplet.first);
                     // ==============================
 
                     free(triplet.first.getElementDataAddress());
@@ -328,7 +334,6 @@ public class Search extends RecursiveAction {
         for (int i = 0; i < piLen - 2; i++) {
             for (int j = (i + 1); j < piLen - 1; j++) {
                 for (int k = (j + 1); k < piLen; k++) {
-
                     byte a = pi.getByte(i), b = pi.getByte(j), c = pi.getByte(k);
 
                     final var is_2Move = spiIndex.getLong(a) != spiIndex.getLong(b) &&
@@ -371,17 +376,17 @@ public class Search extends RecursiveAction {
                             after = 0;
                             final var aCycle = create(ca_k);
                             cycleSet(aCycle, 0, a);
-                            arraycopy(alignedCycle, ab_k + bc_k + 1, aCycle, 1, ca_k - 1);
+                            cyclecopy(alignedCycle, ab_k + bc_k + 1, aCycle, 1, ca_k - 1);
                             after += ca_k & 1;
 
                             final var bCycle = create(ab_k);
                             cycleSet(bCycle, 0, b);
-                            arraycopy(alignedCycle, 1, bCycle, 1, ab_k - 1);
+                            cyclecopy(alignedCycle, 1, bCycle, 1, ab_k - 1);
                             after += ab_k & 1;
 
                             final var cCycle = create(bc_k);
                             cycleSet(cCycle, 0, c);
-                            arraycopy(alignedCycle, ab_k + 1, cCycle, 1, bc_k - 1);
+                            cyclecopy(alignedCycle, ab_k + 1, cCycle, 1, bc_k - 1);
                             after += bc_k & 1;
 
                             TheUnsafe.get().freeMemory(alignedCycle);
@@ -417,7 +422,7 @@ public class Search extends RecursiveAction {
                             numberOfTrivialCycles++;
                         }
                     }
-                    updateIndex(spiIndex, parity, triplet.second);
+                    Sorter.update(spiIndex, parity, triplet.second);
                     // ==============================
 
                     final var newPi = applyTransposition(pi, a, b, c, piLen - numberOfTrivialCycles, spiIndex);
@@ -438,7 +443,7 @@ public class Search extends RecursiveAction {
                         free(cycleAddress);
                     }
                     spi.addAll(triplet.first);
-                    updateIndex(spiIndex, parity, triplet.first);
+                    Sorter.update(spiIndex, parity, triplet.first);
                     // ==============================
 
                     free(triplet.first.getElementDataAddress());
