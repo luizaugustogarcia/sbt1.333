@@ -56,6 +56,7 @@ public class UnsafeListOfCycles {
     }
 
     private UnsafeLongArray grow(final int minCapacity) {
+        // TODO use Unsafe.reallocateMemory
         final var copy = new UnsafeLongArray((byte) minCapacity);
         UnsafeLongArray.copy(elementData.getAddress(), 0, copy.getAddress(), 0, elementData.size());
         free(elementData.getAddress());

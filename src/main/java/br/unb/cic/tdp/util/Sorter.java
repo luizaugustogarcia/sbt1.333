@@ -142,7 +142,7 @@ public class Sorter {
         System.out.println("Sorting " + configuration.getSpi());
 
         final var hasSorting = new boolean[1];
-        final var forkJoinPool = new ForkJoinPool(1);
+        final var forkJoinPool = new ForkJoinPool(numberOfProcessors);
         final var spi = toUnsafeListOfCycle(configuration.getSpi(), configuration.getPi());
         final var pi = new UnsafeByteArray(configuration.getPi().getSymbols());
         final var stack = new Stack(rootMove.getHeight());
@@ -465,12 +465,14 @@ public class Sorter {
         // ======= 0 Moves =======
         // =======================
 
-        final var cycleIndexes = unsafe.allocateMemory(pi.len() * 8);
-        UnsafeLongArray.fill(cycleIndexes, pi.len(), (byte) 0);
+        final var piLen = pi.len();
 
-        for (int i = 0; i < pi.len() - 2; i++) {
-            for (int j = (i + 1); j < pi.len() - 1; j++) {
-                for (int k = (j + 1); k < pi.len(); k++) {
+        final var cycleIndexes = unsafe.allocateMemory(spiIndex.size() * 8);
+        UnsafeLongArray.fill(cycleIndexes, spiIndex.size(), (byte) 0);
+
+        for (int i = 0; i < piLen - 2; i++) {
+            for (int j = (i + 1); j < piLen - 1; j++) {
+                for (int k = (j + 1); k < piLen; k++) {
 
                     byte a = pi.getByte(i), b = pi.getByte(j), c = pi.getByte(k);
 
@@ -527,7 +529,7 @@ public class Sorter {
                             cyclecopy(alignedCycle, ab_k + 1, cCycle, 1, bc_k - 1);
                             after += bc_k & 1;
 
-                            unsafe.freeMemory(alignedCycle);
+                            free(alignedCycle);
 
                             final var second = new UnsafeListOfCycles(3);
                             second.add(aCycle);
@@ -567,7 +569,7 @@ public class Sorter {
                         return stack.toListOfCycles();
                     } else {
                         for (final var m : root.children) {
-                            final var newPi = applyTransposition(pi, a, b, c, pi.len() - numberOfTrivialCycles, spiIndex);
+                            final var newPi = applyTransposition(pi, a, b, c, piLen - numberOfTrivialCycles, spiIndex);
                             final var sorting = search(spi, parity, spiIndex, newPi, stack, m);
                             free(newPi.getAddress());
                             if (!sorting.isEmpty()) {
@@ -597,7 +599,7 @@ public class Sorter {
 
         final var freedIndexes = LongLongMaps.mutable.empty();
 
-        for (int i = 0; i < pi.len(); i++) {
+        for (int i = 0; i < piLen; i++) {
             long indexAddress = getLong(cycleIndexes, i);
             if (!freedIndexes.containsKey(indexAddress)) {
                 free(indexAddress);
@@ -885,15 +887,17 @@ public class Sorter {
     }
 
     public static boolean areSymbolsInCyclicOrder(final long piInverseIndex, final byte a, final byte b, final byte c) {
-        return (getByte(piInverseIndex, a) < getByte(piInverseIndex, b) && getByte(piInverseIndex, b) < getByte(piInverseIndex, c)) ||
-                (getByte(piInverseIndex, b) < getByte(piInverseIndex, c) && getByte(piInverseIndex, c) < getByte(piInverseIndex, a)) ||
-                (getByte(piInverseIndex, c) < getByte(piInverseIndex, a) && getByte(piInverseIndex, a) < getByte(piInverseIndex, b));
+        final var aIdx = getByte(piInverseIndex, a);
+        final var bIdx = getByte(piInverseIndex, b);
+        final var cIdx = getByte(piInverseIndex, c);
+        return (aIdx < bIdx && bIdx < cIdx) || (bIdx < cIdx && cIdx < aIdx) || (cIdx < aIdx && aIdx < bIdx);
     }
 
     public static boolean areSymbolsInCyclicOrderCycleIndex(final long cycleIndex, final byte a, final byte b, final byte c) {
-        return (cycleAt(cycleIndex, a) < cycleAt(cycleIndex, b) && cycleAt(cycleIndex, b) < cycleAt(cycleIndex, c)) ||
-                (cycleAt(cycleIndex, b) < cycleAt(cycleIndex, c) && cycleAt(cycleIndex, c) < cycleAt(cycleIndex, a)) ||
-                (cycleAt(cycleIndex, c) < cycleAt(cycleIndex, a) && cycleAt(cycleIndex, a) < cycleAt(cycleIndex, b));
+        final var aIdx = cycleAt(cycleIndex, a);
+        final var bIdx = cycleAt(cycleIndex, b);
+        final var cIdx = cycleAt(cycleIndex, c);
+        return (aIdx < bIdx && bIdx < cIdx) || (bIdx < cIdx && cIdx < aIdx) || (cIdx < aIdx && aIdx < bIdx);
     }
 
     public static void update(final UnsafeLongArray spiIndex, final UnsafeBooleanArray parity, final long cycleAddress) {
@@ -1155,7 +1159,7 @@ public class Sorter {
 //            System.out.println(stackTraces[i]);
 //        }
         unsafe.freeMemory(address);
-//        System.out.println("freed!");
+//        System.out.println("freed! " + address);
     }
 
     public static long startingBy(final long cycleAddress, final int a) {

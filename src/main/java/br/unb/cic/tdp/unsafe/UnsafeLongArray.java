@@ -33,7 +33,7 @@ public class UnsafeLongArray {
         unsafe.putLong(address + (i * LONG), value);
     }
 
-    public static String toString(final long address, final byte len) {
+    public static String toString(final long address, final int len) {
         final var str = new StringBuilder();
         str.append("[");
 

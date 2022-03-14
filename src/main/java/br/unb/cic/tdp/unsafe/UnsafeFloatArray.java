@@ -57,7 +57,7 @@ public class UnsafeFloatArray {
         return result;
     }
 
-    public static String toString(final long address, final byte size) {
+    public static String toString(final long address, final int size) {
         final var str = new StringBuilder();
         str.append("[");
 

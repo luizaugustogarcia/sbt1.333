@@ -57,10 +57,6 @@ public class Search extends RecursiveAction {
     @SneakyThrows({IOException.class, ExecutionException.class})
     @Override
     protected void compute() {
-        final var stopWatch = new StopWatch();
-        stopWatch.start();
-        System.out.println("compute " + this);
-
         if (Thread.currentThread().isInterrupted()) {
             return;
         }
@@ -143,9 +139,6 @@ public class Search extends RecursiveAction {
         }
 
         free(stack.getContentAddress());
-
-        stopWatch.stop();
-        System.out.println("end compute " + stopWatch.getTime());
     }
 
     private void fork2Moves(final UnsafeBooleanArray parity,
@@ -330,8 +323,8 @@ public class Search extends RecursiveAction {
                             final UnsafeByteArray pi) {
         final var piLen = pi.len();
 
-        final var cycleIndexes = unsafe.allocateMemory(piLen * 8);
-        UnsafeLongArray.fill(cycleIndexes, piLen, (byte) 0);
+        final var cycleIndexes = unsafe.allocateMemory(spiIndex.size() * 8);
+        UnsafeLongArray.fill(cycleIndexes, spiIndex.size(), (byte) 0);
 
         final var canonicalSignatures = new HashSet<String>();
 
