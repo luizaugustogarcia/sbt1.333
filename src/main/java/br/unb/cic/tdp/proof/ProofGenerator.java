@@ -201,7 +201,7 @@ public class ProofGenerator {
         Files.copy(ProofGenerator.class.getClassLoader().getResourceAsStream("draw-config.js"),
                 Paths.get(args[0] + "/draw-config.js"), REPLACE_EXISTING);
 
-        //Extensions.generate(args[0]);
+        Extensions.generate(args[0]);
         Combinations.generate(args[0]);
     }
 
