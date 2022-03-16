@@ -28,8 +28,8 @@ import static br.unb.cic.tdp.base.CommonOperations.getComponents;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 import static br.unb.cic.tdp.proof.ProofGenerator.*;
 import static br.unb.cic.tdp.proof.seq12_9.Extensions.cleanUpBadExtensionAndInvalidFiles;
-import static br.unb.cic.tdp.proof.util.SequenceSearcher.applyTransposition;
-import static br.unb.cic.tdp.proof.util.SequenceSearcher.canonicalSignature;
+import static br.unb.cic.tdp.proof.util.SortingSequenceSearcher.applyTransposition;
+import static br.unb.cic.tdp.proof.util.SortingSequenceSearcher.canonicalSignature;
 import static java.util.stream.Collectors.toList;
 
 public class Combinations {
@@ -343,7 +343,7 @@ public class Combinations {
                                 .maximumSize(1_000_000)
                                 .build();
 
-                        sorting = SequenceSearcher.search(unsuccessfulConfigs, spi, parity, spiIndex, spiIndex.length, pi, stack, root);
+                        sorting = SortingSequenceSearcher.search(unsuccessfulConfigs, spi, parity, spiIndex, spiIndex.length, pi, stack, root);
                         if (!sorting.isEmpty()) {
                             return sorting.toList().stream().map(Cycle::create).collect(toList());
                         }

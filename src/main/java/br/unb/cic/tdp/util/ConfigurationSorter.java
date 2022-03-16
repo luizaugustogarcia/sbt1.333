@@ -26,7 +26,7 @@ import static br.unb.cic.tdp.proof.util.ListOfCycles.EMPTY_LIST;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
-public class Sorter {
+public class ConfigurationSorter {
 
     public static Cache<String, Set<String>> UNSUCCESSFUL_VISITED_CONFIGS;
 

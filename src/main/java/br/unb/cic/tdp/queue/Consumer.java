@@ -19,7 +19,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
 
-import static br.unb.cic.tdp.util.Sorter.search;
+import static br.unb.cic.tdp.util.ConfigurationSorter.search;
 import static java.util.stream.Collectors.joining;
 
 @Component

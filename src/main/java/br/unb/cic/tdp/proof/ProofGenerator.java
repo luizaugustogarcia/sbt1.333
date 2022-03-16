@@ -4,7 +4,6 @@ import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.proof.seq12_9.Combinations;
-import br.unb.cic.tdp.proof.seq12_9.Extensions;
 import br.unb.cic.tdp.proof.util.*;
 import cern.colt.list.IntArrayList;
 import com.google.common.base.Throwables;
@@ -19,8 +18,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
-import static br.unb.cic.tdp.proof.seq12_9._19_14Seq._19_14;
-import static br.unb.cic.tdp.proof.seq12_9._20_15._20_15;
+import static br.unb.cic.tdp.util._19_14Seqs._19_14;
+import static br.unb.cic.tdp.proof.seq12_9._20_15Seqs._20_15;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 public class ProofGenerator {

@@ -7,6 +7,7 @@ import lombok.SneakyThrows;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +25,7 @@ public abstract class SortOrExtend extends RecursiveAction {
     protected final String outputDir;
     private static final Map<String, Boolean> workingConfigurations = new ConcurrentHashMap<>();
 
-    @SneakyThrows
+    @SneakyThrows(IOException.class)
     @Override
     protected void compute() {
         final var canonical = configuration.getCanonical();
@@ -123,7 +124,7 @@ public abstract class SortOrExtend extends RecursiveAction {
 
         final var stack = new Stack(rootMove.getHeight());
 
-        return SequenceSearcher.search(null, spi, parity, spiIndex, spiIndex.length, pi, stack, rootMove)
+        return SortingSequenceSearcher.search(null, spi, parity, spiIndex, spiIndex.length, pi, stack, rootMove)
                 .toList().stream().map(Cycle::create).collect(toList());
     }
 

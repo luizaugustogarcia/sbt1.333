@@ -8,7 +8,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 
-import static br.unb.cic.tdp.util.Sorter.*;
+import static br.unb.cic.tdp.util.ConfigurationSorter.*;
 
 @SpringBootApplication
 public class Application {

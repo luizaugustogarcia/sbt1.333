@@ -7,10 +7,11 @@ import lombok.SneakyThrows;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 
-public class SequenceSearcher {
+public class SortingSequenceSearcher {
 
-    @SneakyThrows
+    @SneakyThrows(value = {ExecutionException.class})
     public static ListOfCycles search(final Cache<String, Set<String>> unsuccessfulConfigs,
                                       final ListOfCycles spi,
                                       final boolean[] parity,
@@ -51,14 +52,6 @@ public class SequenceSearcher {
         }
 
         return ListOfCycles.EMPTY_LIST;
-    }
-
-    private static boolean contains(final String[] array, final String string) {
-        for (String s : array) {
-            if (s.equals(string))
-                return true;
-        }
-        return false;
     }
 
     private static ListOfCycles analyzeOddCycles(final Cache<String, Set<String>> unsuccessfulConfigs,
