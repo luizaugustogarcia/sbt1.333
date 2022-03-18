@@ -1,6 +1,5 @@
 package br.unb.cic.tdp.util;
 
-import br.unb.cic.tdp.Application;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
@@ -11,15 +10,12 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.ArrayUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static br.unb.cic.tdp.proof.ProofGenerator.*;
 import static br.unb.cic.tdp.proof.util.ListOfCycles.EMPTY_LIST;
@@ -30,19 +26,16 @@ public class ConfigurationSorter {
 
     public static Cache<String, Set<String>> UNSUCCESSFUL_VISITED_CONFIGS;
 
-    public static final AtomicLong HITS = new AtomicLong();
-    public static final AtomicLong MISSES = new AtomicLong();
-
-    private static Logger logger = LoggerFactory.getLogger(Application.class);
-
-    public static void main(String[] args) {
-        final var cacheSize = (int) ((Runtime.getRuntime().maxMemory() * 0.85) / 429);
-        logger.info("Cache size:" + cacheSize);
+    static {
+        final var cacheSize = (long) ((Runtime.getRuntime().maxMemory() * 0.85) / 429);
 
         UNSUCCESSFUL_VISITED_CONFIGS = CacheBuilder.newBuilder()
                 .maximumSize(cacheSize)
                 .concurrencyLevel(Runtime.getRuntime().availableProcessors())
                 .build();
+    }
+
+    public static void main(String[] args) {
 
 //        Stream.of(
 //                new Configuration("(0 16 14)(1 35 15)(2 6 4)(3 7 5)(8 12 10)(9 13 11)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"), //----- NO SORTING
@@ -81,42 +74,43 @@ public class ConfigurationSorter {
 //                args[3], _20_15_SEQS, Integer.parseInt(args[2]));
     }
 
-    public static void sort(final Configuration configuration,
-                            final String outputDir,
-                            final Move rootMove) {
-        sort(configuration, outputDir, rootMove, Runtime.getRuntime().availableProcessors());
+    public static List<int[]> sort(final Configuration configuration,
+                                   final String outputDir,
+                                   final Move rootMove) {
+        return sort(configuration, outputDir, rootMove, Runtime.getRuntime().availableProcessors());
     }
 
     @SneakyThrows
-    public static void sort(final Configuration configuration,
-                            final String outputDir,
-                            final Move rootMove,
-                            final int numberOfProcessors) {
-        HITS.set(0);
-        MISSES.set(0);
-        UNSUCCESSFUL_VISITED_CONFIGS.invalidateAll();
-
+    public static List<int[]> sort(final Configuration configuration,
+                                   final String outputDir,
+                                   final Move rootMove,
+                                   final int numberOfProcessors) {
         final var canonical = configuration.getCanonical();
 
         final var sortingFile = new File(outputDir + "/comb/" + canonical.getSpi() + ".html");
         if (sortingFile.exists()) {
             System.out.println("Skipping " + configuration.getSpi());
-            return;
+            return null;
         }
 
         System.out.println("Sorting " + configuration.getSpi());
 
         final var hasSorting = new boolean[1];
         final var forkJoinPool = new ForkJoinPool(numberOfProcessors);
+        final var stack = new Stack(rootMove.getHeight());
         final var task = new Search(configuration, outputDir,
-                toListOfCycle(configuration.getSpi(), configuration.getPi()), configuration.getPi().getSymbols(),
-                new Stack(rootMove.getHeight()), rootMove, forkJoinPool, hasSorting);
+                toListOfCycles(configuration.getSpi(), configuration.getPi()), configuration.getPi().getSymbols(),
+                stack, rootMove, forkJoinPool, hasSorting);
         forkJoinPool.submit(task);
         forkJoinPool.shutdown();
         forkJoinPool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
 
-        if (!hasSorting[0])
+        if (!hasSorting[0]) {
             System.out.println("Didn't find sorting for " + configuration.getSpi() + "\n");
+            return Collections.emptyList();
+        }
+
+        return stack.toListOfCycles().toList();
     }
 
     static class Search extends RecursiveAction {
@@ -190,11 +184,9 @@ public class ConfigurationSorter {
                     final var paths = UNSUCCESSFUL_VISITED_CONFIGS.get(key, () -> new HashSet(1));
                     synchronized (paths) {
                         if (paths.isEmpty()) {
-                            MISSES.incrementAndGet();
                             paths.add(rootMove.pathToRoot());
                         } else {
                             if (paths.contains(rootMove.pathToRoot())) {
-                                HITS.incrementAndGet();
                                 return;
                             } else {
                                 paths.add(rootMove.pathToRoot());
@@ -480,7 +472,7 @@ public class ConfigurationSorter {
         }
     }
 
-    private static ListOfCycles toListOfCycle(final MulticyclePermutation spi, final Cycle pi) {
+    private static ListOfCycles toListOfCycles(final MulticyclePermutation spi, final Cycle pi) {
         final var listOfCycles = new ListOfCycles(pi.size());
         spi.stream().map(Cycle::getSymbols).forEach(listOfCycles::add);
         return listOfCycles;
@@ -503,11 +495,9 @@ public class ConfigurationSorter {
             final var paths = UNSUCCESSFUL_VISITED_CONFIGS.get(key, () -> new HashSet(1));
             synchronized (paths) {
                 if (paths.isEmpty()) {
-                    MISSES.incrementAndGet();
                     paths.add(root.pathToRoot());
                 } else {
                     if (paths.contains(root.pathToRoot())) {
-                        HITS.incrementAndGet();
                         return EMPTY_LIST;
                     } else {
                         paths.add(root.pathToRoot());

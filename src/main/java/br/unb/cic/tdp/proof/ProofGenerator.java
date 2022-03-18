@@ -4,6 +4,7 @@ import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.proof.seq12_9.Combinations;
+import br.unb.cic.tdp.proof.seq12_9.Extensions;
 import br.unb.cic.tdp.proof.util.*;
 import cern.colt.list.IntArrayList;
 import com.google.common.base.Throwables;
@@ -189,6 +190,7 @@ public class ProofGenerator {
         Velocity.setProperty("resource.loader", "class");
         Velocity.setProperty("class.resource.loader.class", "org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader");
         Velocity.setProperty("parser.pool.size", 100);
+        Velocity.setProperty("runtime.log.logsystem.class", "org.apache.velocity.runtime.log.NullLogChute");
         Velocity.init();
 
         Files.createDirectories(Paths.get(args[0]));
@@ -200,7 +202,7 @@ public class ProofGenerator {
         Files.copy(ProofGenerator.class.getClassLoader().getResourceAsStream("draw-config.js"),
                 Paths.get(args[0] + "/draw-config.js"), REPLACE_EXISTING);
 
-        Extensions.generate(args[0]);
+        //Extensions.generate(args[0]);
         Combinations.generate(args[0]);
     }
 

@@ -27,7 +27,7 @@ import static br.unb.cic.tdp.proof.seq12_9.ListCases.isBadExtension;
 
 public class Extensions {
 
-    @SneakyThrows
+    @SneakyThrows(value = {IOException.class, InterruptedException.class})
     public static void generate(final String outputDir) {
         Files.createDirectories(Paths.get(outputDir + "/dfs/"));
         Files.createDirectories(Paths.get(outputDir + "/dfs/bad-cases/"));
@@ -39,11 +39,11 @@ public class Extensions {
 
         var pool = new ForkJoinPool();
         // oriented 5-cycle
-        pool.execute(new SortOrExtendExtensions(new Configuration(new MulticyclePermutation("(0,3,1,4,2)")), outputDir + "/dfs/"));
+        pool.submit(new SortOrExtendExtensions(new Configuration(new MulticyclePermutation("(0,3,1,4,2)")), outputDir + "/dfs/"));
         // interleaving pair
-        pool.execute(new SortOrExtendExtensions(new Configuration(new MulticyclePermutation("(0,4,2)(1,5,3)")), outputDir + "/dfs/"));
+        pool.submit(new SortOrExtendExtensions(new Configuration(new MulticyclePermutation("(0,4,2)(1,5,3)")), outputDir + "/dfs/"));
         // intersecting pair
-        pool.execute(new SortOrExtendExtensions(new Configuration(new MulticyclePermutation("(0,3,1)(2,5,4)")), outputDir + "/dfs/"));
+        pool.submit(new SortOrExtendExtensions(new Configuration(new MulticyclePermutation("(0,3,1)(2,5,4)")), outputDir + "/dfs/"));
         pool.shutdown();
         // boundless
         pool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
@@ -51,9 +51,7 @@ public class Extensions {
         final var executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         Files.list(Paths.get(outputDir + "/dfs/bad-cases/"))
                 .map(Path::toFile)
-                .forEach(file -> {
-                    executor.submit(() -> makeHtmlNavigation(new Configuration(new MulticyclePermutation(file.getName())), outputDir));
-                });
+                .forEach(file -> executor.submit(() -> makeHtmlNavigation(new Configuration(new MulticyclePermutation(file.getName())), outputDir)));
 
         executor.shutdown();
         // boundless
@@ -64,8 +62,9 @@ public class Extensions {
     public static void cleanUpBadExtensionAndInvalidFiles(final String outputDir) {
         final var dir = new File(outputDir);
 
-        final var files = new ArrayList<File>();
+        final var files = Collections.synchronizedList(new ArrayList<File>());
         Stream.of(dir.listFiles(file -> file.getName().endsWith(".html")))
+                .parallel()
                 .forEach(f -> {
                         final var file = new File(outputDir + f.getName());
 
@@ -266,16 +265,16 @@ public class Extensions {
                                   final int a, final int b) {
         final Cycle cycle = cyclesByLabel.get(label).startingBy(cyclesByLabel.get(label).getMaxSymbol());
 
-        float[] copiedsignature = new float[signature.length];
-        System.arraycopy(signature, 0, copiedsignature, 0, signature.length);
+        float[] copiedSignature = new float[signature.length];
+        System.arraycopy(signature, 0, copiedSignature, 0, signature.length);
 
         for (int i = cycle.getSymbols().length - 1; i >= 0; i--) {
-            copiedsignature[cycle.getSymbols()[i]] += 0.1 * (i + 1);
+            copiedSignature[cycle.getSymbols()[i]] += 0.1 * (i + 1);
         }
 
         float next = 0.5f;
         final var positions = new int[]{a, b};
-        final var extension = new FloatArrayList(copiedsignature);
+        final var extension = new FloatArrayList(copiedSignature);
         int inserted = 0;
         for (int position : positions) {
             extension.beforeInsert(position + inserted, label + next);

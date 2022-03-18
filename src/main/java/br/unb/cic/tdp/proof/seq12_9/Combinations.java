@@ -22,7 +22,6 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static br.unb.cic.tdp.base.CommonOperations.generateAll0And2Moves;
 import static br.unb.cic.tdp.base.CommonOperations.getComponents;
@@ -31,6 +30,7 @@ import static br.unb.cic.tdp.proof.ProofGenerator.*;
 import static br.unb.cic.tdp.proof.seq12_9.Extensions.cleanUpBadExtensionAndInvalidFiles;
 import static br.unb.cic.tdp.proof.util.SortingSequenceSearcher.applyTransposition;
 import static br.unb.cic.tdp.proof.util.SortingSequenceSearcher.canonicalSignature;
+import static java.util.concurrent.ForkJoinPool.*;
 import static java.util.stream.Collectors.toList;
 
 public class Combinations {
@@ -58,24 +58,10 @@ public class Combinations {
             new Configuration[]{ORIENTED_5_CYCLE, INTERLEAVING_PAIR, NECKLACE_SIZE_4,
                     TWISTED_NECKLACE_SIZE_4, NECKLACE_SIZE_5, NECKLACE_SIZE_6, NECKLACE_SIZE_8, NECKLACE_SIZE_10};
 
-    private static final HashSet<Configuration> problematicConfigurations = new HashSet<>();
+    private static final ExecutorService EXECUTOR_SERVICE = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
     @SneakyThrows
     public static void generate(final String outputDir) {
-        Stream.of(
-                new Configuration("(0 16 14)(1 35 15)(2 6 4)(3 7 5)(8 12 10)(9 13 11)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"), //----- NO SORTING
-                new Configuration("(0 34 20)(1 5 3)(2 6 4)(7 11 9)(8 12 10)(13 35 33)(14 18 16)(15 19 17)(21 25 23)(22 26 24)(27 31 29)(28 32 30)"), //----- NO SORTING
-                new Configuration("(0 4 2)(1 35 3)(5 9 7)(6 10 8)(11 15 13)(12 28 14)(16 20 18)(17 21 19)(22 26 24)(23 27 25)(29 33 31)(30 34 32)"), //----- NO SORTING
-                new Configuration("(0 4 2)(1 5 3)(6 10 8)(7 11 9)(12 16 14)(13 17 15)(18 22 20)(19 23 21)(24 34 26)(25 35 33)(27 31 29)(28 32 30)"), //----- NO SORTING
-                new Configuration("(0 34 26)(1 35 33)(2 6 4)(3 7 5)(8 12 10)(9 13 11)(14 18 16)(15 19 17)(20 24 22)(21 25 23)(27 31 29)(28 32 30)"), //----- NO SORTING
-                new Configuration("(0 34 2)(1 35 33)(3 7 5)(4 8 6)(9 19 17)(10 14 12)(11 15 13)(16 26 18)(20 24 22)(21 25 23)(27 31 29)(28 32 30)"), //----- NO SORTING
-                new Configuration("(0 34 32)(1 29 27)(2 30 28)(3 7 5)(4 8 6)(9 13 11)(10 14 12)(15 19 17)(16 20 18)(21 25 23)(22 26 24)(31 35 33)"), //----- NO SORTING
-                new Configuration("(0 16 14)(1 5 3)(2 6 4)(7 11 9)(8 12 10)(13 35 15)(17 21 19)(18 22 20)(23 27 25)(24 28 26)(29 33 31)(30 34 32)"), //----- NO SORTING
-                new Configuration("(0 34 2)(1 35 33)(3 7 5)(4 8 6)(9 13 11)(10 14 12)(15 25 17)(16 32 18)(19 23 21)(20 24 22)(26 30 28)(27 31 29)"), //----- NO SORTING
-                new Configuration("(0 34 32)(1 35 33)(2 6 4)(3 7 5)(8 12 10)(9 13 11)(14 18 16)(15 19 17)(20 24 22)(21 25 23)(26 30 28)(27 31 29)"), //----- NO SORTING
-                new Configuration("(0 34 32)(1 29 27)(2 6 4)(3 7 5)(8 12 10)(9 13 11)(14 30 28)(15 19 17)(16 20 18)(21 25 23)(22 26 24)(31 35 33)") //----- NO SORTING
-        ).forEach(problematicConfigurations::add);
-
         Files.createDirectories(Paths.get(outputDir + "/comb/"));
         Files.createDirectories(Paths.get(outputDir + "/comb/bad-cases/"));
 
@@ -84,10 +70,11 @@ public class Combinations {
         // ATTENTION: The Sort Or Extend fork/join can never run with BAD EXTENSION files in the comb directory.
         // Otherwise, it will wrongly skip cases.
 
-        var pool = new ForkJoinPool();
+        var pool = new ForkJoinPool(Runtime.getRuntime().availableProcessors(), defaultForkJoinWorkerThreadFactory, null, false,
+                0, Runtime.getRuntime().availableProcessors(), 1, null, 60L, TimeUnit.SECONDS);
 
         for (final var configuration : BAD_SMALL_COMPONENTS) {
-            pool.execute(new SortOrExtendCombinations(configuration, outputDir + "/comb/"));
+            pool.submit(new SortOrExtendCombinations(configuration, outputDir + "/comb/"));
         }
 
         pool.shutdown();
@@ -195,7 +182,7 @@ public class Combinations {
                 out.println("3-norm: " + configuration.getSpi().get3Norm());
 
                 out.println("<p style=\"margin-top: 10px;\"></p>");
-                out.println("THE EXTENSIONS ARE:");
+                out.println("THE EXTENSIONS ARE: </div>");
 
                 renderExtensions(configuration, out, outputDir);
             }
@@ -220,8 +207,8 @@ public class Combinations {
 
                 final var hasSorting = !badCaseFile.exists();
 
-                out.println(hasSorting && !incomplete ? "<div style=\"margin-top: 10px; background-color: rgba(153, 255, 153, 0.15)\">" :
-                        "<div style=\"margin-top: 10px; background-color: rgba(255, 0, 0, 0.05);\">");
+                out.println(hasSorting && !incomplete ? "<div style=\"margin-left: 10px; margin-top: 10px; background-color: rgba(153, 255, 153, 0.15)\">" :
+                        "<div style=\"margin-left: 10px; margin-top: 10px; background-color: rgba(255, 0, 0, 0.05);\">");
                 out.println(extension.getFirst() + "<br>");
                 out.println((incomplete ? "INCOMPLETE" : ((hasSorting ? "GOOD" : "BAD") + " EXTENSION")) + "<br>");
                 out.println("Hash code: " + extension.getSecond().hashCode() + "<br>");
@@ -270,9 +257,6 @@ public class Combinations {
         @SneakyThrows
         @Override
         protected List<Cycle> searchSorting(final Configuration configuration, final Move rootMove) {
-            if (configuration.get3Norm() == 12 & problematicConfigurations.contains(configuration))
-                return Collections.emptyList();
-
             final var smallComponents = getComponents(configuration.getSpi(), configuration.getPi());
 
             for (int i = 2; i < smallComponents.size(); i++) {
@@ -327,58 +311,86 @@ public class Combinations {
                         return new Pair<>(b_.getAsInt(), move);
                     }).sorted(Comparator.comparing(o -> ((Pair<Integer, Cycle>) o).getFirst()).reversed()).map(Pair::getSecond).collect(toList());
 
-            var sorting = ListOfCycles.EMPTY_LIST;
-
             final var canonicalSignatures = new HashSet<String>();
 
+            final var completionService = new ExecutorCompletionService<List<Cycle>>(EXECUTOR_SERVICE);
+
+            final var futures = new ArrayList<Future<List<Cycle>>>();
+
+            final var cacheSize = (long) ((Runtime.getRuntime().maxMemory() * 0.85) / 429);
+            final Cache<String, Set<String>> unsuccessfulConfigs = CacheBuilder.newBuilder()
+                    .maximumSize(cacheSize)
+                    .build();
+
+            final var threadName = Thread.currentThread().getName();
             for (final var move : list) {
-                final var spi = new ListOfCycles(configuration.getPi().size());
-                computeProduct(configuration.getSpi(), move.getInverse())
-                        .stream().map(Cycle::getSymbols).forEach(spi::add);
+                futures.add(completionService.submit(() -> {
+                    final var originalThreadName = Thread.currentThread().getName();
+                    Thread.currentThread().setName(threadName + "-" + move);
 
-                final var parity = new boolean[configuration.getPi().size()];
-                int[][] spiIndex = new int[configuration.getPi().size()][];
+                    try {
+                        final var spi = new ListOfCycles(configuration.getPi().size());
+                        computeProduct(configuration.getSpi(), move.getInverse())
+                                .stream().map(Cycle::getSymbols).forEach(spi::add);
 
-                for (int i = 0; i < spi.size; i++) {
-                    final var cycle = spi.elementData[i];
-                    for (int s : cycle) {
-                        spiIndex[s] = cycle;
-                        parity[s] = (cycle.length & 1) == 1;
-                    }
-                }
+                        final var parity = new boolean[configuration.getPi().size()];
+                        int[][] spiIndex = new int[configuration.getPi().size()][];
 
-                final var removed = removeTrivialCycles(spi);
-
-                final var pi = applyTransposition(configuration.getPi().getSymbols(),
-                        move.getSymbols()[0], move.getSymbols()[1], move.getSymbols()[2],
-                        configuration.getPi().size() - removed, spiIndex);
-
-                final var canonicalSignature = canonicalSignature(spi, pi, spiIndex, configuration.getPi().getMaxSymbol());
-                if (!canonicalSignatures.contains(canonicalSignature)) {
-                    for (final var root : rootMove.children) {
-                        final var stack = new Stack(numberOfMoves);
-                        stack.push(move.getSymbols()[0], move.getSymbols()[1], move.getSymbols()[2]);
-
-                        final Cache<String, Set<String>> unsuccessfulConfigs = CacheBuilder.newBuilder()
-                                .maximumSize(1_000_000)
-                                .build();
-
-                        sorting = SortingSequenceSearcher.search(unsuccessfulConfigs, spi, parity, spiIndex, spiIndex.length, pi, stack, root);
-                        if (!sorting.isEmpty()) {
-                            return sorting.toList().stream().map(Cycle::create).collect(toList());
+                        for (int i = 0; i < spi.size; i++) {
+                            final var cycle = spi.elementData[i];
+                            for (int s : cycle) {
+                                spiIndex[s] = cycle;
+                                parity[s] = (cycle.length & 1) == 1;
+                            }
                         }
+
+                        final var removed = removeTrivialCycles(spi);
+
+                        final var pi = applyTransposition(configuration.getPi().getSymbols(),
+                                move.getSymbols()[0], move.getSymbols()[1], move.getSymbols()[2],
+                                configuration.getPi().size() - removed, spiIndex);
+
+                        final var canonicalSignature = canonicalSignature(spi, pi, spiIndex, configuration.getPi().getMaxSymbol());
+                        if (!canonicalSignatures.contains(canonicalSignature)) {
+                            for (final var root : rootMove.children) {
+                                final var stack = new Stack(numberOfMoves);
+                                stack.push(move.getSymbols()[0], move.getSymbols()[1], move.getSymbols()[2]);
+
+                                final var sorting = SortingSequenceSearcher.search(unsuccessfulConfigs, spi, parity, spiIndex, spiIndex.length, pi, stack, root);
+                                if (!sorting.isEmpty()) {
+                                    return sorting.toList().stream().map(Cycle::create).collect(toList());
+                                }
+                            }
+                            canonicalSignatures.add(canonicalSignature);
+                        }
+
+                        return Collections.emptyList();
+                    } finally {
+                        Thread.currentThread().setName(originalThreadName);
                     }
-                    canonicalSignatures.add(canonicalSignature);
+                }));
+            }
+
+            List<Cycle> sorting = Collections.emptyList();
+            for (int i = 0; i < list.size(); i++) {
+                final var future = completionService.take();
+                if (!future.get().isEmpty()) {
+                    sorting = future.get();
+                    break;
                 }
             }
 
-            return Collections.emptyList();
+            for (final var future : futures) {
+                future.cancel(true);
+            }
+
+            return sorting;
         }
 
         @Override
         protected void extend(final Configuration canonical) {
             if (configuration.get3Norm() >= 12) {
-                System.out.println("BAD: Combination does not allow (16/12): " + canonical.getSpi());
+                System.out.println("BAD: Combination does not allow (16/12): " + canonical.getSpi() + ", hashCode=" + canonical.hashCode());
                 return;
             }
 

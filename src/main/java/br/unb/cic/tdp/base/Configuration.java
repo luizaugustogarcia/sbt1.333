@@ -374,7 +374,7 @@ public class Configuration {
         public String toString() {
             return "[" + Floats.asList(content).stream()
                     .map(f -> f % 1 == 0 ? Integer.toString((int) Math.floor(f)) : Float.toString(f))
-                    .collect(Collectors.joining(",")) + "] - " + hashCode();
+                    .collect(Collectors.joining(",")) + "]";
         }
     }
 }

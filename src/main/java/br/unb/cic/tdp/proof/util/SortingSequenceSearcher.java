@@ -20,17 +20,22 @@ public class SortingSequenceSearcher {
                                       final int[] pi,
                                       final Stack moves,
                                       final Move root) {
+        if (Thread.interrupted())
+            return ListOfCycles.EMPTY_LIST;
+
         if (root.mu == 0) {
-            final var key = canonicalSignature(spi, pi, spiIndex, maxSymbol);
-            final var paths = unsuccessfulConfigs.get(key, HashSet::new);
-            synchronized (paths) {
-                if (paths.isEmpty()) {
-                    paths.add(root.pathToRoot());
-                } else {
-                    if (paths.contains(root.pathToRoot())) {
-                        return ListOfCycles.EMPTY_LIST;
-                    } else {
+            if (unsuccessfulConfigs != null) {
+                final var key = canonicalSignature(spi, pi, spiIndex, maxSymbol);
+                final var paths = unsuccessfulConfigs.get(key, HashSet::new);
+                synchronized (paths) {
+                    if (paths.isEmpty()) {
                         paths.add(root.pathToRoot());
+                    } else {
+                        if (paths.contains(root.pathToRoot())) {
+                            return ListOfCycles.EMPTY_LIST;
+                        } else {
+                            paths.add(root.pathToRoot());
+                        }
                     }
                 }
             }

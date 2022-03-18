@@ -2,6 +2,7 @@ package br.unb.cic.tdp.proof.util;
 
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
+import br.unb.cic.tdp.util.ConfigurationSorter;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 
