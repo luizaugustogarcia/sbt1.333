@@ -30,7 +30,6 @@ import static br.unb.cic.tdp.proof.ProofGenerator.*;
 import static br.unb.cic.tdp.proof.seq12_9.Extensions.cleanUpBadExtensionAndInvalidFiles;
 import static br.unb.cic.tdp.proof.util.SortingSequenceSearcher.applyTransposition;
 import static br.unb.cic.tdp.proof.util.SortingSequenceSearcher.canonicalSignature;
-import static java.util.concurrent.ForkJoinPool.*;
 import static java.util.stream.Collectors.toList;
 
 public class Combinations {
@@ -58,8 +57,6 @@ public class Combinations {
             new Configuration[]{ORIENTED_5_CYCLE, INTERLEAVING_PAIR, NECKLACE_SIZE_4,
                     TWISTED_NECKLACE_SIZE_4, NECKLACE_SIZE_5, NECKLACE_SIZE_6, NECKLACE_SIZE_8, NECKLACE_SIZE_10};
 
-    private static final ExecutorService EXECUTOR_SERVICE = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-
     @SneakyThrows
     public static void generate(final String outputDir) {
         Files.createDirectories(Paths.get(outputDir + "/comb/"));
@@ -70,11 +67,10 @@ public class Combinations {
         // ATTENTION: The Sort Or Extend fork/join can never run with BAD EXTENSION files in the comb directory.
         // Otherwise, it will wrongly skip cases.
 
-        var pool = new ForkJoinPool(Runtime.getRuntime().availableProcessors(), defaultForkJoinWorkerThreadFactory, null, false,
-                0, Runtime.getRuntime().availableProcessors(), 1, null, 60L, TimeUnit.SECONDS);
+        var pool = new ForkJoinPool();
 
         for (final var configuration : BAD_SMALL_COMPONENTS) {
-            pool.submit(new SortOrExtendCombinations(configuration, outputDir + "/comb/"));
+            pool.execute(new SortOrExtendCombinations(configuration, outputDir + "/comb/"));
         }
 
         pool.shutdown();
@@ -311,86 +307,58 @@ public class Combinations {
                         return new Pair<>(b_.getAsInt(), move);
                     }).sorted(Comparator.comparing(o -> ((Pair<Integer, Cycle>) o).getFirst()).reversed()).map(Pair::getSecond).collect(toList());
 
+            var sorting = ListOfCycles.EMPTY_LIST;
+
             final var canonicalSignatures = new HashSet<String>();
 
-            final var completionService = new ExecutorCompletionService<List<Cycle>>(EXECUTOR_SERVICE);
-
-            final var futures = new ArrayList<Future<List<Cycle>>>();
-
-            final var cacheSize = (long) ((Runtime.getRuntime().maxMemory() * 0.85) / 429);
-            final Cache<String, Set<String>> unsuccessfulConfigs = CacheBuilder.newBuilder()
-                    .maximumSize(cacheSize)
-                    .build();
-
-            final var threadName = Thread.currentThread().getName();
             for (final var move : list) {
-                futures.add(completionService.submit(() -> {
-                    final var originalThreadName = Thread.currentThread().getName();
-                    Thread.currentThread().setName(threadName + "-" + move);
+                final var spi = new ListOfCycles(configuration.getPi().size());
+                computeProduct(configuration.getSpi(), move.getInverse())
+                        .stream().map(Cycle::getSymbols).forEach(spi::add);
 
-                    try {
-                        final var spi = new ListOfCycles(configuration.getPi().size());
-                        computeProduct(configuration.getSpi(), move.getInverse())
-                                .stream().map(Cycle::getSymbols).forEach(spi::add);
+                final var parity = new boolean[configuration.getPi().size()];
+                int[][] spiIndex = new int[configuration.getPi().size()][];
 
-                        final var parity = new boolean[configuration.getPi().size()];
-                        int[][] spiIndex = new int[configuration.getPi().size()][];
-
-                        for (int i = 0; i < spi.size; i++) {
-                            final var cycle = spi.elementData[i];
-                            for (int s : cycle) {
-                                spiIndex[s] = cycle;
-                                parity[s] = (cycle.length & 1) == 1;
-                            }
-                        }
-
-                        final var removed = removeTrivialCycles(spi);
-
-                        final var pi = applyTransposition(configuration.getPi().getSymbols(),
-                                move.getSymbols()[0], move.getSymbols()[1], move.getSymbols()[2],
-                                configuration.getPi().size() - removed, spiIndex);
-
-                        final var canonicalSignature = canonicalSignature(spi, pi, spiIndex, configuration.getPi().getMaxSymbol());
-                        if (!canonicalSignatures.contains(canonicalSignature)) {
-                            for (final var root : rootMove.children) {
-                                final var stack = new Stack(numberOfMoves);
-                                stack.push(move.getSymbols()[0], move.getSymbols()[1], move.getSymbols()[2]);
-
-                                final var sorting = SortingSequenceSearcher.search(unsuccessfulConfigs, spi, parity, spiIndex, spiIndex.length, pi, stack, root);
-                                if (!sorting.isEmpty()) {
-                                    return sorting.toList().stream().map(Cycle::create).collect(toList());
-                                }
-                            }
-                            canonicalSignatures.add(canonicalSignature);
-                        }
-
-                        return Collections.emptyList();
-                    } finally {
-                        Thread.currentThread().setName(originalThreadName);
+                for (int i = 0; i < spi.size; i++) {
+                    final var cycle = spi.elementData[i];
+                    for (int s : cycle) {
+                        spiIndex[s] = cycle;
+                        parity[s] = (cycle.length & 1) == 1;
                     }
-                }));
-            }
+                }
 
-            List<Cycle> sorting = Collections.emptyList();
-            for (int i = 0; i < list.size(); i++) {
-                final var future = completionService.take();
-                if (!future.get().isEmpty()) {
-                    sorting = future.get();
-                    break;
+                final var removed = removeTrivialCycles(spi);
+
+                final var pi = applyTransposition(configuration.getPi().getSymbols(),
+                        move.getSymbols()[0], move.getSymbols()[1], move.getSymbols()[2],
+                        configuration.getPi().size() - removed, spiIndex);
+
+                final var canonicalSignature = canonicalSignature(spi, pi, spiIndex, configuration.getPi().getMaxSymbol());
+                if (!canonicalSignatures.contains(canonicalSignature)) {
+                    for (final var root : rootMove.children) {
+                        final var stack = new Stack(numberOfMoves);
+                        stack.push(move.getSymbols()[0], move.getSymbols()[1], move.getSymbols()[2]);
+
+                        final Cache<String, Set<String>> unsuccessfulConfigs = CacheBuilder.newBuilder()
+                                .maximumSize(1_000_000)
+                                .build();
+
+                        sorting = SortingSequenceSearcher.search(unsuccessfulConfigs, spi, parity, spiIndex, spiIndex.length, pi, stack, root);
+                        if (!sorting.isEmpty()) {
+                            return sorting.toList().stream().map(Cycle::create).collect(toList());
+                        }
+                    }
+                    canonicalSignatures.add(canonicalSignature);
                 }
             }
 
-            for (final var future : futures) {
-                future.cancel(true);
-            }
-
-            return sorting;
+            return Collections.emptyList();
         }
 
         @Override
         protected void extend(final Configuration canonical) {
             if (configuration.get3Norm() >= 12) {
-                System.out.println("BAD: Combination does not allow (16/12): " + canonical.getSpi() + ", hashCode=" + canonical.hashCode());
+                System.out.println("BAD: Combination does not allow (16/12): " + canonical.getSpi());
                 return;
             }
 
