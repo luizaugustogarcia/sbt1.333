@@ -41,7 +41,7 @@ public class ListCases {
                                         spi = new MulticyclePermutation(line.trim().replace("<h6>", "")
                                                 .replace("</h6>", "").replace(" ", ","));
                                     }
-                                    if (line.equals("THE EXTENSIONS ARE:")) {
+                                    if (line.equals("THE EXTENSIONS ARE: </div>")) {
                                         return;
                                     }
                                     final var sorting = new ArrayList<Cycle>();
@@ -79,7 +79,7 @@ public class ListCases {
             while ((line = reader.readLine()) != null) {
                 line = line.trim();
 
-                if (line.equals("THE EXTENSIONS ARE:")) {
+                if (line.equals("THE EXTENSIONS ARE: </div>")) {
                     return true;
                 }
 
@@ -108,7 +108,7 @@ public class ListCases {
                         .replace("</h6>", "").replace(" ", ","));
             }
 
-            if (line.equals("THE EXTENSIONS ARE:")) {
+            if (line.equals("THE EXTENSIONS ARE: </div>")) {
                 return new Pair<>(spi, null);
             }
 

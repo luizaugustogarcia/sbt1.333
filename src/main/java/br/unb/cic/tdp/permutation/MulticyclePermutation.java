@@ -12,7 +12,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class MulticyclePermutation implements Collection<Cycle>, Permutation {
-    private List<Cycle> cycles = new ArrayList<>();
+    private Set<Cycle> cycles = new HashSet<>();
 
     @Getter
     private MutableIntObjectMap index = IntObjectMaps.mutable.empty();

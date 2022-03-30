@@ -11,9 +11,9 @@ public class ListSequences {
     public static void main(String[] args) {
         final var sequences = new ArrayList<String>();
 
-        for (int i = 1; i <= 19; i++) {
+        for (int i = 1; i <= 21; i++) {
             final var seq = new ArrayList<>();
-            while (i / (i - ((float) seq.size() + 1)) <= 1.35714285715) {
+            while (i / (i - ((float) seq.size() + 1)) <= 1.374) {
                 seq.add(0);
             }
             while (seq.size() < i) {
