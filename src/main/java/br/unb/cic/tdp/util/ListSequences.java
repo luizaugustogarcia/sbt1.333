@@ -13,7 +13,7 @@ public class ListSequences {
 
         for (int i = 1; i <= 21; i++) {
             final var seq = new ArrayList<>();
-            while (i / (i - ((float) seq.size() + 1)) <= 1.374) {
+            while (i / (i - ((float) seq.size() + 1)) < 1.375) {
                 seq.add(0);
             }
             while (seq.size() < i) {

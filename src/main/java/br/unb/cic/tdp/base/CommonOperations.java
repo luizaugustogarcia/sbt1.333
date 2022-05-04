@@ -6,25 +6,14 @@ import br.unb.cic.tdp.permutation.PermutationGroups;
 import br.unb.cic.tdp.util.Pair;
 import cern.colt.list.IntArrayList;
 import cern.colt.list.FloatArrayList;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
-import lombok.SneakyThrows;
 import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.time.StopWatch;
-import org.paukov.combinatorics.Factory;
-import org.paukov.combinatorics.Generator;
 
 import java.io.Serializable;
-import java.sql.Array;
 import java.util.*;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static br.unb.cic.tdp.BaseAlgorithm.isOutOfInterval;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 
 public class CommonOperations implements Serializable {
@@ -376,5 +365,11 @@ public class CommonOperations implements Serializable {
         final var after = spi.getNumberOfEvenCycles();
         final var ratio = (float) moves.size() / ((after - before) / 2);
         return spi.stream().allMatch(Cycle::isEven) && ratio >= 1 && ratio <= ((float) 16 / 12);
+    }
+
+    public static boolean isOutOfInterval(final int pos, final int aPos, final int bPos) {
+        if (aPos < bPos)
+            return pos < aPos || pos > bPos;
+        return pos < aPos && pos > bPos;
     }
 }
