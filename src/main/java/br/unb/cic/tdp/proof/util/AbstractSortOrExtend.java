@@ -27,7 +27,7 @@ import lombok.val;
 @AllArgsConstructor
 public abstract class AbstractSortOrExtend extends RecursiveAction {
 
-    private static final Map<String, Boolean> workingConfigurations = new ConcurrentHashMap<>();
+    private static final Map<String, Boolean> ONGOING_SORTINGS = new ConcurrentHashMap<>();
 
     protected final int maxExtension;
 
@@ -40,73 +40,71 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
     protected void compute() {
         val canonical = configuration.getCanonical();
 
-        val isBeingSorting = workingConfigurations.putIfAbsent(canonical.getSpi().toString(), Boolean.TRUE);
+        val canonicalSpi = canonical.getSpi().toString();
 
-        if (isBeingSorting != null && isBeingSorting) {
+        val isSortingOngoing = ONGOING_SORTINGS.putIfAbsent(canonicalSpi, Boolean.TRUE) != null;
+
+        if (isSortingOngoing) {
             // some thread is already working on this case, thus, skipping
             return;
         }
 
-        if (isAlreadySorted(canonical)) {
+        if (isAlreadySorted(canonicalSpi)) {
             return;
         }
 
-        if (!isBadCase(canonical)) {
+        if (!isBadCase(canonicalSpi)) {
             try {
                 val sorting = searchForSorting(canonical);
                 if (sorting.isPresent()) {
                     try (val writer = new StringWriter()) {
                         //renderSorting(canonical, sorting.get(), writer);
-                        saveSorting(canonical, sorting.toString());
+                        saveSorting(canonicalSpi, sorting.toString());
                         return;
                     }
                 } else {
-                    saveBadCase(canonical);
+                    saveBadCase(canonicalSpi);
                 }
             } finally {
-                if (isBeingSorting == null) {
-                    // only the thread sorting this case should remove it from the map
-                    workingConfigurations.remove(canonical.getSpi().toString());
-                }
+                ONGOING_SORTINGS.remove(canonicalSpi);
             }
         }
 
         extend(configuration);
     }
 
-    private boolean isAlreadySorted(final Configuration canonical) throws SQLException {
+    private boolean isAlreadySorted(final String canonicalSpi) throws SQLException {
         try (val conn = dataSource.getConnection()) {
             val runner = new QueryRunner();
-            val spi = canonical.getSpi().toString();
             return runner.query(conn, "select 1 from dfs where config = ? and not sorting is null",
-                    spi, new ScalarHandler<>()) != null || runner.query(conn,
-                    "select 1 from full_configs_without_sorting where config = ?", spi,
+                    canonicalSpi, new ScalarHandler<>()) != null || runner.query(conn,
+                    "select 1 from full_configs_without_sorting where config = ?", canonicalSpi,
                     new ScalarHandler<>()) != null;
         }
     }
 
     @SneakyThrows
-    private void saveSorting(final Configuration canonical, final String sorting) {
+    private void saveSorting(final String canonicalSpi, final String sorting) {
         try (val conn = dataSource.getConnection()) {
             val runner = new QueryRunner();
-            runner.execute(conn, "insert into dfs(config, sorting) values (?,?)", canonical.getSpi().toString(), sorting);
+            runner.execute(conn, "insert into dfs(config, sorting) values (?,?)", canonicalSpi, sorting);
         }
     }
 
     @SneakyThrows
-    private void saveBadCase(final Configuration canonical) {
+    private void saveBadCase(final String canonicalSpi) {
         try (val conn = dataSource.getConnection()) {
             val runner = new QueryRunner();
-            runner.execute(conn, "insert into dfs_bad_cases(config) values (?)", canonical.getSpi().toString());
+            runner.execute(conn, "insert into dfs_bad_cases(config) values (?)", canonicalSpi);
         }
     }
 
     @SneakyThrows
-    private boolean isBadCase(final Configuration canonical) {
+    private boolean isBadCase(final String canonicalSpi) {
         try (val conn = dataSource.getConnection()) {
             val runner = new QueryRunner();
             return runner.query(conn, "select 1 from dfs_bad_cases where config = ?",
-                    canonical.getSpi().toString(), new ScalarHandler<>()) != null;
+                    canonicalSpi, new ScalarHandler<>()) != null;
         }
     }
 
