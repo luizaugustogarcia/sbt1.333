@@ -131,7 +131,7 @@ public class Configuration {
             value.addAll(orientedCycle);
         });
 
-        final var spi = cyclesByLabel.values().stream().map(c -> Cycle.create(Ints.toArray(c)))
+        final var spi = cyclesByLabel.values().stream().map(c -> Cycle.of(Ints.toArray(c)))
                 .collect(Collectors.toCollection(MulticyclePermutation::new));
         return new Configuration(spi, pi);
     }
@@ -240,12 +240,12 @@ public class Configuration {
 
         for (final var move : sorting) {
             if (matchedSignature.isMirror()) {
-                translatedSorting.add(Cycle.create(
+                translatedSorting.add(Cycle.of(
                         _pi.get(Math.abs(pi.indexOf(move.get(0)) - pi.size()) - 1),
                         _pi.get(Math.abs(pi.indexOf(move.get(1)) - pi.size()) - 1),
                         _pi.get(Math.abs(pi.indexOf(move.get(2)) - pi.size()) - 1)).getInverse());
             } else {
-                translatedSorting.add(Cycle.create(
+                translatedSorting.add(Cycle.of(
                         _pi.get(pi.indexOf(move.get(0))),
                         _pi.get(pi.indexOf(move.get(1))),
                         _pi.get(pi.indexOf(move.get(2)))));

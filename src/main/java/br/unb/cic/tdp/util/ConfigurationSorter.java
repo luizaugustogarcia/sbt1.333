@@ -174,7 +174,7 @@ public class ConfigurationSorter {
                     try (final var out = new FileWriter(outputDir + "/comb/" + configuration.getCanonical().getSpi() + ".html")) {
                         renderSorting(configuration.getCanonical(),
                                 configuration.getCanonical().translatedSorting(configuration,
-                                        sorting.toList().stream().map(Cycle::create).collect(toList())), out);
+                                        sorting.toList().stream().map(Cycle::of).collect(toList())), out);
                     }
                 }
             } else {

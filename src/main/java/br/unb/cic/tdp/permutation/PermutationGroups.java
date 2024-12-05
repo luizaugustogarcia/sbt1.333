@@ -1,17 +1,12 @@
 package br.unb.cic.tdp.permutation;
 
 import cc.redberry.core.utils.BitArray;
-import cern.colt.list.IntArrayList;
-import cern.colt.map.OpenIntIntHashMap;
-import org.eclipse.collections.api.list.primitive.IntList;
 import org.eclipse.collections.api.map.primitive.MutableIntIntMap;
 import org.eclipse.collections.impl.factory.primitive.IntIntMaps;
 import org.eclipse.collections.impl.factory.primitive.IntLists;
 
 import java.io.Serializable;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
 
 public class PermutationGroups implements Serializable {
 
@@ -77,7 +72,7 @@ public class PermutationGroups implements Serializable {
                 ++counter;
                 bitArray.set(start);
                 if (include1Cycle && symbols.containsKey(start))
-                    result.add(Cycle.create(start));
+                    result.add(Cycle.of(start));
                 continue;
             }
             while (!bitArray.get(start)) {
@@ -93,7 +88,7 @@ public class PermutationGroups implements Serializable {
                 start = image;
             }
 
-            result.add(Cycle.create(cycle.toArray()));
+            result.add(Cycle.of(cycle.toArray()));
             cycle.clear();
         }
 

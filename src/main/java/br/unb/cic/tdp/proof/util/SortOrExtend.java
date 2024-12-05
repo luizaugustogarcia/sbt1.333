@@ -2,13 +2,15 @@ package br.unb.cic.tdp.proof.util;
 
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
-import br.unb.cic.tdp.util.ConfigurationSorter;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.val;
+import org.apache.commons.dbutils.QueryRunner;
+import org.apache.commons.dbutils.handlers.ScalarHandler;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import javax.sql.DataSource;
+import java.io.StringWriter;
+import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -22,41 +24,36 @@ import static java.util.stream.Collectors.toList;
 
 @AllArgsConstructor
 public abstract class SortOrExtend extends RecursiveAction {
+    protected final DataSource dataSource;
     protected final Configuration configuration;
-    protected final String outputDir;
     private static final Map<String, Boolean> workingConfigurations = new ConcurrentHashMap<>();
 
-    @SneakyThrows(IOException.class)
+    @SneakyThrows
     @Override
     protected void compute() {
-        final var canonical = configuration.getCanonical();
+        val canonical = configuration.getCanonical();
 
-        final var sortingFile = new File(outputDir + "/" + canonical.getSpi() + ".html");
-        if (sortingFile.exists()) {
-            // if it's already sorted, return
+        if (isAlreadySorted(canonical)) {
             return;
         }
 
-        final var badCaseFile = new File(outputDir + "/bad-cases/" + canonical.getSpi());
-
-        if (!badCaseFile.exists()) {
+        if (!isBadCase(canonical)) {
             try {
-                final var previousValue = workingConfigurations.putIfAbsent(canonical.getSpi().toString(), Boolean.TRUE);
+                val previousValue = workingConfigurations.putIfAbsent(canonical.getSpi().toString(), Boolean.TRUE);
                 if (previousValue != null && previousValue) {
-                    // some thread already is working on this case, skipping
+                    // some thread is already working on this case, thus, skipping
                     return;
                 }
 
-                final var sorting = searchForSorting(canonical);
+                val sorting = searchForSorting(canonical);
                 if (sorting.isPresent()) {
-                    try (final var writer = new FileWriter(outputDir + "/" + canonical.getSpi() + ".html")) {
-                        renderSorting(canonical, sorting.get(), writer);
+                    try (val writer = new StringWriter()) {
+                        //renderSorting(canonical, sorting.get(), writer);
+                        saveSorting(canonical, sorting.toString());
                         return;
                     }
                 } else {
-                    try (final var writer = new FileWriter(outputDir + "/bad-cases/" + canonical.getSpi())) {
-                        // create the base case
-                    }
+                    saveBadCase(canonical);
                 }
             } finally {
                 workingConfigurations.remove(canonical.getSpi().toString());
@@ -66,31 +63,59 @@ public abstract class SortOrExtend extends RecursiveAction {
         extend(configuration);
     }
 
+    private boolean isAlreadySorted(Configuration canonical) throws SQLException {
+        try (val conn = dataSource.getConnection()) {
+            val runner = new QueryRunner();
+            return runner.query(conn, "select 1 from dfs where config = ? and not sorting is null",
+                    canonical.getSpi().toString(), new ScalarHandler<>()) != null;
+        }
+    }
+
+    @SneakyThrows
+    private void saveSorting(final Configuration canonical, final String sorting) {
+        try (val conn = dataSource.getConnection()) {
+            val runner = new QueryRunner();
+            runner.execute(conn, "insert into dfs(config, sorting) values (?,?)", canonical.getSpi().toString(), sorting);
+        }
+    }
+
+    @SneakyThrows
+    private void saveBadCase(final Configuration canonical) {
+        try (val conn = dataSource.getConnection()) {
+            val runner = new QueryRunner();
+            runner.execute(conn, "insert into dfs_bad_cases(config) values (?)", canonical.getSpi().toString());
+        }
+    }
+
+    @SneakyThrows
+    private boolean isBadCase(final Configuration canonical) {
+        try (val conn = dataSource.getConnection()) {
+            val runner = new QueryRunner();
+            return runner.query(conn, "select 1 from dfs_bad_cases where config = ?",
+                    canonical.getSpi().toString(), new ScalarHandler<>()) != null;
+        }
+    }
+
     protected Optional<List<Cycle>> searchForSorting(final Configuration configuration) {
-        final var _3norm = configuration.getSpi().get3Norm();
+        val _3norm = configuration.getSpi().get3Norm();
 
-        List<Cycle> sorting = Collections.emptyList();
+        var sorting = Collections.<Cycle>emptyList();
 
-        String threadName = Thread.currentThread().getName();
+        val threadName = Thread.currentThread().getName();
 
-        if (_3norm >= 3) {
+        if (_3norm >= 4) {
             Thread.currentThread().setName(configuration.hashCode() + "-" + configuration.getSpi() + "-4,3");
-            sorting = searchSorting(configuration, _4_3_SEQS);
+            sorting = searchSorting(configuration, _5_4_SEQS);
         }
 
-        if (_3norm >= 6 && sorting.isEmpty()) {
+        if (_3norm >= 8 && sorting.isEmpty()) {
             Thread.currentThread().setName(configuration.hashCode() + "-" + configuration.getSpi() + "-8,6");
-            sorting = searchSorting(configuration, _8_6_SEQS);
-        }
-
-        if (_3norm >= 9 && sorting.isEmpty()) {
-            Thread.currentThread().setName(configuration.hashCode() + "-" + configuration.getSpi() + "-12,9");
-            sorting = searchSorting(configuration, _12_9_SEQS);
+            sorting = searchSorting(configuration, _10_8_SEQS);
         }
 
         if (_3norm >= 12 && sorting.isEmpty()) {
-            Thread.currentThread().setName(configuration.hashCode() + "-" + configuration.getSpi() + "-16,12");
-            sorting = searchSorting(configuration, _16_12_SEQS);
+            Thread.currentThread().setName(configuration.hashCode() + "-" + configuration.getSpi() + "-12,9");
+            sorting = searchSorting(configuration, _15_12_SEQS);
         }
 
         Thread.currentThread().setName(threadName);
@@ -100,33 +125,34 @@ public abstract class SortOrExtend extends RecursiveAction {
         }
 
         if (configuration.isFull() && getComponents(configuration.getSpi(), configuration.getPi()).size() == 1) {
-            System.out.println("Full configuration without (12/9): " + configuration.getCanonical().getSpi());
+            // TODO save in the database
+            System.out.println("Full configuration without (15/12): " + configuration.getCanonical().getSpi());
         }
 
         return Optional.empty();
     }
 
     protected List<Cycle> searchSorting(final Configuration configuration, final Move rootMove) {
-        final var spi = new ListOfCycles(configuration.getPi().size());
+        val spi = new ListOfCycles(configuration.getPi().size());
         configuration.getSpi().stream().map(Cycle::getSymbols).forEach(spi::add);
 
-        final var parity = new boolean[configuration.getPi().size()];
-        int[][] spiIndex = new int[configuration.getPi().size()][];
+        val parity = new boolean[configuration.getPi().size()];
+        val spiIndex = new int[configuration.getPi().size()][];
 
-        for (int i = 0; i < spi.size; i++) {
-            final var cycle = spi.elementData[i];
-            for (int s : cycle) {
+        for (var i = 0; i < spi.size; i++) {
+            val cycle = spi.elementData[i];
+            for (val s : cycle) {
                 spiIndex[s] = cycle;
                 parity[s] = (cycle.length & 1) == 1;
             }
         }
 
-        final var pi = configuration.getPi().getSymbols();
+        val pi = configuration.getPi().getSymbols();
 
-        final var stack = new Stack(rootMove.getHeight());
+        val stack = new Stack(rootMove.getHeight());
 
         return SortingSequenceSearcher.search(null, spi, parity, spiIndex, spiIndex.length, pi, stack, rootMove)
-                .toList().stream().map(Cycle::create).collect(toList());
+                .toList().stream().map(Cycle::of).collect(toList());
     }
 
     protected abstract void extend(final Configuration configuration);

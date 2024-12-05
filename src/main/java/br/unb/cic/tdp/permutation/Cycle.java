@@ -20,23 +20,23 @@ public class Cycle implements Permutation, Comparable<Cycle> {
         updateInternalState();
     }
 
-    public static Cycle create(final String cycle) {
+    public static Cycle of(final String cycle) {
         final var strSymbols = cycle.replace("(", "").replace(")", "").split(",|\\s");
         final var symbols = new int[strSymbols.length];
         for (var i = 0; i < strSymbols.length; i++) {
             final var strSymbol = strSymbols[i];
             symbols[i] = Integer.parseInt(strSymbol);
         }
-        return create(symbols);
+        return of(symbols);
     }
 
-    public static Cycle create(final IntArrayList lSymbols) {
+    public static Cycle of(final IntArrayList lSymbols) {
         final var symbols = new int[lSymbols.size()];
         System.arraycopy(lSymbols.elements(), 0, symbols, 0, lSymbols.size());
-        return create(symbols);
+        return of(symbols);
     }
 
-    public static Cycle create(final int... symbols) {
+    public static Cycle of(final int... symbols) {
         return new Cycle(symbols);
     }
 
@@ -87,7 +87,7 @@ public class Cycle implements Permutation, Comparable<Cycle> {
             final var symbolsCopy = new int[this.symbols.length];
             System.arraycopy(this.symbols, 0, symbolsCopy, 0, this.symbols.length);
             ArrayUtils.reverse(symbolsCopy);
-            inverse = Cycle.create(symbolsCopy);
+            inverse = Cycle.of(symbolsCopy);
         }
         return inverse;
     }
@@ -177,7 +177,7 @@ public class Cycle implements Permutation, Comparable<Cycle> {
         System.arraycopy(this.symbols, index, symbols, 0, symbols.length - index);
         System.arraycopy(this.symbols, 0, symbols, symbols.length - index, index);
 
-        return Cycle.create(symbols);
+        return Cycle.of(symbols);
     }
 
     @Override

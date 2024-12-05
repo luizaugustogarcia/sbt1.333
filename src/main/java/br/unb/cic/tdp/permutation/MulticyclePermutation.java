@@ -26,7 +26,7 @@ public class MulticyclePermutation implements Collection<Cycle>, Permutation {
         if (include1Cycles) {
             for (int i = 0; i <= getMaxSymbol(); i++) {
                 if (!getSymbols().contains(i)) {
-                    this.add(Cycle.create(i));
+                    this.add(Cycle.of(i));
                 }
             }
         }

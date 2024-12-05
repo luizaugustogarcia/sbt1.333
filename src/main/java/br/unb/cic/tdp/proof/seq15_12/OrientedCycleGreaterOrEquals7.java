@@ -1,4 +1,4 @@
-package br.unb.cic.tdp.proof.seq16_12;
+package br.unb.cic.tdp.proof.seq15_12;
 
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
@@ -46,7 +46,7 @@ public class OrientedCycleGreaterOrEquals7 {
                 "\t</head>\n" +
                 "<body><div style=\"margin-top: 10px; margin-left: 10px;\"> \n");
 
-        final var orientedCycle = Cycle.create("0,3,4,1,5,2,6");
+        final var orientedCycle = Cycle.of("0,3,4,1,5,2,6");
         final var orientedTriple = new int[]{0, 1, 2};
 
         out.println(orientedCycle + "<br>");
@@ -63,7 +63,7 @@ public class OrientedCycleGreaterOrEquals7 {
         for (final var permutation : Factory.createPermutationGenerator(
                 Factory.createVector(Ints.asList(CANONICAL_PI[7].getSymbols())))) {
 
-            final var pi = Cycle.create(Ints.toArray(permutation.getVector()));
+            final var pi = Cycle.of(Ints.toArray(permutation.getVector()));
 
             if (!verifiedPis.contains(pi)) {
                 verifiedPis.add(pi);

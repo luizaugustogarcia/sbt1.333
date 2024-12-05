@@ -29,7 +29,7 @@ public class Cases3_2 {
     public static List<Pair<Configuration, List<Cycle>>> generate() {
         final var result = new ArrayList<Pair<Configuration, List<Cycle>>>();
         result.add(new Pair<>(new Configuration(new MulticyclePermutation("(0,4,2)(1,5,3)")),
-                Arrays.asList(Cycle.create("0,2,4"), Cycle.create("3,1,5"), Cycle.create("2,4,0"))));
+                Arrays.asList(Cycle.of("0,2,4"), Cycle.of("3,1,5"), Cycle.of("2,4,0"))));
         result.addAll(generate(new MulticyclePermutation("(0,1,2)(3,4,5)(6,7,8)")));
         return result;
     }
@@ -40,7 +40,7 @@ public class Cases3_2 {
         final var verifiedConfigurations = new HashSet<Configuration>();
 
         for (final var permutation : Factory.createPermutationGenerator(Factory.createVector(IntStream.of(spi.getSymbols().toArray()).boxed().collect(Collectors.toList())))) {
-            final var pi = Cycle.create(Ints.toArray(permutation.getVector()));
+            final var pi = Cycle.of(Ints.toArray(permutation.getVector()));
             if (spi.stream().noneMatch(cycle -> isOriented(pi, cycle))) {
                 final var openGates = getOpenGates(spi, pi);
                 if (openGates.size() <= 2) {

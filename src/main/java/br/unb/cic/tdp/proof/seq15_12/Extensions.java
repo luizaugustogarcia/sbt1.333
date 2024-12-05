@@ -1,109 +1,73 @@
-package br.unb.cic.tdp.proof.seq16_12;
+package br.unb.cic.tdp.proof.seq15_12;
 
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.proof.util.SortOrExtend;
 import br.unb.cic.tdp.util.Pair;
+import br.unb.cic.tdp.util.PoolingDataSource;
 import cern.colt.list.FloatArrayList;
 import com.google.common.base.Preconditions;
 import lombok.SneakyThrows;
-import org.apache.commons.io.FileUtils;
+import lombok.val;
+import org.apache.commons.dbutils.QueryRunner;
+import org.apache.commons.dbutils.handlers.ScalarHandler;
 
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import javax.sql.DataSource;
+import java.io.PrintStream;
+import java.sql.SQLException;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinTask;
 
-import static br.unb.cic.tdp.base.CommonOperations.*;
-import static br.unb.cic.tdp.proof.ProofGenerator.*;
-import java.util.concurrent.*;
-import java.util.stream.Stream;
-
-import static br.unb.cic.tdp.base.Configuration.*;
-import static br.unb.cic.tdp.util.ListCases.getSorting;
-import static br.unb.cic.tdp.util.ListCases.isBadExtension;
+import static br.unb.cic.tdp.base.CommonOperations.cycleIndex;
+import static br.unb.cic.tdp.base.Configuration.ofSignature;
+import static br.unb.cic.tdp.base.Configuration.signature;
+import static br.unb.cic.tdp.proof.ProofGenerator.permutationToJsArray;
+import static java.lang.Math.floor;
 
 public class Extensions {
 
-    @SneakyThrows(value = {IOException.class, InterruptedException.class})
-    public static void generate(final String outputDir) {
-        Files.createDirectories(Paths.get(outputDir + "/dfs/"));
-        Files.createDirectories(Paths.get(outputDir + "/dfs/bad-cases/"));
+    private static DataSource dataSource;
 
-        cleanUpBadExtensionAndInvalidFiles(outputDir + "/dfs/");
+    @SneakyThrows
+    public static void generate(final String outputDir) {
+        dataSource = PoolingDataSource.get(outputDir + "/extensions-db");
+
+        try (val conn = dataSource.getConnection()) {
+            val runner = new QueryRunner();
+            runner.execute(conn, "create table IF NOT EXISTS dfs(config varchar(255), sorting varchar(1000))");
+            runner.execute(conn, "create table IF NOT EXISTS dfs_bad_cases(config varchar(255))");
+        }
 
         // ATTENTION: The Sort Or Extend fork/join can never run with BAD EXTENSION files in the dfs directory.
         // Otherwise, it will wrongly skip cases.
 
-        var pool = new ForkJoinPool();
-        // oriented 5-cycle
-        pool.submit(new SortOrExtendExtensions(new Configuration(new MulticyclePermutation("(0,3,1,4,2)")), outputDir + "/dfs/"));
-        // interleaving pair
-        pool.submit(new SortOrExtendExtensions(new Configuration(new MulticyclePermutation("(0,4,2)(1,5,3)")), outputDir + "/dfs/"));
-        // intersecting pair
-        pool.submit(new SortOrExtendExtensions(new Configuration(new MulticyclePermutation("(0,3,1)(2,5,4)")), outputDir + "/dfs/"));
-        pool.shutdown();
-        // boundless
-        pool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
-
-        final var executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-        Files.list(Paths.get(outputDir + "/dfs/bad-cases/"))
-                .map(Path::toFile)
-                .forEach(file -> executor.submit(() -> makeHtmlNavigation(new Configuration(new MulticyclePermutation(file.getName())), outputDir)));
-
-        executor.shutdown();
-        // boundless
-        executor.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
-    }
-
-    @SneakyThrows
-    public static void cleanUpBadExtensionAndInvalidFiles(final String outputDir) {
-        final var dir = new File(outputDir);
-
-        final var files = Collections.synchronizedList(new ArrayList<File>());
-        Stream.of(dir.listFiles(file -> file.getName().endsWith(".html")))
-                .parallel()
-                .forEach(f -> {
-                        final var file = new File(outputDir + f.getName());
-
-                        try {
-                            if (isBadExtension(file)) {
-                                files.add(file);
-                            } else {
-                                final var canonical = new Configuration(new MulticyclePermutation(f.getName().replace(" ", ",")));
-                                final var sorting = getSorting(file.toPath());
-                                if (!is16_12(canonical.getSpi(), canonical.getPi(), sorting.getSecond())) {
-                                    files.add(file);
-                                }
-                            }
-                        } catch (IllegalStateException e) {
-                            files.add(file);
-                        }
-                });
-
-        boolean canContinue = true;
-        for (final var file : files) {
-            boolean deleted = FileUtils.deleteQuietly(file);
-            canContinue &= deleted;
-            if (!deleted) {
-                System.out.println("rm \"" + file + "\"");
-            }
+        try (var pool = new ForkJoinPool(Runtime.getRuntime().availableProcessors())) {
+            // oriented 5-cycle
+            pool.submit(new SortOrExtendExtensions(dataSource, new Configuration(new MulticyclePermutation("(0,3,1,4,2)"))));
+            // interleaving pair
+            pool.submit(new SortOrExtendExtensions(dataSource, new Configuration(new MulticyclePermutation("(0,4,2)(1,5,3)"))));
+            // intersecting pair
+            pool.submit(new SortOrExtendExtensions(dataSource, new Configuration(new MulticyclePermutation("(0,3,1)(2,5,4)"))));
         }
 
-        if (!canContinue)
-            throw new RuntimeException("ERROR: files not deleted, cannot continue.");
+        try (val executor = Executors.newCachedThreadPool()) {
+//            Files.list(dir)
+//                    .map(Path::toFile)
+//                    .forEach(file -> executor.submit(() -> makeHtmlNavigation(new Configuration(new MulticyclePermutation(file.getName())), outputDir)));
+        }
     }
 
     @SneakyThrows
     private static void renderExtensions(final List<Pair<String, Configuration>> extensions, final PrintStream out, final String outputDir) {
-        for (final var extension : extensions) {
-            final var configuration = extension.getSecond();
-            final var canonical = extension.getSecond().getCanonical();
+        for (val extension : extensions) {
+            val configuration = extension.getSecond();
+            val canonical = extension.getSecond().getCanonical();
 
-            final var badCaseFile = new File(outputDir + "/dfs/bad-cases/" + canonical.getSpi());
-            final var hasSorting = !badCaseFile.exists();
+            var hasSorting = hasSorting(canonical);
+
             out.println(hasSorting ? "<div style=\"margin-top: 10px; background-color: rgba(153, 255, 153, 0.15)\">" :
                     "<div style=\"margin-top: 10px; background-color: rgba(255, 0, 0, 0.05);\">");
             out.println(extension.getFirst() + "<br>");
@@ -111,7 +75,7 @@ public class Extensions {
             out.println("Hash code: " + configuration.hashCode() + "<br>");
             out.println("3-norm: " + configuration.getSpi().get3Norm() + "<br>");
             out.println("Signature: " + configuration.getSignature() + "<br>");
-            final var jsSpi = permutationToJsArray(configuration.getSpi());
+            val jsSpi = permutationToJsArray(configuration.getSpi());
             out.printf("Extension: <a href=\"\" " +
                             "onclick=\"" +
                             "updateCanvas('modalCanvas', %s); " +
@@ -124,20 +88,28 @@ public class Extensions {
         }
     }
 
+    private static boolean hasSorting(Configuration canonical) throws SQLException {
+        try (val conn = dataSource.getConnection()) {
+            val runner = new QueryRunner();
+            return runner.query(conn, "select 1 from dfs_bad_cases where config = ?",
+                    canonical.getSpi(), new ScalarHandler<>()) != null;
+        }
+    }
+
     /*
      * Type 1 extension.
      */
     private static List<Pair<String, Configuration>> type1Extensions(final Configuration config) {
-        final var result = new ArrayList<Pair<String, Configuration>>();
+        val result = new ArrayList<Pair<String, Configuration>>();
 
-        final var newCycleLabel = config.getSpi().size() + 1;
+        val newCycleLabel = config.getSpi().size() + 1;
 
-        final var signature = signature(config.getSpi(), config.getPi());
+        val signature = signature(config.getSpi(), config.getPi());
 
-        for (int i = 0; i < signature.length; i++) {
+        for (var i = 0; i < signature.length; i++) {
             if (config.getOpenGates().contains(i)) {
-                for (int b = 0; b < signature.length; b++) {
-                    for (int c = b; c < signature.length; c++) {
+                for (var b = 0; b < signature.length; b++) {
+                    for (var c = b; c < signature.length; c++) {
                         if (!(i == b && b == c)) {
                             result.add(new Pair<>(String.format("a=%d b=%d c=%d", i, b, c),
                                     ofSignature(unorientedExtension(signature, newCycleLabel, i, b, c).elements())));
@@ -158,15 +130,15 @@ public class Extensions {
             return Collections.emptyList();
         }
 
-        final var result = new ArrayList<Pair<String, Configuration>>();
+        val result = new ArrayList<Pair<String, Configuration>>();
 
-        final var newCycleLabel = config.getSpi().size() + 1;
+        val newCycleLabel = config.getSpi().size() + 1;
 
-        final var signature = signature(config.getSpi(), config.getPi());
+        val signature = signature(config.getSpi(), config.getPi());
 
-        for (int a = 0; a < signature.length; a++) {
-            for (int b = a; b < signature.length; b++) {
-                for (int c = b; c < signature.length; c++) {
+        for (var a = 0; a < signature.length; a++) {
+            for (var b = a; b < signature.length; b++) {
+                for (var c = b; c < signature.length; c++) {
                     if (!(a == b && b == c)) {
                         result.add(new Pair<>(String.format("a=%d b=%d c=%d", a, b, c),
                                 ofSignature(unorientedExtension(signature, newCycleLabel, a, b, c).elements())));
@@ -182,45 +154,45 @@ public class Extensions {
      * Type 3 extension.
      */
     private static List<Pair<String, Configuration>> type3Extensions(final Configuration config) {
-        final var result = new ArrayList<Pair<String, Configuration>>();
+        val result = new ArrayList<Pair<String, Configuration>>();
 
-        final var signature = signature(config.getSpi(), config.getPi());
-        final var _cyclesSizes = new HashMap<Integer, Integer>();
-        final var indexesByLabel = new HashMap<Integer, List<Integer>>();
-        for (int i = 0; i < signature.length; i++) {
-            _cyclesSizes.putIfAbsent((int) Math.floor(signature[i]), 0);
-            _cyclesSizes.computeIfPresent((int) Math.floor(signature[i]), (k, v) -> v + 1);
-            indexesByLabel.computeIfAbsent((int) Math.floor(signature[i]), _s -> new ArrayList<>());
+        val signature = signature(config.getSpi(), config.getPi());
+        val _cyclesSizes = new HashMap<Integer, Integer>();
+        val indexesByLabel = new HashMap<Integer, List<Integer>>();
+        for (var i = 0; i < signature.length; i++) {
+            _cyclesSizes.putIfAbsent((int) floor(signature[i]), 0);
+            _cyclesSizes.computeIfPresent((int) floor(signature[i]), (k, v) -> v + 1);
+            indexesByLabel.computeIfAbsent((int) floor(signature[i]), _s -> new ArrayList<>());
             int finalI = i;
-            indexesByLabel.computeIfPresent((int) Math.floor(signature[i]), (k, v) -> {
+            indexesByLabel.computeIfPresent((int) floor(signature[i]), (k, v) -> {
                 v.add(finalI);
                 return v;
             });
         }
 
-        final var cycleIndex = cycleIndex(config.getSpi(), config.getPi());
-        final var cyclesByLabel = new HashMap<Integer, Cycle>();
-        for (int i = 0; i < signature.length; i++) {
-            final int _i = i;
-            cyclesByLabel.computeIfAbsent((int) Math.floor(signature[i]), k -> cycleIndex[config.getPi().get(_i)]);
+        val cycleIndex = cycleIndex(config.getSpi(), config.getPi());
+        val cyclesByLabel = new HashMap<Integer, Cycle>();
+        for (var i = 0; i < signature.length; i++) {
+            val _i = i;
+            cyclesByLabel.computeIfAbsent((int) floor(signature[i]), k -> cycleIndex[config.getPi().get(_i)]);
         }
 
-        for (int label = 1; label <= config.getSpi().size(); label++) {
+        for (var label = 1; label <= config.getSpi().size(); label++) {
             if (!isOriented(signature, label)) {
-                for (int a = 0; a < signature.length; a++) {
-                    for (int b = a; b < signature.length; b++) {
-                        float[] extendedSignature = unorientedExtension(signature, label, a, b).elements();
+                for (var a = 0; a < signature.length; a++) {
+                    for (var b = a; b < signature.length; b++) {
+                        val extendedSignature = unorientedExtension(signature, label, a, b).elements();
 
-                        Configuration extension = ofSignature(extendedSignature);
+                        val extension = ofSignature(extendedSignature);
 
                         if (remainsUnoriented(indexesByLabel.get(label), a, b)) {
                             if (extension.getOpenGates().size() <= 2) {
                                 result.add(new Pair<>(String.format("a=%d b=%d, extended cycle: %s", a, b, cyclesByLabel.get(label)), extension));
                             }
                         } else if (_cyclesSizes.get(label) == 3) {
-                            final var extension_ = extend(cyclesByLabel, label, signature, a, b);
-                            final var fractions = new float[]{0.1F, 0.3F, 0.5F, 0.2F, 0.4F};
-                            for (int i = 0; i < fractions.length; i++) {
+                            val extension_ = extend(cyclesByLabel, label, signature, a, b);
+                            val fractions = new float[]{0.1F, 0.3F, 0.5F, 0.2F, 0.4F};
+                            for (var i = 0; i < fractions.length; i++) {
                                 fractions[i] += label;
                             }
 
@@ -240,11 +212,12 @@ public class Extensions {
     public static boolean areSymbolsInCyclicOrder(final float[] elements, final float[] other) {
         int next = 0;
 
-        outer: for (int i = 0; i < elements.length; i++) {
+        outer:
+        for (var i = 0; i < elements.length; i++) {
             if (elements[i] == other[next]) {
-                for (int j = 0; j <= elements.length; j++) {
+                for (var j = 0; j <= elements.length; j++) {
                     int index = (i + j) % elements.length;
-                    if (Math.floor(elements[index]) == Math.floor(other[next % other.length])) {
+                    if (floor(elements[index]) == floor(other[next % other.length])) {
                         if (elements[index] == other[next % other.length]) {
                             next++;
                             if (next > other.length) {
@@ -261,22 +234,27 @@ public class Extensions {
         return true;
     }
 
-    private static float[] extend(final Map<Integer, Cycle> cyclesByLabel, final int label, float[] signature,
-                                  final int a, final int b) {
+    private static float[] extend(
+            final Map<Integer, Cycle> cyclesByLabel,
+            final int label,
+            float[] signature,
+            final int a,
+            final int b
+    ) {
         final Cycle cycle = cyclesByLabel.get(label).startingBy(cyclesByLabel.get(label).getMaxSymbol());
 
         float[] copiedSignature = new float[signature.length];
         System.arraycopy(signature, 0, copiedSignature, 0, signature.length);
 
-        for (int i = cycle.getSymbols().length - 1; i >= 0; i--) {
+        for (var i = cycle.getSymbols().length - 1; i >= 0; i--) {
             copiedSignature[cycle.getSymbols()[i]] += 0.1 * (i + 1);
         }
 
         float next = 0.5f;
-        final var positions = new int[]{a, b};
-        final var extension = new FloatArrayList(copiedSignature);
+        val positions = new int[]{a, b};
+        val extension = new FloatArrayList(copiedSignature);
         int inserted = 0;
-        for (int position : positions) {
+        for (var position : positions) {
             extension.beforeInsert(position + inserted, label + next);
             next -= 0.1f;
             inserted++;
@@ -287,10 +265,10 @@ public class Extensions {
     }
 
     private static boolean remainsUnoriented(final List<Integer> indexes, final int... newIndices) {
-        final var intervals = new HashSet<Pair<Integer, Integer>>();
+        val intervals = new HashSet<Pair<Integer, Integer>>();
 
-        for (final var index : newIndices) {
-            for (int i = 0; i < indexes.size(); i++) {
+        for (val index : newIndices) {
+            for (var i = 0; i < indexes.size(); i++) {
                 int left = indexes.get(i), right = indexes.get((i + 1) % indexes.size());
                 if ((left < index && index <= right) ||
                         (right < left && (left < index || index <= right))) {
@@ -304,7 +282,7 @@ public class Extensions {
 
     private static boolean isOriented(float[] signature, int label) {
         for (float s : signature) {
-            if (s % 1 > 0 && Math.floor(s) == label) {
+            if (s % 1 > 0 && floor(s) == label) {
                 return true;
             }
         }
@@ -314,8 +292,8 @@ public class Extensions {
     private static FloatArrayList unorientedExtension(final float[] signature, final int label, final int... positions) {
         Preconditions.checkArgument(1 < positions.length && positions.length <= 3);
         Arrays.sort(positions);
-        final var extension = new FloatArrayList(signature);
-        for (int i = 0; i < positions.length; i++) {
+        val extension = new FloatArrayList(signature);
+        for (var i = 0; i < positions.length; i++) {
             extension.beforeInsert(positions[i] + i, label);
         }
         extension.trimToSize();
@@ -323,8 +301,8 @@ public class Extensions {
     }
 
     @SneakyThrows
-    private static void makeHtmlNavigation (final Configuration configuration, final String outputDir) {
-        try (final var out = new PrintStream(outputDir + "/dfs/" + configuration.getSpi() + ".html")) {
+    private static void makeHtmlNavigation(final Configuration configuration, final String outputDir) {
+        try (val out = new PrintStream(outputDir + "/dfs/" + configuration.getSpi() + ".html")) {
             out.println("<html>\n" +
                     "\t<head>\n" +
                     "\t\t<link rel=\"stylesheet\" href=\"https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css\" integrity=\"sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh\" crossorigin=\"anonymous\">\n" +
@@ -400,15 +378,19 @@ public class Extensions {
 
     static class SortOrExtendExtensions extends SortOrExtend {
 
-        public SortOrExtendExtensions(final Configuration configuration, final String outputDir) {
-            super(configuration, outputDir);
+        public SortOrExtendExtensions(final DataSource dataSource, final Configuration configuration) {
+            super(dataSource, configuration);
         }
 
         @Override
-        protected void extend(Configuration canonical) {
-            type1Extensions(canonical).stream().map(extension -> new SortOrExtendExtensions(extension.getSecond(), outputDir)).forEach(ForkJoinTask::fork);
-            type2Extensions(canonical).stream().map(extension -> new SortOrExtendExtensions(extension.getSecond(), outputDir)).forEach(ForkJoinTask::fork);
-            type3Extensions(canonical).stream().map(extension -> new SortOrExtendExtensions(extension.getSecond(), outputDir)).forEach(ForkJoinTask::fork);
+        protected void extend(final Configuration canonical) {
+            if (canonical.get3Norm() > 12) {
+                System.err.println("Configuration too big");
+                System.exit(1);
+            }
+            type1Extensions(canonical).stream().map(extension -> new SortOrExtendExtensions(dataSource, extension.getSecond())).forEach(ForkJoinTask::fork);
+            type2Extensions(canonical).stream().map(extension -> new SortOrExtendExtensions(dataSource, extension.getSecond())).forEach(ForkJoinTask::fork);
+            type3Extensions(canonical).stream().map(extension -> new SortOrExtendExtensions(dataSource, extension.getSecond())).forEach(ForkJoinTask::fork);
         }
     }
 }
