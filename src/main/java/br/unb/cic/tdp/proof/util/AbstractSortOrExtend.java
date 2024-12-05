@@ -1,14 +1,9 @@
 package br.unb.cic.tdp.proof.util;
 
-import br.unb.cic.tdp.base.Configuration;
-import br.unb.cic.tdp.permutation.Cycle;
-import lombok.AllArgsConstructor;
-import lombok.SneakyThrows;
-import lombok.val;
-import org.apache.commons.dbutils.QueryRunner;
-import org.apache.commons.dbutils.handlers.ScalarHandler;
+import static br.unb.cic.tdp.base.CommonOperations.getComponents;
+import static br.unb.cic.tdp.proof.ProofGenerator.*;
+import static java.util.stream.Collectors.toList;
 
-import javax.sql.DataSource;
 import java.io.StringWriter;
 import java.sql.SQLException;
 import java.util.Collections;
@@ -18,20 +13,39 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RecursiveAction;
 
-import static br.unb.cic.tdp.base.CommonOperations.getComponents;
-import static br.unb.cic.tdp.proof.ProofGenerator.*;
-import static java.util.stream.Collectors.toList;
+import javax.sql.DataSource;
+
+import org.apache.commons.dbutils.QueryRunner;
+import org.apache.commons.dbutils.handlers.ScalarHandler;
+
+import br.unb.cic.tdp.base.Configuration;
+import br.unb.cic.tdp.permutation.Cycle;
+import lombok.AllArgsConstructor;
+import lombok.SneakyThrows;
+import lombok.val;
 
 @AllArgsConstructor
-public abstract class SortOrExtend extends RecursiveAction {
-    protected final DataSource dataSource;
-    protected final Configuration configuration;
+public abstract class AbstractSortOrExtend extends RecursiveAction {
+
     private static final Map<String, Boolean> workingConfigurations = new ConcurrentHashMap<>();
+
+    protected final int maxExtension;
+
+    protected final DataSource dataSource;
+
+    protected final Configuration configuration;
 
     @SneakyThrows
     @Override
     protected void compute() {
         val canonical = configuration.getCanonical();
+
+        val isBeingSorting = workingConfigurations.putIfAbsent(canonical.getSpi().toString(), Boolean.TRUE);
+
+        if (isBeingSorting != null && isBeingSorting) {
+            // some thread is already working on this case, thus, skipping
+            return;
+        }
 
         if (isAlreadySorted(canonical)) {
             return;
@@ -39,12 +53,6 @@ public abstract class SortOrExtend extends RecursiveAction {
 
         if (!isBadCase(canonical)) {
             try {
-                val previousValue = workingConfigurations.putIfAbsent(canonical.getSpi().toString(), Boolean.TRUE);
-                if (previousValue != null && previousValue) {
-                    // some thread is already working on this case, thus, skipping
-                    return;
-                }
-
                 val sorting = searchForSorting(canonical);
                 if (sorting.isPresent()) {
                     try (val writer = new StringWriter()) {
@@ -56,18 +64,24 @@ public abstract class SortOrExtend extends RecursiveAction {
                     saveBadCase(canonical);
                 }
             } finally {
-                workingConfigurations.remove(canonical.getSpi().toString());
+                if (isBeingSorting == null) {
+                    // only the thread sorting this case should remove it from the map
+                    workingConfigurations.remove(canonical.getSpi().toString());
+                }
             }
         }
 
         extend(configuration);
     }
 
-    private boolean isAlreadySorted(Configuration canonical) throws SQLException {
+    private boolean isAlreadySorted(final Configuration canonical) throws SQLException {
         try (val conn = dataSource.getConnection()) {
             val runner = new QueryRunner();
+            val spi = canonical.getSpi().toString();
             return runner.query(conn, "select 1 from dfs where config = ? and not sorting is null",
-                    canonical.getSpi().toString(), new ScalarHandler<>()) != null;
+                    spi, new ScalarHandler<>()) != null || runner.query(conn,
+                    "select 1 from full_configs_without_sorting where config = ?", spi,
+                    new ScalarHandler<>()) != null;
         }
     }
 
@@ -125,11 +139,20 @@ public abstract class SortOrExtend extends RecursiveAction {
         }
 
         if (configuration.isFull() && getComponents(configuration.getSpi(), configuration.getPi()).size() == 1) {
-            // TODO save in the database
+            saveFullConfigWithoutSorting(configuration.getCanonical());
             System.out.println("Full configuration without (15/12): " + configuration.getCanonical().getSpi());
         }
 
         return Optional.empty();
+    }
+
+    @SneakyThrows
+    private void saveFullConfigWithoutSorting(final Configuration canonical) {
+        try (val conn = dataSource.getConnection()) {
+            val runner = new QueryRunner();
+            runner.execute(conn, "insert into full_configs_without_sorting(config) values (?)",
+                    canonical.getSpi().toString());
+        }
     }
 
     protected List<Cycle> searchSorting(final Configuration configuration, final Move rootMove) {
@@ -155,5 +178,13 @@ public abstract class SortOrExtend extends RecursiveAction {
                 .toList().stream().map(Cycle::of).collect(toList());
     }
 
-    protected abstract void extend(final Configuration configuration);
+    private void extend(final Configuration configuration) {
+        if (configuration.get3Norm() > maxExtension) {
+            System.err.println("Configuration too big");
+            System.exit(1);
+        }
+        doExtend(configuration);
+    }
+
+    protected abstract void doExtend(Configuration configuration);
 }

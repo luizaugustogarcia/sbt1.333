@@ -1,31 +1,34 @@
 package br.unb.cic.tdp.proof.seq15_12;
 
-import br.unb.cic.tdp.base.Configuration;
-import br.unb.cic.tdp.permutation.Cycle;
-import br.unb.cic.tdp.permutation.MulticyclePermutation;
-import br.unb.cic.tdp.proof.util.SortOrExtend;
-import br.unb.cic.tdp.util.Pair;
-import br.unb.cic.tdp.util.PoolingDataSource;
-import cern.colt.list.FloatArrayList;
-import com.google.common.base.Preconditions;
-import lombok.SneakyThrows;
-import lombok.val;
-import org.apache.commons.dbutils.QueryRunner;
-import org.apache.commons.dbutils.handlers.ScalarHandler;
+import static br.unb.cic.tdp.base.CommonOperations.cycleIndex;
+import static br.unb.cic.tdp.base.Configuration.ofSignature;
+import static br.unb.cic.tdp.base.Configuration.signature;
+import static br.unb.cic.tdp.proof.ProofGenerator.permutationToJsArray;
+import static java.lang.Math.floor;
 
-import javax.sql.DataSource;
 import java.io.PrintStream;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
+import java.util.stream.Stream;
 
-import static br.unb.cic.tdp.base.CommonOperations.cycleIndex;
-import static br.unb.cic.tdp.base.Configuration.ofSignature;
-import static br.unb.cic.tdp.base.Configuration.signature;
-import static br.unb.cic.tdp.proof.ProofGenerator.permutationToJsArray;
-import static java.lang.Math.floor;
+import javax.sql.DataSource;
+
+import org.apache.commons.dbutils.QueryRunner;
+import org.apache.commons.dbutils.handlers.ScalarHandler;
+
+import com.google.common.base.Preconditions;
+import br.unb.cic.tdp.base.Configuration;
+import br.unb.cic.tdp.permutation.Cycle;
+import br.unb.cic.tdp.permutation.MulticyclePermutation;
+import br.unb.cic.tdp.proof.util.AbstractSortOrExtend;
+import br.unb.cic.tdp.util.Pair;
+import br.unb.cic.tdp.util.PoolingDataSource;
+import cern.colt.list.FloatArrayList;
+import lombok.SneakyThrows;
+import lombok.val;
 
 public class Extensions {
 
@@ -37,20 +40,22 @@ public class Extensions {
 
         try (val conn = dataSource.getConnection()) {
             val runner = new QueryRunner();
-            runner.execute(conn, "create table IF NOT EXISTS dfs(config varchar(255), sorting varchar(1000))");
-            runner.execute(conn, "create table IF NOT EXISTS dfs_bad_cases(config varchar(255))");
+            runner.execute(conn, "create table IF NOT EXISTS full_configs_without_sorting(config varchar(255) primary key)");
+            runner.execute(conn, "create table IF NOT EXISTS dfs(config varchar(255) primary key, sorting varchar(1000))");
+            runner.execute(conn, "create table IF NOT EXISTS dfs_bad_cases(config varchar(255) primary key)");
         }
 
-        // ATTENTION: The Sort Or Extend fork/join can never run with BAD EXTENSION files in the dfs directory.
-        // Otherwise, it will wrongly skip cases.
+        val maxExtension = 12;
 
         try (var pool = new ForkJoinPool(Runtime.getRuntime().availableProcessors())) {
             // oriented 5-cycle
-            pool.submit(new SortOrExtendExtensions(dataSource, new Configuration(new MulticyclePermutation("(0,3,1,4,2)"))));
+            pool.submit(new SortOrExtend(maxExtension, dataSource, new Configuration(new MulticyclePermutation("(0,3,1,4,2)"))));
             // interleaving pair
-            pool.submit(new SortOrExtendExtensions(dataSource, new Configuration(new MulticyclePermutation("(0,4,2)(1,5,3)"))));
+            pool.submit(
+                    new SortOrExtend(maxExtension, dataSource, new Configuration(new MulticyclePermutation("(0,4,2)(1,5,3)"))));
             // intersecting pair
-            pool.submit(new SortOrExtendExtensions(dataSource, new Configuration(new MulticyclePermutation("(0,3,1)(2,5,4)"))));
+            pool.submit(
+                    new SortOrExtend(maxExtension, dataSource, new Configuration(new MulticyclePermutation("(0,3,1)(2,5,4)"))));
         }
 
         try (val executor = Executors.newCachedThreadPool()) {
@@ -61,7 +66,8 @@ public class Extensions {
     }
 
     @SneakyThrows
-    private static void renderExtensions(final List<Pair<String, Configuration>> extensions, final PrintStream out, final String outputDir) {
+    private static void renderExtensions(final List<Pair<String, Configuration>> extensions, final PrintStream out,
+            final String outputDir) {
         for (val extension : extensions) {
             val configuration = extension.getSecond();
             val canonical = extension.getSecond().getCanonical();
@@ -187,11 +193,12 @@ public class Extensions {
 
                         if (remainsUnoriented(indexesByLabel.get(label), a, b)) {
                             if (extension.getOpenGates().size() <= 2) {
-                                result.add(new Pair<>(String.format("a=%d b=%d, extended cycle: %s", a, b, cyclesByLabel.get(label)), extension));
+                                result.add(new Pair<>(String.format("a=%d b=%d, extended cycle: %s", a, b, cyclesByLabel.get(label)),
+                                        extension));
                             }
                         } else if (_cyclesSizes.get(label) == 3) {
                             val extension_ = extend(cyclesByLabel, label, signature, a, b);
-                            val fractions = new float[]{0.1F, 0.3F, 0.5F, 0.2F, 0.4F};
+                            val fractions = new float[] { 0.1F, 0.3F, 0.5F, 0.2F, 0.4F };
                             for (var i = 0; i < fractions.length; i++) {
                                 fractions[i] += label;
                             }
@@ -251,7 +258,7 @@ public class Extensions {
         }
 
         float next = 0.5f;
-        val positions = new int[]{a, b};
+        val positions = new int[] { a, b };
         val extension = new FloatArrayList(copiedSignature);
         int inserted = 0;
         for (var position : positions) {
@@ -376,21 +383,18 @@ public class Extensions {
         }
     }
 
-    static class SortOrExtendExtensions extends SortOrExtend {
+    static class SortOrExtend extends AbstractSortOrExtend {
 
-        public SortOrExtendExtensions(final DataSource dataSource, final Configuration configuration) {
-            super(dataSource, configuration);
+        public SortOrExtend(final int maxExtension, final DataSource dataSource, final Configuration configuration) {
+            super(maxExtension, dataSource, configuration);
         }
 
         @Override
-        protected void extend(final Configuration canonical) {
-            if (canonical.get3Norm() > 12) {
-                System.err.println("Configuration too big");
-                System.exit(1);
-            }
-            type1Extensions(canonical).stream().map(extension -> new SortOrExtendExtensions(dataSource, extension.getSecond())).forEach(ForkJoinTask::fork);
-            type2Extensions(canonical).stream().map(extension -> new SortOrExtendExtensions(dataSource, extension.getSecond())).forEach(ForkJoinTask::fork);
-            type3Extensions(canonical).stream().map(extension -> new SortOrExtendExtensions(dataSource, extension.getSecond())).forEach(ForkJoinTask::fork);
+        protected void doExtend(final Configuration canonical) {
+            Stream.of(type1Extensions(canonical), type2Extensions(canonical), type3Extensions(canonical))
+                    .flatMap(Collection::stream)
+                    .map(extension -> new SortOrExtend(maxExtension, dataSource, extension.getSecond()))
+                    .forEach(ForkJoinTask::fork);
         }
     }
 }
